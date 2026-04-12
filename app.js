@@ -11,6 +11,14 @@ async function loadJson(url) {
   return response.json();
 }
 
+function getEl(id) {
+  const el = document.getElementById(id);
+  if (!el) {
+    throw new Error(`Missing HTML element with id="${id}"`);
+  }
+  return el;
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -33,15 +41,15 @@ async function loadData() {
 function initApp() {
   populateOccupancies();
 
-  document.getElementById('occupancySelect').addEventListener('change', updateDisplay);
-  document.getElementById('saveBtn').addEventListener('click', saveProject);
-  document.getElementById('deleteBtn').addEventListener('click', deleteProject);
-  document.getElementById('newProjectBtn').addEventListener('click', createNewProject);
-  document.getElementById('backBtn').addEventListener('click', showProjectList);
+  getEl('occupancySelect').addEventListener('change', updateDisplay);
+  getEl('saveBtn').addEventListener('click', saveProject);
+  getEl('deleteBtn').addEventListener('click', deleteProject);
+  getEl('newProjectBtn').addEventListener('click', createNewProject);
+  getEl('backBtn').addEventListener('click', showProjectList);
 }
 
 function populateOccupancies() {
-  const select = document.getElementById('occupancySelect');
+  const select = getEl('occupancySelect');
   select.innerHTML = "";
 
   occupancies.forEach(o => {
@@ -63,28 +71,28 @@ function setProjects(projects) {
 
 function createNewProject() {
   currentProjectId = null;
-  document.getElementById('projectName').value = '';
-  document.getElementById('inspectorName').value = '';
-  document.getElementById('occupancySelect').selectedIndex = 0;
-  document.getElementById('saveMessage').textContent = '';
+  getEl('projectName').value = '';
+  getEl('inspectorName').value = '';
+  getEl('occupancySelect').selectedIndex = 0;
+  getEl('saveMessage').textContent = '';
   updateDisplay();
   showProjectForm();
 }
 
 function showProjectList() {
-  document.getElementById('projectListSection').style.display = 'block';
-  document.getElementById('projectFormSection').style.display = 'none';
+  getEl('projectListSection').style.display = 'block';
+  getEl('projectFormSection').style.display = 'none';
   renderProjectsList();
 }
 
 function showProjectForm() {
-  document.getElementById('projectListSection').style.display = 'none';
-  document.getElementById('projectFormSection').style.display = 'block';
+  getEl('projectListSection').style.display = 'none';
+  getEl('projectFormSection').style.display = 'block';
 }
 
 function renderProjectsList() {
   const projects = getProjects();
-  const container = document.getElementById('projectsList');
+  const container = getEl('projectsList');
   container.innerHTML = '';
 
   if (projects.length === 0) {
@@ -115,10 +123,10 @@ function openProject(projectId) {
   if (!project) return;
 
   currentProjectId = project.id;
-  document.getElementById('projectName').value = project.projectName || '';
-  document.getElementById('inspectorName').value = project.inspectorName || '';
-  document.getElementById('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
-  document.getElementById('saveMessage').textContent = '';
+  getEl('projectName').value = project.projectName || '';
+  getEl('inspectorName').value = project.inspectorName || '';
+  getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
+  getEl('saveMessage').textContent = '';
 
   updateDisplay();
 
@@ -135,9 +143,9 @@ function openProject(projectId) {
 }
 
 function saveProject() {
-  const projectName = document.getElementById('projectName').value.trim();
-  const inspectorName = document.getElementById('inspectorName').value.trim();
-  const occupancy = document.getElementById('occupancySelect').value;
+  const projectName = getEl('projectName').value.trim();
+  const inspectorName = getEl('inspectorName').value.trim();
+  const occupancy = getEl('occupancySelect').value;
 
   const answers = [];
   document.querySelectorAll('.answer-select').forEach((field, index) => {
@@ -173,13 +181,13 @@ function saveProject() {
   }
 
   setProjects(projects);
-  document.getElementById('saveMessage').textContent = 'Project saved on this device.';
+  getEl('saveMessage').textContent = 'Project saved on this device.';
   renderProjectsList();
 }
 
 function deleteProject() {
   if (!currentProjectId) {
-    document.getElementById('saveMessage').textContent = 'Save the project first before deleting.';
+    getEl('saveMessage').textContent = 'Save the project first before deleting.';
     return;
   }
 
@@ -195,9 +203,9 @@ function deleteProject() {
 }
 
 function updateDisplay() {
-  const selected = document.getElementById('occupancySelect').value;
+  const selected = getEl('occupancySelect').value;
 
-  const reqDiv = document.getElementById('requirements');
+  const reqDiv = getEl('requirements');
   reqDiv.innerHTML = "";
 
   const selectedRequirements = requirements.filter(r => r["Occupancy Code"] === selected);
@@ -220,7 +228,7 @@ function updateDisplay() {
 }
 
 function renderChecklist(selected) {
-  const chkDiv = document.getElementById('checklist');
+  const chkDiv = getEl('checklist');
   chkDiv.innerHTML = "";
 
   const selectedChecklist = checklists.filter(c =>
