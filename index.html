@@ -32,5 +32,14 @@
   </div>
 
   <script src="app.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/fireye-online-app/service-worker.js')
+        .then(reg => console.log('Service worker registered', reg))
+        .catch(err => console.log('Service worker not registered', err));
+    });
+  }
+</script>
 </body>
 </html>
