@@ -9,6 +9,17 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fireye Online Fire Safety App</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#b71c1c">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
   <div class="app">
     <header class="header">
       <h1>🔥 Fireye Online Fire Safety App</h1>
@@ -16,8 +27,17 @@
     </header>
 
     <section class="card">
-      <label for="occupancySelect">Select Occupancy</label>
+      <label for="projectName">Project Name</label>
+      <input id="projectName" type="text" placeholder="Enter project name">
+
+      <label for="inspectorName" style="margin-top: 12px;">Inspector Name</label>
+      <input id="inspectorName" type="text" placeholder="Enter inspector name">
+
+      <label for="occupancySelect" style="margin-top: 12px;">Select Occupancy</label>
       <select id="occupancySelect"></select>
+
+      <button id="saveBtn" style="margin-top: 16px;">Save Inspection</button>
+      <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
     </section>
 
     <section class="card">
@@ -32,14 +52,16 @@
   </div>
 
   <script src="app.js"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/fireye-online-app/service-worker.js')
-        .then(reg => console.log('Service worker registered', reg))
-        .catch(err => console.log('Service worker not registered', err));
-    });
-  }
-</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/fireye-online-app/service-worker.js')
+          .then(reg => console.log('Service worker registered', reg))
+          .catch(err => console.log('Service worker not registered', err));
+      });
+    }
+  </script>
+</body>
+</html>
 </body>
 </html>
