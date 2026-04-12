@@ -1,6 +1,7 @@
 let occupancies = [];
 let requirements = [];
 let checklists = [];
+let currentProjectId = null;
 
 async function loadJson(url) {
   const response = await fetch(url);
@@ -17,7 +18,7 @@ async function loadData() {
     checklists = await loadJson('checklists.json');
 
     initApp();
-    loadSavedInspection();
+    renderProjectsList();
   } catch (error) {
     console.error('Data loading error:', error);
     document.body.innerHTML = `
@@ -30,6 +31,16 @@ async function loadData() {
 }
 
 function initApp() {
+  populateOccupancies();
+
+  document.getElementById('occupancySelect').addEventListener('change', updateDisplay);
+  document.getElementById('saveBtn').addEventListener('click', saveProject);
+  document.getElementById('deleteBtn').addEventListener('click', deleteProject);
+  document.getElementById('newProjectBtn').addEventListener('click', createNewProject);
+  document.getElementById('backBtn').addEventListener('click', showProjectList);
+}
+
+function populateOccupancies() {
   const select = document.getElementById('occupancySelect');
   select.innerHTML = "";
 
@@ -39,11 +50,148 @@ function initApp() {
     option.textContent = `${o["Occupancy Code"]} - ${o["Occupancy Name"]}`;
     select.appendChild(option);
   });
+}
 
-  select.addEventListener('change', updateDisplay);
-  document.getElementById('saveBtn').addEventListener('click', saveInspection);
+function getProjects() {
+  const saved = localStorage.getItem('fireyeProjects');
+  return saved ? JSON.parse(saved) : [];
+}
+
+function setProjects(projects) {
+  localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+}
+
+function createNewProject() {
+  currentProjectId = null;
+  document.getElementById('projectName').value = '';
+  document.getElementById('inspectorName').value = '';
+  document.getElementById('occupancySelect').selectedIndex = 0;
+  document.getElementById('saveMessage').textContent = '';
+  updateDisplay();
+  showProjectForm();
+}
+
+function showProjectList() {
+  document.getElementById('projectListSection').style.display = 'block';
+  document.getElementById('projectFormSection').style.display = 'none';
+  renderProjectsList();
+}
+
+function showProjectForm() {
+  document.getElementById('projectListSection').style.display = 'none';
+  document.getElementById('projectFormSection').style.display = 'block';
+}
+
+function renderProjectsList() {
+  const projects = getProjects();
+  const container = document.getElementById('projectsList');
+  container.innerHTML = '';
+
+  if (projects.length === 0) {
+    container.innerHTML = `<div class="empty-state">No projects saved yet.</div>`;
+    return;
+  }
+
+  projects.forEach(project => {
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.innerHTML = `
+      <h3>${escapeHtml(project.projectName || 'Untitled Project')}</h3>
+      <div class="project-meta">
+        Inspector: ${escapeHtml(project.inspectorName || '-')}<br>
+        Occupancy: ${escapeHtml(project.occupancy || '-')}
+      </div>
+      <div class="project-actions">
+        <button class="small-btn" onclick="openProject('${project.id}')">Open</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function openProject(projectId) {
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+  if (!project) return;
+
+  currentProjectId = project.id;
+  document.getElementById('projectName').value = project.projectName || '';
+  document.getElementById('inspectorName').value = project.inspectorName || '';
+  document.getElementById('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
+  document.getElementById('saveMessage').textContent = '';
 
   updateDisplay();
+
+  if (project.answers) {
+    project.answers.forEach(item => {
+      const field = document.getElementById(`check_${item.itemIndex}`);
+      if (field) {
+        field.value = item.answer;
+      }
+    });
+  }
+
+  showProjectForm();
+}
+
+function saveProject() {
+  const projectName = document.getElementById('projectName').value.trim();
+  const inspectorName = document.getElementById('inspectorName').value.trim();
+  const occupancy = document.getElementById('occupancySelect').value;
+
+  const answers = [];
+  document.querySelectorAll('.answer-select').forEach((field, index) => {
+    answers.push({
+      itemIndex: index,
+      answer: field.value
+    });
+  });
+
+  const projects = getProjects();
+
+  if (currentProjectId) {
+    const index = projects.findIndex(p => p.id === currentProjectId);
+    if (index !== -1) {
+      projects[index] = {
+        ...projects[index],
+        projectName,
+        inspectorName,
+        occupancy,
+        answers
+      };
+    }
+  } else {
+    const newProject = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      projectName,
+      inspectorName,
+      occupancy,
+      answers
+    };
+    currentProjectId = newProject.id;
+    projects.push(newProject);
+  }
+
+  setProjects(projects);
+  document.getElementById('saveMessage').textContent = 'Project saved on this device.';
+  renderProjectsList();
+}
+
+function deleteProject() {
+  if (!currentProjectId) {
+    document.getElementById('saveMessage').textContent = 'Save the project first before deleting.';
+    return;
+  }
+
+  const confirmed = confirm('Delete this project?');
+  if (!confirmed) return;
+
+  let projects = getProjects();
+  projects = projects.filter(p => p.id !== currentProjectId);
+  setProjects(projects);
+
+  currentProjectId = null;
+  showProjectList();
 }
 
 function updateDisplay() {
@@ -69,7 +217,6 @@ function updateDisplay() {
   }
 
   renderChecklist(selected);
-  restoreChecklistAnswers();
 }
 
 function renderChecklist(selected) {
@@ -102,64 +249,14 @@ function renderChecklist(selected) {
   });
 }
 
-function saveInspection() {
-  const projectName = document.getElementById('projectName').value;
-  const inspectorName = document.getElementById('inspectorName').value;
-  const occupancy = document.getElementById('occupancySelect').value;
-
-  const answers = [];
-  const answerFields = document.querySelectorAll('.answer-select');
-
-  answerFields.forEach((field, index) => {
-    answers.push({
-      itemIndex: index,
-      answer: field.value
-    });
-  });
-
-  const inspectionData = {
-    projectName,
-    inspectorName,
-    occupancy,
-    answers
-  };
-
-  localStorage.setItem('fireyeInspection', JSON.stringify(inspectionData));
-
-  document.getElementById('saveMessage').textContent = 'Inspection saved on this device.';
-}
-
-function loadSavedInspection() {
-  const saved = localStorage.getItem('fireyeInspection');
-  if (!saved) return;
-
-  const data = JSON.parse(saved);
-
-  document.getElementById('projectName').value = data.projectName || '';
-  document.getElementById('inspectorName').value = data.inspectorName || '';
-
-  const select = document.getElementById('occupancySelect');
-  if (data.occupancy) {
-    select.value = data.occupancy;
-  }
-
-  updateDisplay();
-  restoreChecklistAnswers();
-}
-
-function restoreChecklistAnswers() {
-  const saved = localStorage.getItem('fireyeInspection');
-  if (!saved) return;
-
-  const data = JSON.parse(saved);
-  if (!data.answers) return;
-
-  data.answers.forEach(item => {
-    const field = document.getElementById(`check_${item.itemIndex}`);
-    if (field) {
-      field.value = item.answer;
-    }
-  });
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }
 
 loadData();
+window.openProject = openProject;
