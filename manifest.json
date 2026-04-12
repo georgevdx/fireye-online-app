@@ -1,0 +1,20 @@
+{
+  "name": "Fireye Fire Safety App",
+  "short_name": "Fireye",
+  "start_url": "/fireye-online-app/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#b71c1c",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
