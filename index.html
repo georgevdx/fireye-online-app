@@ -5,17 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Fireye Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fireye Online Fire Safety App</title>
-  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -26,28 +15,47 @@
       <p class="subtitle">Basic fire safety lookup and checklist</p>
     </header>
 
-    <section class="card">
-      <label for="projectName">Project Name</label>
-      <input id="projectName" type="text" placeholder="Enter project name">
-
-      <label for="inspectorName" style="margin-top: 12px;">Inspector Name</label>
-      <input id="inspectorName" type="text" placeholder="Enter inspector name">
-
-      <label for="occupancySelect" style="margin-top: 12px;">Select Occupancy</label>
-      <select id="occupancySelect"></select>
-
-      <button id="saveBtn" style="margin-top: 16px;">Save Inspection</button>
-      <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
+    <section id="projectListSection" class="card">
+      <div class="toolbar">
+        <h2>Projects</h2>
+        <button id="newProjectBtn" type="button">New Project</button>
+      </div>
+      <div id="projectsList"></div>
     </section>
 
-    <section class="card">
-      <h2>Requirements</h2>
-      <div id="requirements"></div>
-    </section>
+    <section id="projectFormSection" style="display:none;">
+      <section class="card">
+        <div class="toolbar">
+          <h2>Project Details</h2>
+          <button id="backBtn" type="button">Back to Projects</button>
+        </div>
 
-    <section class="card">
-      <h2>Checklist</h2>
-      <div id="checklist"></div>
+        <label for="projectName">Project Name</label>
+        <input id="projectName" type="text" placeholder="Enter project name">
+
+        <label for="inspectorName" style="margin-top: 12px;">Inspector Name</label>
+        <input id="inspectorName" type="text" placeholder="Enter inspector name">
+
+        <label for="occupancySelect" style="margin-top: 12px;">Select Occupancy</label>
+        <select id="occupancySelect"></select>
+
+        <div class="button-row">
+          <button id="saveBtn" type="button">Save Project</button>
+          <button id="deleteBtn" type="button" class="secondary-btn">Delete Project</button>
+        </div>
+
+        <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
+      </section>
+
+      <section class="card">
+        <h2>Requirements</h2>
+        <div id="requirements"></div>
+      </section>
+
+      <section class="card">
+        <h2>Checklist</h2>
+        <div id="checklist"></div>
+      </section>
     </section>
   </div>
 
@@ -61,6 +69,5 @@
       });
     }
   </script>
-</body>
 </body>
 </html>
