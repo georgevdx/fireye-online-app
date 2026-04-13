@@ -323,19 +323,9 @@ function generateReport() {
   const reportContent = getEl('reportContent');
 
   let answersHtml = '';
+  let photosHtml = '';   // ✅ BELANGRIK: hier bo
 
-  if (currentPhotos.length > 0) {
-    currentPhotos.forEach((photo, index) => {
-      photosHtml += `
-        <div class="report-photo-item">
-          <div><strong>Photo ${index + 1}</strong></div>
-          <img src="${photo}" alt="Inspection photo ${index + 1}">
-        </div>
-      `;
-    });
-  } else {
-    photosHtml = `<div class="note">No photo evidence added.</div>`;
-  }
+  // Checklist
   selectedChecklist.forEach((item, index) => {
     const field = document.getElementById(`check_${index}`);
     const answer = field ? (field.value || 'Not answered') : 'Not answered';
@@ -348,26 +338,41 @@ function generateReport() {
     `;
   });
 
+  // Photos
+  if (currentPhotos.length > 0) {
+    currentPhotos.forEach((photo, index) => {
+      photosHtml += `
+        <div class="report-photo-item">
+          <div><strong>Photo ${index + 1}</strong></div>
+          <img src="${photo}" alt="Inspection photo ${index + 1}">
+        </div>
+      `;
+    });
+  } else {
+    photosHtml = `<div class="note">No photo evidence added.</div>`;
+  }
+
+  // Final report
   reportContent.innerHTML = `
-  <div class="report-block">
-    <h3>Project Information</h3>
-    <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
-    <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
-    <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
-  </div>
-
-  <div class="report-block">
-    <h3>Checklist Results</h3>
-    ${answersHtml}
-  </div>
-
-  <div class="report-block">
-    <h3>Photo Evidence</h3>
-    <div class="report-photos">
-      ${photosHtml}
+    <div class="report-block">
+      <h3>Project Information</h3>
+      <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
+      <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
+      <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
     </div>
-  </div>
-`;
+
+    <div class="report-block">
+      <h3>Checklist Results</h3>
+      ${answersHtml}
+    </div>
+
+    <div class="report-block">
+      <h3>Photo Evidence</h3>
+      <div class="report-photos">
+        ${photosHtml}
+      </div>
+    </div>
+  `;
 
   getEl('reportSection').style.display = 'block';
   window.print();
