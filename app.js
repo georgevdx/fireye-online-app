@@ -382,8 +382,8 @@ function handlePhotoUpload(event) {
     const img = new Image();
 
     img.onload = function() {
-      const maxWidth = 1200;
-      const maxHeight = 1200;
+      const maxWidth = 500;
+      const maxHeight = 500;
 
       let width = img.width;
       let height = img.height;
@@ -401,7 +401,7 @@ function handlePhotoUpload(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
 
       currentPhotos.push(compressedDataUrl);
       renderPhotos();
