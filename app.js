@@ -324,12 +324,26 @@ function generateReport() {
 
   let answersHtml = '';
   let photosHtml = '';   // ✅ BELANGRIK: hier bo
+  
+  let yesCount = 0;
+  let noCount = 0;
+  let naCount = 0;
+  let notAnsweredCount = 0;
 
   // Checklist
   selectedChecklist.forEach((item, index) => {
     const field = document.getElementById(`check_${index}`);
     const answer = field ? (field.value || 'Not answered') : 'Not answered';
 
+    if (answer === 'Yes') {
+      yesCount++;
+    } else if (answer === 'No') {
+      noCount++;
+    } else if (answer === 'N/A') {
+      naCount++;
+    } else {
+     notAnsweredCount++;
+    }
     answersHtml += `
       <div class="report-answer">
         <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
@@ -337,6 +351,16 @@ function generateReport() {
       </div>
     `;
   });
+
+  const totalItems = selectedChecklist.length;
+
+  let overallStatus = 'Compliant / Acceptable';
+
+  if (noCount > 0) {
+    overallStatus = 'Attention Required';
+  } else if (notAnsweredCount > 0) {
+    overallStatus = 'Incomplete Inspection';
+  }
 
   // Photos
   if (currentPhotos.length > 0) {
@@ -354,25 +378,36 @@ function generateReport() {
 
   // Final report
   reportContent.innerHTML = `
-    <div class="report-block">
-      <h3>Project Information</h3>
-      <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
-      <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
-      <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
-    </div>
+  <div class="report-block">
+    <h3>Project Information</h3>
+    <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
+    <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
+    <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
+    <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
+  </div>
 
-    <div class="report-block">
-      <h3>Checklist Results</h3>
-      ${answersHtml}
-    </div>
+  <div class="report-block">
+    <h3>Inspection Summary</h3>
+    <div class="report-line"><strong>Total Items:</strong> ${totalItems}</div>
+    <div class="report-line"><strong>Yes:</strong> ${yesCount}</div>
+    <div class="report-line"><strong>No:</strong> ${noCount}</div>
+    <div class="report-line"><strong>N/A:</strong> ${naCount}</div>
+    <div class="report-line"><strong>Not Answered:</strong> ${notAnsweredCount}</div>
+    <div class="report-line"><strong>Overall Status:</strong> ${overallStatus}</div>
+  </div>
 
-    <div class="report-block">
-      <h3>Photo Evidence</h3>
-      <div class="report-photos">
-        ${photosHtml}
-      </div>
+  <div class="report-block">
+    <h3>Checklist Results</h3>
+    ${answersHtml}
+  </div>
+
+  <div class="report-block">
+    <h3>Photo Evidence</h3>
+    <div class="report-photos">
+      ${photosHtml}
     </div>
-  `;
+  </div>
+`;
 
   getEl('reportSection').style.display = 'block';
   window.print();

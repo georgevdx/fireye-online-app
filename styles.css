@@ -264,3 +264,24 @@ button:hover {
   border: 1px solid #ddd;
   margin-top: 6px;
 }
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 8px 16px;
+}
+
+.status-good {
+  color: green;
+  font-weight: bold;
+}
+
+.status-warning {
+  color: #b71c1c;
+  font-weight: bold;
+}
+
+.status-incomplete {
+  color: #d97706;
+  font-weight: bold;
+}
