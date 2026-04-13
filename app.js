@@ -379,13 +379,38 @@ function handlePhotoUpload(event) {
   const reader = new FileReader();
 
   reader.onload = function(e) {
-    currentPhotos.push(e.target.result);
-    renderPhotos();
+    const img = new Image();
+
+    img.onload = function() {
+      const maxWidth = 1200;
+      const maxHeight = 1200;
+
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxWidth || height > maxHeight) {
+        const ratio = Math.min(maxWidth / width, maxHeight / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+      currentPhotos.push(compressedDataUrl);
+      renderPhotos();
+    };
+
+    img.src = e.target.result;
   };
 
   reader.readAsDataURL(file);
-
-  // reset input
   event.target.value = '';
 }
 
