@@ -377,7 +377,7 @@ function generateReport() {
   }
 
   // Final report
-  reportContent.innerHTML = `
+reportContent.innerHTML = `
   <div class="report-block">
     <h3>Project Information</h3>
     <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
@@ -393,7 +393,13 @@ function generateReport() {
     <div class="report-line"><strong>No:</strong> ${noCount}</div>
     <div class="report-line"><strong>N/A:</strong> ${naCount}</div>
     <div class="report-line"><strong>Not Answered:</strong> ${notAnsweredCount}</div>
-    <div class="report-line"><strong>Overall Status:</strong> ${overallStatus}</div>
+    <div class="report-line"><strong>Overall Status:</strong> <span class="${
+      overallStatus === 'Compliant / Acceptable'
+        ? 'status-good'
+        : overallStatus === 'Attention Required'
+        ? 'status-warning'
+        : 'status-incomplete'
+    }">${overallStatus}</span></div>
   </div>
 
   <div class="report-block">
