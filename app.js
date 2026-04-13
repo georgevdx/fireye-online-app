@@ -43,6 +43,7 @@ function initApp() {
 
   getEl('occupancySelect').addEventListener('change', updateDisplay);
   getEl('saveBtn').addEventListener('click', saveProject);
+  getEl('reportBtn').addEventListener('click', generateReport);
   getEl('deleteBtn').addEventListener('click', deleteProject);
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
@@ -265,6 +266,47 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+function generateReport() {
+  const projectName = getEl('projectName').value.trim() || 'Untitled Project';
+  const inspectorName = getEl('inspectorName').value.trim() || '-';
+  const occupancy = getEl('occupancySelect').value || '-';
 
+  const selectedChecklist = checklists.filter(c =>
+    c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
+  );
+
+  const reportContent = getEl('reportContent');
+
+  let answersHtml = '';
+
+  selectedChecklist.forEach((item, index) => {
+    const field = document.getElementById(`check_${index}`);
+    const answer = field ? (field.value || 'Not answered') : 'Not answered';
+
+    answersHtml += `
+      <div class="report-answer">
+        <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
+        Answer: ${escapeHtml(answer)}
+      </div>
+    `;
+  });
+
+  reportContent.innerHTML = `
+    <div class="report-block">
+      <h3>Project Information</h3>
+      <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
+      <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
+      <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
+    </div>
+
+    <div class="report-block">
+      <h3>Checklist Results</h3>
+      ${answersHtml}
+    </div>
+  `;
+
+  getEl('reportSection').style.display = 'block';
+  window.print();
+}
 loadData();
 window.openProject = openProject;

@@ -165,3 +165,52 @@ button:hover {
   color: #666;
   padding: 8px 0;
 }
+
+.report-block {
+  margin-bottom: 18px;
+}
+
+.report-block h3 {
+  margin-bottom: 8px;
+  color: #b71c1c;
+}
+
+.report-line {
+  margin-bottom: 6px;
+}
+
+.report-answer {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .header,
+  #projectListSection,
+  .button-row,
+  #backBtn,
+  #newProjectBtn,
+  #saveBtn,
+  #deleteBtn,
+  #reportBtn {
+    display: none !important;
+  }
+
+  #projectFormSection,
+  #reportSection,
+  .card {
+    display: block !important;
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  #reportSection {
+    display: block !important;
+  }
+}
