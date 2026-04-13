@@ -2,6 +2,7 @@ let occupancies = [];
 let requirements = [];
 let checklists = [];
 let currentProjectId = null;
+let currentPhotos = [];
 
 async function loadJson(url) {
   const response = await fetch(url);
@@ -47,6 +48,7 @@ function initApp() {
   getEl('deleteBtn').addEventListener('click', deleteProject);
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
+  getEl('photoInput').addEventListener('change', handlePhotoUpload);
 }
 
 function populateOccupancies() {
@@ -76,6 +78,8 @@ function createNewProject() {
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
+  currentPhotos = [];
+  renderPhotos();
   updateDisplay();
   showProjectForm();
 }
@@ -128,7 +132,8 @@ function openProject(projectId) {
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
-
+  currentPhotos = project.photos || [];
+  renderPhotos();
   updateDisplay();
 
   if (project.answers) {
@@ -162,12 +167,13 @@ function saveProject() {
     const index = projects.findIndex(p => p.id === currentProjectId);
     if (index !== -1) {
       projects[index] = {
-        ...projects[index],
-        projectName,
-        inspectorName,
-        occupancy,
-        answers
-      };
+      ...projects[index],
+      projectName,
+      inspectorName,
+      occupancy,
+      answers,
+      photos: currentPhotos
+    };
     }
   } else {
     const newProject = {
@@ -175,7 +181,8 @@ function saveProject() {
       projectName,
       inspectorName,
       occupancy,
-      answers
+      answers,
+      photos: currentPhotos
     };
     currentProjectId = newProject.id;
     projects.push(newProject);
@@ -266,6 +273,44 @@ function escapeHtml(value) {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    currentPhotos.push(e.target.result);
+    renderPhotos();
+  };
+
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function renderPhotos() {
+  const container = getEl('photoPreview');
+  container.innerHTML = '';
+
+  currentPhotos.forEach((photo, index) => {
+    const div = document.createElement('div');
+    div.className = 'photo-item';
+
+    div.innerHTML = `
+      <img src="${photo}">
+      <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function deletePhoto(index) {
+  currentPhotos.splice(index, 1);
+  renderPhotos();
+}
+
 function generateReport() {
   const projectName = getEl('projectName').value.trim() || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
@@ -307,6 +352,44 @@ function generateReport() {
 
   getEl('reportSection').style.display = 'block';
   window.print();
+}
+function handlePhotoUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    currentPhotos.push(e.target.result);
+    renderPhotos();
+  };
+
+  reader.readAsDataURL(file);
+
+  // reset input
+  event.target.value = '';
+}
+
+function renderPhotos() {
+  const container = getEl('photoPreview');
+  container.innerHTML = '';
+
+  currentPhotos.forEach((photo, index) => {
+    const div = document.createElement('div');
+    div.className = 'photo-item';
+
+    div.innerHTML = `
+      <img src="${photo}">
+      <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
+    `;
+
+    container.appendChild(div);
+  });
+}
+
+function deletePhoto(index) {
+  currentPhotos.splice(index, 1);
+  renderPhotos();
 }
 loadData();
 window.openProject = openProject;
