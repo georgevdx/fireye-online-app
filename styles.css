@@ -245,3 +245,22 @@ button:hover {
   height: 22px;
   cursor: pointer;
 }
+
+.report-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.report-photo-item {
+  width: 180px;
+}
+
+.report-photo-item img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  margin-top: 6px;
+}
