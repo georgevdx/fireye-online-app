@@ -4,6 +4,11 @@ let checklists = [];
 let currentProjectId = null;
 let currentPhotos = [];
 
+const SUPABASE_URL = 'https://ispsdmglyylcwkufphnv.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk';
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 async function loadJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -28,6 +33,7 @@ async function loadData() {
 
     initApp();
     renderProjectsList();
+    await loadProjectsFromCloud();
   } catch (error) {
     console.error('Data loading error:', error);
     document.body.innerHTML = `
@@ -191,6 +197,7 @@ function saveProject() {
   setProjects(projects);
   getEl('saveMessage').textContent = 'Project saved on this device.';
   renderProjectsList();
+  syncProjectsToCloud();
 }
 
 function deleteProject() {
@@ -486,5 +493,52 @@ function deletePhoto(index) {
   currentPhotos.splice(index, 1);
   renderPhotos();
 }
+
+async function syncProjectsToCloud() {
+  const projects = getProjects();
+
+  for (const project of projects) {
+    const { error } = await supabaseClient
+      .from('projects')
+      .upsert({
+        id: project.id,
+        project_name: project.projectName,
+        inspector_name: project.inspectorName,
+        occupancy: project.occupancy,
+        answers: project.answers,
+        photos: project.photos || [],
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Sync up error:', error);
+    }
+  }
+}
+
+async function loadProjectsFromCloud() {
+  const { data, error } = await supabaseClient
+    .from('projects')
+    .select('*')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    console.error('Cloud load error:', error);
+    return;
+  }
+
+  const mappedProjects = (data || []).map(row => ({
+    id: row.id,
+    projectName: row.project_name,
+    inspectorName: row.inspector_name,
+    occupancy: row.occupancy,
+    answers: row.answers || [],
+    photos: row.photos || []
+  }));
+
+  setProjects(mappedProjects);
+  renderProjectsList();
+}
+
 loadData();
 window.openProject = openProject;
