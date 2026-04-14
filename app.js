@@ -378,6 +378,11 @@ function generateReport() {
 
   // Final report
 reportContent.innerHTML = `
+  <div class="report-header">
+  <div class="report-title">Fireye Fire Safety Report</div>
+  <div class="report-subtitle">Inspection and checklist summary</div>
+  </div>
+  
   <div class="report-block">
     <h3>Project Information</h3>
     <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
