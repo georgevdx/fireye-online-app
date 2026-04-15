@@ -24,7 +24,53 @@ function getEl(id) {
   }
   return el;
 }
+async function signUpUser() {
+  const email = getEl('emailInput').value.trim();
+  const password = getEl('passwordInput').value.trim();
 
+  const { error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    getEl('authMessage').textContent = error.message;
+    return;
+  }
+
+  getEl('authMessage').textContent = 'Sign-up successful. Check your email if confirmation is enabled.';
+}
+
+async function signInUser() {
+    const email = getEl('emailInput').value.trim();
+    const password = getEl('passwordInput').value.trim();
+
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      getEl('authMessage').textContent = error.message;
+      return;
+    }
+
+    getEl('authMessage').textContent = 'Signed in successfully.';
+    await loadProjectsFromCloud();
+  }
+
+  async function signOutUser() {
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+      getEl('authMessage').textContent = error.message;
+      return;
+    }
+
+    setProjects([]);
+    renderProjectsList();
+    getEl('authMessage').textContent = 'Signed out.';
+  }
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -55,6 +101,9 @@ function initApp() {
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
+  getEl('signUpBtn').addEventListener('click', signUpUser);
+  getEl('signInBtn').addEventListener('click', signInUser);
+  getEl('signOutBtn').addEventListener('click', signOutUser);
 }
 
 function populateOccupancies() {
@@ -155,10 +204,17 @@ function openProject(projectId) {
 }
 
 function saveProject() {
-  const projectName = getEl('projectName').value.trim();
+  const { data: userData } = await supabaseClient.auth.getUser();
+  const currentUser = userData.user;
+
+  if (!currentUser) {
+    getEl('saveMessage').textContent = 'You must sign in first.';
+    return;
+  }
+const projectName = getEl('projectName').value.trim();
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
-
+  
   const answers = [];
   document.querySelectorAll('.answer-select').forEach((field, index) => {
     answers.push({
@@ -170,26 +226,29 @@ function saveProject() {
   const projects = getProjects();
 
   if (currentProjectId) {
-    const index = projects.findIndex(p => p.id === currentProjectId);
-    if (index !== -1) {
-      projects[index] = {
+  const index = projects.findIndex(p => p.id === currentProjectId);
+  if (index !== -1) {
+    projects[index] = {
       ...projects[index],
       projectName,
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos
+      photos: currentPhotos,
+      userId: currentUser.id   // 👈 HIER
     };
-    }
-  } else {
+  }
+} else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos
+      photos: currentPhotos,
+      userId: currentUser.id   // 👈 HIER OOK
     };
+    
     currentProjectId = newProject.id;
     projects.push(newProject);
   }
