@@ -4,11 +4,6 @@ let checklists = [];
 let currentProjectId = null;
 let currentPhotos = [];
 
-const SUPABASE_URL = 'https://ispsdmglyylcwkufphnv.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk';
-
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 async function loadJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -24,53 +19,7 @@ function getEl(id) {
   }
   return el;
 }
-async function signUpUser() {
-  const email = getEl('emailInput').value.trim();
-  const password = getEl('passwordInput').value.trim();
 
-  const { error } = await supabaseClient.auth.signUp({
-    email,
-    password
-  });
-
-  if (error) {
-    getEl('authMessage').textContent = error.message;
-    return;
-  }
-
-  getEl('authMessage').textContent = 'Sign-up successful. Check your email if confirmation is enabled.';
-}
-
-async function signInUser() {
-    const email = getEl('emailInput').value.trim();
-    const password = getEl('passwordInput').value.trim();
-
-    const { error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      getEl('authMessage').textContent = error.message;
-      return;
-    }
-
-    getEl('authMessage').textContent = 'Signed in successfully.';
-    await loadProjectsFromCloud();
-  }
-
-  async function signOutUser() {
-    const { error } = await supabaseClient.auth.signOut();
-
-    if (error) {
-      getEl('authMessage').textContent = error.message;
-      return;
-    }
-
-    setProjects([]);
-    renderProjectsList();
-    getEl('authMessage').textContent = 'Signed out.';
-  }
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -79,7 +28,6 @@ async function loadData() {
 
     initApp();
     renderProjectsList();
-    await loadProjectsFromCloud();
   } catch (error) {
     console.error('Data loading error:', error);
     document.body.innerHTML = `
@@ -101,9 +49,6 @@ function initApp() {
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
-  getEl('signUpBtn').addEventListener('click', signUpUser);
-  getEl('signInBtn').addEventListener('click', signInUser);
-  getEl('signOutBtn').addEventListener('click', signOutUser);
 }
 
 function populateOccupancies() {
@@ -204,17 +149,10 @@ function openProject(projectId) {
 }
 
 function saveProject() {
-  const { data: userData } = await supabaseClient.auth.getUser();
-  const currentUser = userData.user;
-
-  if (!currentUser) {
-    getEl('saveMessage').textContent = 'You must sign in first.';
-    return;
-  }
-const projectName = getEl('projectName').value.trim();
+  const projectName = getEl('projectName').value.trim();
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
-  
+
   const answers = [];
   document.querySelectorAll('.answer-select').forEach((field, index) => {
     answers.push({
@@ -226,29 +164,26 @@ const projectName = getEl('projectName').value.trim();
   const projects = getProjects();
 
   if (currentProjectId) {
-  const index = projects.findIndex(p => p.id === currentProjectId);
-  if (index !== -1) {
-    projects[index] = {
+    const index = projects.findIndex(p => p.id === currentProjectId);
+    if (index !== -1) {
+      projects[index] = {
       ...projects[index],
       projectName,
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos,
-      userId: currentUser.id   // 👈 HIER
+      photos: currentPhotos
     };
-  }
-} else {
+    }
+  } else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos,
-      userId: currentUser.id   // 👈 HIER OOK
+      photos: currentPhotos
     };
-    
     currentProjectId = newProject.id;
     projects.push(newProject);
   }
@@ -256,7 +191,6 @@ const projectName = getEl('projectName').value.trim();
   setProjects(projects);
   getEl('saveMessage').textContent = 'Project saved on this device.';
   renderProjectsList();
-  syncProjectsToCloud();
 }
 
 function deleteProject() {
@@ -552,52 +486,5 @@ function deletePhoto(index) {
   currentPhotos.splice(index, 1);
   renderPhotos();
 }
-
-async function syncProjectsToCloud() {
-  const projects = getProjects();
-
-  for (const project of projects) {
-    const { error } = await supabaseClient
-      .from('projects')
-      .upsert({
-        id: project.id,
-        project_name: project.projectName,
-        inspector_name: project.inspectorName,
-        occupancy: project.occupancy,
-        answers: project.answers,
-        photos: project.photos || [],
-        updated_at: new Date().toISOString()
-      });
-
-    if (error) {
-      console.error('Sync up error:', error);
-    }
-  }
-}
-
-async function loadProjectsFromCloud() {
-  const { data, error } = await supabaseClient
-    .from('projects')
-    .select('*')
-    .order('updated_at', { ascending: false });
-
-  if (error) {
-    console.error('Cloud load error:', error);
-    return;
-  }
-
-  const mappedProjects = (data || []).map(row => ({
-    id: row.id,
-    projectName: row.project_name,
-    inspectorName: row.inspector_name,
-    occupancy: row.occupancy,
-    answers: row.answers || [],
-    photos: row.photos || []
-  }));
-
-  setProjects(mappedProjects);
-  renderProjectsList();
-}
-
 loadData();
 window.openProject = openProject;
