@@ -82,10 +82,14 @@ function autoSaveProject() {
   setProjects(projects);
   renderProjectsList();
 
-  const saveMessage = document.getElementById('saveMessage');
+ const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
-    saveMessage.textContent = 'Auto-saved.';
+    saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
   }
+}
+
+  function formatLastSaved(date = new Date()) {
+    return date.toLocaleString();
 }
 
 async function loadData() {
@@ -260,7 +264,7 @@ function saveProject() {
   }
 
   setProjects(projects);
-  getEl('saveMessage').textContent = 'Project saved on this device.';
+  getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
 }
 
