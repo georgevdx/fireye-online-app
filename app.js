@@ -20,6 +20,74 @@ function getEl(id) {
   return el;
 }
 
+let autoSaveTimer = null;
+
+function scheduleAutoSave() {
+  clearTimeout(autoSaveTimer);
+
+  autoSaveTimer = setTimeout(() => {
+    autoSaveProject();
+  }, 800);
+}
+
+function autoSaveProject() {
+  const projectNameField = document.getElementById('projectName');
+  const inspectorNameField = document.getElementById('inspectorName');
+  const occupancyField = document.getElementById('occupancySelect');
+
+  if (!projectNameField || !inspectorNameField || !occupancyField) return;
+
+  const projectName = projectNameField.value.trim();
+  const inspectorName = inspectorNameField.value.trim();
+  const occupancy = occupancyField.value;
+
+  if (!projectName && !inspectorName) return;
+
+  const answers = [];
+  document.querySelectorAll('.answer-select').forEach((field, index) => {
+    answers.push({
+      itemIndex: index,
+      answer: field.value
+    });
+  });
+
+  const projects = getProjects();
+
+  if (currentProjectId) {
+    const index = projects.findIndex(p => p.id === currentProjectId);
+    if (index !== -1) {
+      projects[index] = {
+        ...projects[index],
+        projectName,
+        inspectorName,
+        occupancy,
+        answers,
+        photos: currentPhotos
+      };
+    }
+  } else {
+    const newProject = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      projectName,
+      inspectorName,
+      occupancy,
+      answers,
+      photos: currentPhotos
+    };
+
+    currentProjectId = newProject.id;
+    projects.push(newProject);
+  }
+
+  setProjects(projects);
+  renderProjectsList();
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'Auto-saved.';
+  }
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -49,6 +117,9 @@ function initApp() {
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
+  getEl('projectName').addEventListener('input', scheduleAutoSave);
+  getEl('inspectorName').addEventListener('input', scheduleAutoSave);
+  getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
 }
 
 function populateOccupancies() {
@@ -254,7 +325,7 @@ function renderChecklist(selected) {
       <div class="checklist-row">
         <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
         <div class="note">Answer type: ${c["Answer Type"]}</div>
-        <select class="answer-select" id="${itemId}">
+        <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
           <option value="">Select answer</option>
           <option value="Yes">Yes</option>
           <option value="No">No</option>
@@ -488,3 +559,4 @@ function deletePhoto(index) {
 }
 loadData();
 window.openProject = openProject;
+window.scheduleAutoSave = scheduleAutoSave;
