@@ -92,6 +92,87 @@ function autoSaveProject() {
     return date.toLocaleString();
 }
 
+  function exportReport() {
+    generateReport();
+  }
+
+  async function shareReport() {
+  const projectName = getEl('projectName').value.trim() || 'Untitled Project';
+  const inspectorName = getEl('inspectorName').value.trim() || '-';
+  const occupancy = getEl('occupancySelect').value || '-';
+
+  const selectedChecklist = checklists.filter(c =>
+    c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
+  );
+
+  let yesCount = 0;
+  let noCount = 0;
+  let naCount = 0;
+  let notAnsweredCount = 0;
+
+  selectedChecklist.forEach((item, index) => {
+    const field = document.getElementById(`check_${index}`);
+    const answer = field ? (field.value || 'Not answered') : 'Not answered';
+
+    if (answer === 'Yes') {
+      yesCount++;
+    } else if (answer === 'No') {
+      noCount++;
+    } else if (answer === 'N/A') {
+      naCount++;
+    } else {
+      notAnsweredCount++;
+    }
+  });
+
+  const totalItems = selectedChecklist.length;
+
+  let overallStatus = 'Compliant / Acceptable';
+  if (noCount > 0) {
+    overallStatus = 'Attention Required';
+  } else if (notAnsweredCount > 0) {
+    overallStatus = 'Incomplete Inspection';
+  }
+
+  const shareText =
+`Fireye Fire Safety Report
+
+Project Name: ${projectName}
+Inspector Name: ${inspectorName}
+Occupancy: ${occupancy}
+Inspection Date: ${new Date().toLocaleDateString()}
+
+Inspection Summary
+Total Items: ${totalItems}
+Yes: ${yesCount}
+No: ${noCount}
+N/A: ${naCount}
+Not Answered: ${notAnsweredCount}
+Overall Status: ${overallStatus}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: `Fireye Report - ${projectName}`,
+        text: shareText
+      });
+
+      getEl('saveMessage').textContent = 'Report shared.';
+    } catch (error) {
+      getEl('saveMessage').textContent = 'Share cancelled or failed.';
+      console.error('Share error:', error);
+    }
+  } else {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      getEl('saveMessage').textContent = 'Share not supported. Report copied to clipboard.';
+    } catch (error) {
+      getEl('saveMessage').textContent = 'Share not supported on this device.';
+      console.error('Clipboard error:', error);
+    }
+  }
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -124,7 +205,9 @@ function initApp() {
   getEl('projectName').addEventListener('input', scheduleAutoSave);
   getEl('inspectorName').addEventListener('input', scheduleAutoSave);
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
-}
+  getEl('exportBtn').addEventListener('click', exportReport);
+  getEl('shareBtn').addEventListener('click', shareReport);
+  }
 
 function populateOccupancies() {
   const select = getEl('occupancySelect');
