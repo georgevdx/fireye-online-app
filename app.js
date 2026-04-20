@@ -418,32 +418,32 @@ function generateReport() {
   // Checklist
   selectedChecklist.forEach((item, index) => {
     const field = document.getElementById(`check_${index}`);
-    const answer = field ? (field.value || 'Not answered') : 'Not answered';
+    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+    const answer = rawAnswer.trim();
 
-    if (answer === 'Yes') {
-      yesCount++;
-    } else if (answer === 'No') {
-      noCount++;
-    } else if (answer === 'N/A') {
-      naCount++;
-    } else {
-     notAnsweredCount++;
-    }
+    if (answer.toLowerCase() === 'yes') {
+  yesCount++;
+} else if (answer.toLowerCase() === 'no') {
+  noCount++;
+} else if (answer.toUpperCase() === 'N/A') {
+  naCount++;
+} else {
+  notAnsweredCount++;
+}
 
-    let answerClass = '';
+let answerClass = '';
 
-    if (answer === 'No') {
-      answerClass = 'answer-no';
-    } else if (answer === 'Yes') {
-      answerClass = 'answer-yes';
-    } else if (answer === 'N/A') {
-      answerClass = 'answer-na';
-    }
-
+if (answer.toLowerCase() === 'no') {
+  answerClass = 'answer-no';
+} else if (answer.toLowerCase() === 'yes') {
+  answerClass = 'answer-yes';
+} else if (answer.toUpperCase() === 'N/A') {
+  answerClass = 'answer-na';
+}
     answersHtml += `
       <div class="report-answer ${answerClass}">
         <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-        Answer: ${escapeHtml(answer)}
+        Answer: ${escapeHtml(rawAnswer)}
       </div>
     `;
   });
