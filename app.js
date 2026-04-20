@@ -429,8 +429,19 @@ function generateReport() {
     } else {
      notAnsweredCount++;
     }
+
+    let answerClass = '';
+
+    if (answer === 'No') {
+      answerClass = 'answer-no';
+    } else if (answer === 'Yes') {
+      answerClass = 'answer-yes';
+    } else if (answer === 'N/A') {
+      answerClass = 'answer-na';
+    }
+
     answersHtml += `
-      <div class="report-answer">
+      <div class="report-answer ${answerClass}">
         <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
         Answer: ${escapeHtml(answer)}
       </div>
