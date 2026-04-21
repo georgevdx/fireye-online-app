@@ -99,7 +99,36 @@ function autoSaveProject() {
     generateReport();
   }
 
-  
+  function useCurrentLocation() {
+  if (!navigator.geolocation) {
+    getEl('saveMessage').textContent = 'Geolocation is not supported on this device.';
+    return;
+  }
+
+  getEl('saveMessage').textContent = 'Getting current location...';
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const lat = position.coords.latitude.toFixed(6);
+      const lon = position.coords.longitude.toFixed(6);
+
+      getEl('gps').value = `${lat}, ${lon}`;
+      getEl('saveMessage').textContent = `Location captured: ${lat}, ${lon}`;
+
+      scheduleAutoSave();
+    },
+    (error) => {
+      getEl('saveMessage').textContent = 'Could not get current location.';
+      console.error('Geolocation error:', error);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
+}
+
 
 async function loadData() {
   try {
@@ -137,7 +166,10 @@ function initApp() {
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
   getEl('exportBtn').addEventListener('click', exportReport);
   getEl('shareBtn').addEventListener('click', shareReport);
-  }
+  getEl('projectAddress').addEventListener('input', scheduleAutoSave);
+  getEl('gps').addEventListener('input', scheduleAutoSave);
+  getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
+}
 
 function populateOccupancies() {
   const select = getEl('occupancySelect');
@@ -166,6 +198,8 @@ function createNewProject() {
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
+  getEl('projectAddress').value = '';
+  getEl('gps').value = '';
 
   currentPhotos = [];
   renderPhotos();
@@ -237,6 +271,9 @@ function openProject(projectId) {
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
+  getEl('projectAddress').value = project.projectAddress || '';
+  getEl('gps').value = project.gps || '';
+
   currentPhotos = project.photos || [];
   renderPhotos();
   updateDisplay();
@@ -262,7 +299,10 @@ function saveProject() {
   const projectName = getEl('projectName').value.trim();
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
-
+  
+  const projectAddress = getEl('projectAddress').value.trim();
+  const gps = getEl('gps').value.trim();
+  
   const answers = [];
 
   document.querySelectorAll('.answer-select').forEach((field, index) => {
@@ -278,21 +318,26 @@ function saveProject() {
   const projects = getProjects();
 
   if (currentProjectId) {
-    const index = projects.findIndex(p => p.id === currentProjectId);
-    if (index !== -1) {
-      projects[index] = {
+  const index = projects.findIndex(p => p.id === currentProjectId);
+
+  if (index !== -1) {
+    projects[index] = {
       ...projects[index],
       projectName,
+      projectAddress,
+      gps,
       inspectorName,
       occupancy,
       answers,
       photos: currentPhotos
     };
-    }
-  } else {
+  }
+} else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
+      projectAddress,
+      gps,
       inspectorName,
       occupancy,
       answers,
