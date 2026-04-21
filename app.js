@@ -553,6 +553,13 @@ function generateReport() {
   const projectName = getEl('projectName').value.trim() || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const occupancy = getEl('occupancySelect').value || '-';
+  
+  const projectAddress = getEl('projectAddress').value.trim();
+  const gps = getEl('gps').value.trim();
+  
+  const inMall = getEl('inMall').value || 'No';
+  const mallName = getEl('mallName').value.trim();
+  const unitNumber = getEl('unitNumber').value.trim();
 
   const selectedChecklist = checklists.filter(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
@@ -637,6 +644,13 @@ reportContent.innerHTML = `
   
   <div class="report-block">
     <h3>Project Information</h3>
+    <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
+    <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
+    <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
+
+    <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
+    ${inMall === 'Yes' ? `<div class="report-line"><strong>Mall/Centre Name:</strong> ${escapeHtml(mallName)}</div>` : ''}
+    ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
     <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
     <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
     <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
