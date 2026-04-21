@@ -34,13 +34,24 @@ function autoSaveProject() {
   const projectNameField = document.getElementById('projectName');
   const inspectorNameField = document.getElementById('inspectorName');
   const occupancyField = document.getElementById('occupancySelect');
-
-  if (!projectNameField || !inspectorNameField || !occupancyField) return;
+  const projectAddressField = document.getElementById('projectAddress');
+  const gpsField = document.getElementById('gps');
+  const inMallField = document.getElementById('inMall');
+  const mallNameField = document.getElementById('mallName');
+  const unitNumberField = document.getElementById('unitNumber');
+ 
+if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
   const projectName = projectNameField.value.trim();
   const inspectorName = inspectorNameField.value.trim();
   const occupancy = occupancyField.value;
-
+  const projectAddress = projectAddressField.value.trim();
+  const gps = gpsField.value.trim();
+  
+  const inMall = inMallField.value;
+  const mallName = mallNameField.value.trim();
+  const unitNumber = unitNumberField.value.trim();
+  
   if (!projectName && !inspectorName) return;
 
   const answers = [];
@@ -198,6 +209,8 @@ function initApp() {
   getEl('gps').addEventListener('input', scheduleAutoSave);
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
   getEl('inMall').addEventListener('change', toggleMallFields);
+  getEl('mallName').addEventListener('input', scheduleAutoSave);
+  getEl('unitNumber').addEventListener('input', scheduleAutoSave);
   toggleMallFields();
 }
 
@@ -234,7 +247,7 @@ function createNewProject() {
   getEl('mallName').value = '';
   getEl('unitNumber').value = '';
   toggleMallFields();
-  
+
   currentPhotos = [];
   renderPhotos();
 
