@@ -47,7 +47,7 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   const occupancy = occupancyField.value;
   const projectAddress = projectAddressField.value.trim();
   const gps = gpsField.value.trim();
-  
+
   const inMall = inMallField.value;
   const mallName = mallNameField.value.trim();
   const unitNumber = unitNumberField.value.trim();
@@ -68,21 +68,31 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   const projects = getProjects();
 
   if (currentProjectId) {
-    const index = projects.findIndex(p => p.id === currentProjectId);
-    if (index !== -1) {
-      projects[index] = {
-        ...projects[index],
-        projectName,
-        inspectorName,
-        occupancy,
-        answers,
-        photos: currentPhotos
-      };
-    }
-  } else {
+  const index = projects.findIndex(p => p.id === currentProjectId);
+  if (index !== -1) {
+    projects[index] = {
+      ...projects[index],
+      projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      inspectorName,
+      occupancy,
+      answers,
+      photos: currentPhotos
+    };
+  }
+} else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
       inspectorName,
       occupancy,
       answers,
