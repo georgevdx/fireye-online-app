@@ -166,13 +166,30 @@ function createNewProject() {
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
+
   currentPhotos = [];
   renderPhotos();
+
+  const reportSection = document.getElementById('reportSection');
+  if (reportSection) {
+    reportSection.style.display = 'none';
+  }
+
+  const reportContent = document.getElementById('reportContent');
+  if (reportContent) {
+    reportContent.innerHTML = '';
+  }
+
   updateDisplay();
   showProjectForm();
 }
 
 function showProjectList() {
+  const reportSection = document.getElementById('reportSection');
+  if (reportSection) {
+    reportSection.style.display = 'none';
+  }
+
   getEl('projectListSection').style.display = 'block';
   getEl('projectFormSection').style.display = 'none';
   renderProjectsList();
