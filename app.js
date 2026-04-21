@@ -333,6 +333,10 @@ function saveProject() {
   const projectAddress = getEl('projectAddress').value.trim();
   const gps = getEl('gps').value.trim();
   
+  const inMall = getEl('inMall').value;
+  const mallName = getEl('mallName').value.trim();
+  const unitNumber = getEl('unitNumber').value.trim();
+  
   const answers = [];
 
   document.querySelectorAll('.answer-select').forEach((field, index) => {
@@ -352,28 +356,34 @@ function saveProject() {
 
   if (index !== -1) {
     projects[index] = {
-      ...projects[index],
-      projectName,
-      projectAddress,
-      gps,
-      inspectorName,
-      occupancy,
-      answers,
-      photos: currentPhotos
-    };
+    ...projects[index],
+    projectName,
+    projectAddress,
+    gps,
+    inMall,
+    mallName,
+    unitNumber,
+    inspectorName,
+    occupancy,
+    answers,
+    photos: currentPhotos
+  };
   }
 } else {
     const newProject = {
-      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-      projectName,
-      projectAddress,
-      gps,
-      inspectorName,
-      occupancy,
-      answers,
-      photos: currentPhotos
-    };
-    currentProjectId = newProject.id;
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+    projectName,
+    projectAddress,
+    gps,
+    inMall,
+    mallName,
+    unitNumber,
+    inspectorName,
+    occupancy,
+    answers,
+    photos: currentPhotos
+  };
+      currentProjectId = newProject.id;
     projects.push(newProject);
   }
 
