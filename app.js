@@ -147,6 +147,16 @@ function autoSaveProject() {
   );
 }
 
+function toggleMallFields() {
+  const inMall = getEl('inMall').value;
+  const mallFields = getEl('mallFields');
+
+  if (inMall === 'Yes') {
+    mallFields.style.display = 'block';
+  } else {
+    mallFields.style.display = 'none';
+  }
+}
 
 async function loadData() {
   try {
@@ -187,6 +197,8 @@ function initApp() {
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', scheduleAutoSave);
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
+  getEl('inMall').addEventListener('change', toggleMallFields);
+  toggleMallFields();
 }
 
 function populateOccupancies() {
