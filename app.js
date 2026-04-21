@@ -99,27 +99,45 @@ function autoSaveProject() {
     generateReport();
   }
 
-  function useCurrentLocation() {
+  async function useCurrentLocation() {
   if (!navigator.geolocation) {
-    getEl('saveMessage').textContent = 'Geolocation is not supported on this device.';
+    getEl('saveMessage').textContent = 'Geolocation not supported.';
     return;
   }
 
-  getEl('saveMessage').textContent = 'Getting current location...';
+  getEl('saveMessage').textContent = 'Getting location...';
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       const lat = position.coords.latitude.toFixed(6);
       const lon = position.coords.longitude.toFixed(6);
 
       getEl('gps').value = `${lat}, ${lon}`;
-      getEl('saveMessage').textContent = `Location captured: ${lat}, ${lon}`;
+
+      // 🔥 Reverse geocoding
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+        );
+
+        const data = await response.json();
+
+        if (data && data.display_name) {
+          getEl('projectAddress').value = data.display_name;
+          getEl('saveMessage').textContent = 'Location + address captured.';
+        } else {
+          getEl('saveMessage').textContent = 'GPS captured. Address not found.';
+        }
+      } catch (err) {
+        getEl('saveMessage').textContent = 'GPS captured. Could not fetch address.';
+        console.error('Reverse geocode error:', err);
+      }
 
       scheduleAutoSave();
     },
     (error) => {
-      getEl('saveMessage').textContent = 'Could not get current location.';
-      console.error('Geolocation error:', error);
+      getEl('saveMessage').textContent = 'Could not get location.';
+      console.error(error);
     },
     {
       enableHighAccuracy: true,
