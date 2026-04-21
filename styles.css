@@ -238,4 +238,17 @@ button:hover {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}.note-input {
+  width: 100%;
+  max-width: 420px;
+  min-height: 70px;
+  margin-top: 8px;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: Arial, sans-serif;
 }
+

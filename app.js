@@ -45,9 +45,12 @@ function autoSaveProject() {
 
   const answers = [];
   document.querySelectorAll('.answer-select').forEach((field, index) => {
+    const noteField = document.getElementById(`note_${index}`);
+
     answers.push({
       itemIndex: index,
-      answer: field.value
+      answer: field.value,
+      note: noteField ? noteField.value.trim() : ''
     });
   });
 
@@ -222,10 +225,15 @@ function openProject(projectId) {
   updateDisplay();
 
   if (project.answers) {
-    project.answers.forEach(item => {
+   project.answers.forEach(item => {
       const field = document.getElementById(`check_${item.itemIndex}`);
-      if (field) {
+     if (field) {
         field.value = item.answer;
+     }
+
+      const noteField = document.getElementById(`note_${item.itemIndex}`);
+      if (noteField) {
+      noteField.value = item.note || '';
       }
     });
   }
@@ -239,10 +247,14 @@ function saveProject() {
   const occupancy = getEl('occupancySelect').value;
 
   const answers = [];
+
   document.querySelectorAll('.answer-select').forEach((field, index) => {
+    const noteField = document.getElementById(`note_${index}`);
+
     answers.push({
       itemIndex: index,
-      answer: field.value
+      answer: field.value,
+      note: noteField ? noteField.value.trim() : ''
     });
   });
 
@@ -336,17 +348,25 @@ function renderChecklist(selected) {
   selectedChecklist.forEach((c, index) => {
     const itemId = `check_${index}`;
     chkDiv.innerHTML += `
-      <div class="checklist-row">
-        <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
-        <div class="note">Answer type: ${c["Answer Type"]}</div>
-        <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
-          <option value="">Select answer</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-          <option value="N/A">N/A</option>
-        </select>
-      </div>
-    `;
+    <div class="checklist-row">
+    <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
+    <div class="note">Answer type: ${c["Answer Type"]}</div>
+
+    <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
+      <option value="">Select answer</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+      <option value="N/A">N/A</option>
+    </select>
+
+    <textarea
+      class="note-input"
+      id="note_${index}"
+      placeholder="Add note for this item..."
+      oninput="scheduleAutoSave()"
+    ></textarea>
+  </div>
+`;
   });
 }
 
@@ -420,6 +440,8 @@ function generateReport() {
     const field = document.getElementById(`check_${index}`);
     const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
     const answer = rawAnswer.trim();
+    const noteField = document.getElementById(`note_${index}`);
+    const itemNote = noteField ? noteField.value.trim() : '';
 
     if (answer.toLowerCase() === 'yes') {
   yesCount++;
@@ -441,11 +463,12 @@ if (answer.toLowerCase() === 'no') {
   answerClass = 'answer-na';
 }
     answersHtml += `
-      <div class="report-answer ${answerClass}">
-        <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-        Answer: ${escapeHtml(rawAnswer)}
-      </div>
-    `;
+    <div class="report-answer ${answerClass}">
+      <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
+      Answer: ${escapeHtml(rawAnswer)}
+      ${itemNote ? `<br><em>Note:</em> ${escapeHtml(itemNote)}` : ''}
+    </div>
+  `;
   });
 
   const totalItems = selectedChecklist.length;
