@@ -230,7 +230,11 @@ function createNewProject() {
   getEl('saveMessage').textContent = '';
   getEl('projectAddress').value = '';
   getEl('gps').value = '';
-
+  getEl('inMall').value = 'No';
+  getEl('mallName').value = '';
+  getEl('unitNumber').value = '';
+  toggleMallFields();
+  
   currentPhotos = [];
   renderPhotos();
 
@@ -303,6 +307,10 @@ function openProject(projectId) {
   getEl('saveMessage').textContent = '';
   getEl('projectAddress').value = project.projectAddress || '';
   getEl('gps').value = project.gps || '';
+  getEl('inMall').value = project.inMall || 'No';
+  getEl('mallName').value = project.mallName || '';
+  getEl('unitNumber').value = project.unitNumber || '';
+  toggleMallFields();
 
   currentPhotos = project.photos || [];
   renderPhotos();
