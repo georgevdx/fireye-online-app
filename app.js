@@ -398,6 +398,9 @@ function saveProject() {
   const mallName = getEl('mallName').value.trim();
   const unitNumber = getEl('unitNumber').value.trim();
   
+  const productType = getEl('productType').value;
+  const inspectionType = getEl('inspectionType').value;
+
   const answers = [];
 
   document.querySelectorAll('.answer-select').forEach((field, index) => {
@@ -424,6 +427,8 @@ function saveProject() {
       inMall,
       mallName,
       unitNumber,
+      productType,
+      inspectionType,
       inspectorName,
       occupancy,
       answers,
@@ -440,6 +445,8 @@ function saveProject() {
       inMall,
       mallName,
       unitNumber,
+      productType,
+      inspectionType,
       inspectorName,
       occupancy,
       answers,
