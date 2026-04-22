@@ -39,6 +39,8 @@ function autoSaveProject() {
   const inMallField = document.getElementById('inMall');
   const mallNameField = document.getElementById('mallName');
   const unitNumberField = document.getElementById('unitNumber');
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
  
 if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
@@ -81,7 +83,8 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos
+      photos: currentPhotos,
+      lastSaved: new Date().toISOString()
     };
   }
 } else {
@@ -96,7 +99,8 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos
+      photos: currentPhotos,
+      lastSaved: new Date().toISOString()
     };
 
     currentProjectId = newProject.id;
@@ -316,6 +320,12 @@ function renderProjectsList() {
     );
   });
 
+  filteredProjects.sort((a, b) => {
+      const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+      const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+      return bTime - aTime;
+    });
+
   if (filteredProjects.length === 0) {
     container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
     return;
@@ -407,33 +417,35 @@ function saveProject() {
 
   if (index !== -1) {
     projects[index] = {
-    ...projects[index],
-    projectName,
-    projectAddress,
-    gps,
-    inMall,
-    mallName,
-    unitNumber,
-    inspectorName,
-    occupancy,
-    answers,
-    photos: currentPhotos
-  };
+      ...projects[index],
+      projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      inspectorName,
+      occupancy,
+      answers,
+      photos: currentPhotos,
+      lastSaved: new Date().toISOString()
+    };
   }
 } else {
     const newProject = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-    projectName,
-    projectAddress,
-    gps,
-    inMall,
-    mallName,
-    unitNumber,
-    inspectorName,
-    occupancy,
-    answers,
-    photos: currentPhotos
-  };
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      inspectorName,
+      occupancy,
+      answers,
+      photos: currentPhotos,
+      lastSaved: new Date().toISOString()
+    };
       currentProjectId = newProject.id;
     projects.push(newProject);
   }
