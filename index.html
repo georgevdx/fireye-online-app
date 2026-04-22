@@ -23,13 +23,12 @@
         <h2>Projects</h2>
         <button id="newProjectBtn" type="button">New Project</button>
       </div>
-
       <input
         id="projectSearch"
         type="text"
         placeholder="Search by place name, address, mall/centre, or unit"
+        style="margin:12px 0; width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;"
       >
-
       <div id="projectsList"></div>
     </section>
 
@@ -65,6 +64,23 @@
           <input id="unitNumber" type="text" placeholder="e.g. Shop 12">
         </div>
 
+          <label for="productType" style="margin-top:12px;">Product Type</label>
+        <select id="productType">
+          <option value="Fire Safety Officer">Fire Safety Officer</option>
+          <option value="Commercial">Commercial</option>
+          <option value="Industrial">Industrial</option>
+          <option value="Retail">Retail</option>
+          <option value="Hospitality">Hospitality</option>
+        </select>
+
+        <label for="inspectionType" style="margin-top:12px;">Inspection Type</label>
+        <select id="inspectionType">
+          <option value="General Fire Inspection">General Fire Inspection</option>
+          <option value="Compliance Inspection">Compliance Inspection</option>
+          <option value="Occupancy Inspection">Occupancy Inspection</option>
+          <option value="Means of Escape Inspection">Means of Escape Inspection</option>
+        </select>
+        
         <label for="inspectorName" style="margin-top: 12px;">Inspector Name</label>
         <input id="inspectorName" type="text" placeholder="Enter inspector name">
 
