@@ -221,6 +221,7 @@ function initApp() {
   getEl('inMall').addEventListener('change', toggleMallFields);
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
+  getEl('projectSearch').addEventListener('input', renderProjectsList);
   toggleMallFields();
 }
 
@@ -294,14 +295,33 @@ function showProjectForm() {
 function renderProjectsList() {
   const projects = getProjects();
   const container = getEl('projectsList');
+  const searchField = document.getElementById('projectSearch');
+  const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
+
   container.innerHTML = '';
 
-  if (projects.length === 0) {
-    container.innerHTML = `<div class="empty-state">No projects saved yet.</div>`;
+  const filteredProjects = projects.filter(project => {
+    if (!searchText) return true;
+
+    const placeName = (project.projectName || '').toLowerCase();
+    const address = (project.projectAddress || '').toLowerCase();
+    const mallName = (project.mallName || '').toLowerCase();
+    const unitNumber = (project.unitNumber || '').toLowerCase();
+
+    return (
+      placeName.includes(searchText) ||
+      address.includes(searchText) ||
+      mallName.includes(searchText) ||
+      unitNumber.includes(searchText)
+    );
+  });
+
+  if (filteredProjects.length === 0) {
+    container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
     return;
   }
 
-  projects.forEach(project => {
+  filteredProjects.forEach(project => {
     const card = document.createElement('div');
     card.className = 'project-card';
     card.innerHTML = `
