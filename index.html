@@ -39,54 +39,78 @@
           <button id="backBtn" type="button">Back to Projects</button>
         </div>
 
-        <label for="projectName">Place Name</label>
-        <input id="projectName" type="text" placeholder="Enter place name">
+        <div class="form-grid">
 
-        <label for="projectAddress" style="margin-top:12px;">Address</label>
-        <input id="projectAddress" type="text" placeholder="Enter address">
+  <div class="form-row">
+    <label for="projectName">Place Name</label>
+    <input id="projectName" type="text" placeholder="Enter place name">
+  </div>
 
-        <label for="gps" style="margin-top:12px;">GPS Reference</label>
-        <input id="gps" type="text" placeholder="-25.7479, 28.2293">
+  <div class="form-row">
+    <label for="projectAddress">Address</label>
+    <input id="projectAddress" type="text" placeholder="Enter address">
+  </div>
 
-        <button id="useLocationBtn" type="button" style="margin-top:12px;">Use Current Location</button>
+  <div class="form-row">
+    <label for="gps">GPS Reference</label>
+    <div class="field-stack">
+      <input id="gps" type="text" placeholder="-25.7479, 28.2293">
+      <button id="useLocationBtn" type="button">Use Current Location</button>
+    </div>
+  </div>
 
-        <label for="inMall" style="margin-top:12px;">In Mall/Centre?</label>
-        <select id="inMall">
-          <option value="No">No</option>
-          <option value="Yes">Yes</option>
-        </select>
+  <div class="form-row">
+    <label for="inMall">In Mall/Centre?</label>
+    <select id="inMall">
+      <option value="No">No</option>
+      <option value="Yes">Yes</option>
+    </select>
+  </div>
 
-        <div id="mallFields" style="display:none;">
-          <label for="mallName" style="margin-top:12px;">Mall/Centre Name</label>
-          <input id="mallName" type="text" placeholder="Enter mall/centre name">
+  <div id="mallFields" style="display:none;">
+    <div class="form-row">
+      <label for="mallName">Mall/Centre Name</label>
+      <input id="mallName" type="text">
+    </div>
 
-          <label for="unitNumber" style="margin-top:12px;">Unit / Shop Number</label>
-          <input id="unitNumber" type="text" placeholder="e.g. Shop 12">
-        </div>
+    <div class="form-row">
+      <label for="unitNumber">Unit / Shop Number</label>
+      <input id="unitNumber" type="text">
+    </div>
+  </div>
 
-          <label for="productType" style="margin-top:12px;">Product Type</label>
-        <select id="productType">
-          <option value="Fire Safety Officer">Fire Safety Officer</option>
-          <option value="Commercial">Commercial</option>
-          <option value="Industrial">Industrial</option>
-          <option value="Retail">Retail</option>
-          <option value="Hospitality">Hospitality</option>
-        </select>
+  <div class="form-row">
+    <label for="productType">Product Type</label>
+    <select id="productType">
+      <option value="Fire Safety Officer">Fire Safety Officer</option>
+      <option value="Commercial">Commercial</option>
+      <option value="Industrial">Industrial</option>
+      <option value="Retail">Retail</option>
+      <option value="Hospitality">Hospitality</option>
+    </select>
+  </div>
 
-        <label for="inspectionType" style="margin-top:12px;">Inspection Type</label>
-        <select id="inspectionType">
-          <option value="General Fire Inspection">General Fire Inspection</option>
-          <option value="Compliance Inspection">Compliance Inspection</option>
-          <option value="Occupancy Inspection">Occupancy Inspection</option>
-          <option value="Means of Escape Inspection">Means of Escape Inspection</option>
-        </select>
-        
-        <label for="inspectorName" style="margin-top: 12px;">Inspector Name</label>
-        <input id="inspectorName" type="text" placeholder="Enter inspector name">
+  <div class="form-row">
+    <label for="inspectionType">Inspection Type</label>
+    <select id="inspectionType">
+      <option value="General Fire Inspection">General Fire Inspection</option>
+      <option value="Compliance Inspection">Compliance Inspection</option>
+      <option value="Occupancy Inspection">Occupancy Inspection</option>
+      <option value="Means of Escape Inspection">Means of Escape Inspection</option>
+    </select>
+  </div>
 
-        <label for="occupancySelect" style="margin-top: 12px;">Select Occupancy</label>
-        <select id="occupancySelect"></select>
+  <div class="form-row">
+    <label for="inspectorName">Inspector Name</label>
+    <input id="inspectorName" type="text">
+  </div>
 
+  <div class="form-row">
+    <label for="occupancySelect">Select Occupancy</label>
+    <select id="occupancySelect"></select>
+  </div>
+
+</div>
         <div class="button-row">
           <button id="saveBtn" type="button">Save Project</button>
           <button id="reportBtn" type="button">Generate Report</button>
