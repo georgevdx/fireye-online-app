@@ -253,6 +253,8 @@ function setProjects(projects) {
 function createNewProject() {
   currentProjectId = null;
   getEl('projectName').value = '';
+  getEl('productType').value = 'Fire Safety Officer';
+  getEl('inspectionType').value = 'General Fire Inspection';
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
@@ -355,6 +357,8 @@ function openProject(projectId) {
 
   currentProjectId = project.id;
   getEl('projectName').value = project.projectName || '';
+  getEl('productType').value = project.productType || 'Fire Safety Officer';
+  getEl('inspectionType').value = project.inspectionType || 'General Fire Inspection';
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
