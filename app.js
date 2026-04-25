@@ -2,50 +2,50 @@ let occupancies = [];
 let requirements = [];
 let checklists = [];
 const inspectionTemplates = {
-  "Fire Safety Officer": {
-    "General Fire Inspection": [
-      {
-        sectionName: "Fire Equipment",
-        items: [
-          {
-            "Item Number": "1",
-            "Checklist Item": "Are fire extinguishers provided and accessible?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "2",
-            "Checklist Item": "Are fire hose reels accessible and unobstructed?",
-            "Answer Type": "Yes/No"
-          }
-        ]
-      },
-      {
-        sectionName: "Escape Routes",
-        items: [
-          {
-            "Item Number": "3",
-            "Checklist Item": "Are escape routes unobstructed?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "4",
-            "Checklist Item": "Are final exits unlocked and immediately openable?",
-            "Answer Type": "Yes/No"
-          }
-        ]
-      },
-      {
-        sectionName: "Exit Signage",
-        items: [
-          {
-            "Item Number": "5",
-            "Checklist Item": "Are exit signs visible and illuminated?",
-            "Answer Type": "Yes/No"
-          }
-        ]
-      }
-    ]
-  }, // 👈 BELANGRIKE KOMMA HIER
+ "Fire Safety Officer": {
+  "General Fire Inspection": [
+    {
+      sectionName: "Fire Equipment",
+      items: [
+        {
+          "Item Number": "1",
+          "Checklist Item": "Are fire extinguishers provided and accessible?",
+          "Answer Type": "Yes/No"
+        },
+        {
+          "Item Number": "2",
+          "Checklist Item": "Are fire hose reels accessible and unobstructed?",
+          "Answer Type": "Yes/No"
+        }
+      ]
+    },
+    {
+      sectionName: "Escape Routes",
+      items: [
+        {
+          "Item Number": "3",
+          "Checklist Item": "Are escape routes unobstructed?",
+          "Answer Type": "Yes/No"
+        },
+        {
+          "Item Number": "4",
+          "Checklist Item": "Are final exits unlocked and immediately openable?",
+          "Answer Type": "Yes/No"
+        }
+      ]
+    },
+    {
+      sectionName: "Exit Signage",
+      items: [
+        {
+          "Item Number": "5",
+          "Checklist Item": "Are exit signs visible and illuminated?",
+          "Answer Type": "Yes/No"
+        }
+      ]
+    }
+  ]
+},
 
   "Commercial": {
     "Compliance Inspection": [
@@ -599,8 +599,7 @@ function updateDisplay() {
 function getActiveTemplateChecklist() {
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
-console.log('Product:', productType);
-console.log('Inspection:', inspectionType);
+
   if (
     inspectionTemplates[productType] &&
     inspectionTemplates[productType][inspectionType]
@@ -622,8 +621,10 @@ function renderChecklist(selected) {
   const chkDiv = getEl('checklist');
   chkDiv.innerHTML = "";
 
-  const selectedChecklist = checklists.filter(c =>
-    c["Applicable To"] === "All occupancies" || c["Applicable To"] === selected
+  const templateChecklist = getActiveTemplateChecklist();
+
+  const selectedChecklist = templateChecklist || checklists.filter(c =>
+   c["Applicable To"] === "All occupancies" || c["Applicable To"] === selected
   );
 
   if (selectedChecklist.length === 0) {
