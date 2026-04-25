@@ -262,7 +262,7 @@ function createNewProject() {
   getEl('gps').value = '';
   getEl('inMall').value = 'No';
   getEl('mallName').value = '';
-  getEl('unitNumber').value = '';
+  getEl('unitNumber').value = '';  
   toggleMallFields();
 
   currentPhotos = [];
@@ -604,6 +604,9 @@ function generateReport() {
   const mallName = getEl('mallName').value.trim();
   const unitNumber = getEl('unitNumber').value.trim();
 
+  const productType = getEl('productType').value;
+  const inspectionType = getEl('inspectionType').value;
+
   const selectedChecklist = checklists.filter(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
   );
@@ -688,6 +691,8 @@ reportContent.innerHTML = `
   <div class="report-block">
     <h3>Project Information</h3>
     <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
+    <div class="report-line"><strong>Product Type:</strong> ${escapeHtml(productType)}</div>
+    <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
     <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
     <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
 
