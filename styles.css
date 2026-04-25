@@ -264,3 +264,12 @@ button:hover {
   box-sizing: border-box;
 }
 
+.section-label {
+  font-size: 13px;
+  font-weight: bold;
+  color: #b71c1c;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
