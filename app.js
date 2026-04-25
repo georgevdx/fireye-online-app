@@ -312,10 +312,19 @@ function initApp() {
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', renderProjectsList);
-  getEl('productType').addEventListener('change', updateDisplay);
-  getEl('inspectionType').addEventListener('change', updateDisplay);
-  toggleMallFields();
-}
+  getEl('productType').addEventListener('change', () => {
+    updateInspectionTypeOptions();
+    updateDisplay();
+    scheduleAutoSave();
+  });
+
+  getEl('inspectionType').addEventListener('change', () => {
+    updateDisplay();
+    scheduleAutoSave();
+  });
+    updateInspectionTypeOptions();
+    toggleMallFields();
+  }
 
 function populateOccupancies() {
   const select = getEl('occupancySelect');
@@ -342,6 +351,7 @@ function createNewProject() {
   currentProjectId = null;
   getEl('projectName').value = '';
   getEl('productType').value = 'Fire Safety Officer';
+  updateInspectionTypeOptions();
   getEl('inspectionType').value = 'General Fire Inspection';
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
@@ -446,7 +456,8 @@ function openProject(projectId) {
   currentProjectId = project.id;
   getEl('projectName').value = project.projectName || '';
   getEl('productType').value = project.productType || 'Fire Safety Officer';
-  getEl('inspectionType').value = project.inspectionType || 'General Fire Inspection';
+  updateInspectionTypeOptions();
+  getEl('inspectionType').value = project.inspectionType || getEl('inspectionType').value;
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
@@ -594,6 +605,32 @@ function updateDisplay() {
   }
 
   renderChecklist(selected);
+}
+
+function updateInspectionTypeOptions() {
+  const productType = getEl('productType').value;
+  const inspectionSelect = getEl('inspectionType');
+
+  inspectionSelect.innerHTML = '';
+
+  const inspectionTypes = inspectionTemplates[productType]
+    ? Object.keys(inspectionTemplates[productType])
+    : [];
+
+  if (inspectionTypes.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = 'No inspection types available';
+    inspectionSelect.appendChild(option);
+    return;
+  }
+
+  inspectionTypes.forEach(type => {
+    const option = document.createElement('option');
+    option.value = type;
+    option.textContent = type;
+    inspectionSelect.appendChild(option);
+  });
 }
 
 function getActiveTemplateChecklist() {
