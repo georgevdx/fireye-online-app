@@ -5,39 +5,47 @@ const inspectionTemplates = {
   "Fire Safety Officer": {
     "General Fire Inspection": [
       {
-        "Item Number": "1",
-        "Checklist Item": "Are fire extinguishers provided and accessible?",
-        "Answer Type": "Yes/No"
+        sectionName: "Fire Equipment",
+        items: [
+          {
+            "Item Number": "1",
+            "Checklist Item": "Are fire extinguishers provided and accessible?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "2",
+            "Checklist Item": "Are fire hose reels accessible and unobstructed?",
+            "Answer Type": "Yes/No"
+          }
+        ]
       },
       {
-        "Item Number": "2",
-        "Checklist Item": "Are escape routes unobstructed?",
-        "Answer Type": "Yes/No"
+        sectionName: "Escape Routes",
+        items: [
+          {
+            "Item Number": "3",
+            "Checklist Item": "Are escape routes unobstructed?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "4",
+            "Checklist Item": "Are final exits unlocked and immediately openable?",
+            "Answer Type": "Yes/No"
+          }
+        ]
       },
       {
-        "Item Number": "3",
-        "Checklist Item": "Are exit signs visible and illuminated?",
-        "Answer Type": "Yes/No"
-      }
-    ],
-    "Means of Escape Inspection": [
-      {
-        "Item Number": "1",
-        "Checklist Item": "Are escape routes clear and usable?",
-        "Answer Type": "Yes/No"
-      },
-      {
-        "Item Number": "2",
-        "Checklist Item": "Do exit doors open in the direction of escape where required?",
-        "Answer Type": "Yes/No"
-      },
-      {
-        "Item Number": "3",
-        "Checklist Item": "Are final exits unlocked and immediately openable?",
-        "Answer Type": "Yes/No"
+        sectionName: "Exit Signage",
+        items: [
+          {
+            "Item Number": "5",
+            "Checklist Item": "Are exit signs visible and illuminated?",
+            "Answer Type": "Yes/No"
+          }
+        ]
       }
     ]
-  },
+  }, // 👈 BELANGRIKE KOMMA HIER
 
   "Commercial": {
     "Compliance Inspection": [
@@ -596,7 +604,14 @@ function getActiveTemplateChecklist() {
     inspectionTemplates[productType] &&
     inspectionTemplates[productType][inspectionType]
   ) {
-    return inspectionTemplates[productType][inspectionType];
+    const template = inspectionTemplates[productType][inspectionType];
+
+    return template.flatMap(section =>
+      section.items.map(item => ({
+        ...item,
+        Section: section.sectionName
+      }))
+    );
   }
 
   return null;
@@ -619,8 +634,9 @@ function renderChecklist(selected) {
     const itemId = `check_${index}`;
     chkDiv.innerHTML += `
     <div class="checklist-row">
-    <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
-    <div class="note">Answer type: ${c["Answer Type"]}</div>
+
+    ${c.Section ? `<div class="section-label">${c.Section}</div>` : ''}
+    <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>    <div class="note">Answer type: ${c["Answer Type"]}</div>
 
     <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
       <option value="">Select answer</option>
