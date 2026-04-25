@@ -1,6 +1,84 @@
 let occupancies = [];
 let requirements = [];
 let checklists = [];
+const inspectionTemplates = {
+  "Fire Safety Officer": {
+    "General Fire Inspection": [
+      {
+        "Item Number": "1",
+        "Checklist Item": "Are fire extinguishers provided and accessible?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "2",
+        "Checklist Item": "Are escape routes unobstructed?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "3",
+        "Checklist Item": "Are exit signs visible and illuminated?",
+        "Answer Type": "Yes/No"
+      }
+    ],
+    "Means of Escape Inspection": [
+      {
+        "Item Number": "1",
+        "Checklist Item": "Are escape routes clear and usable?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "2",
+        "Checklist Item": "Do exit doors open in the direction of escape where required?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "3",
+        "Checklist Item": "Are final exits unlocked and immediately openable?",
+        "Answer Type": "Yes/No"
+      }
+    ]
+  },
+
+  "Commercial": {
+    "Compliance Inspection": [
+      {
+        "Item Number": "1",
+        "Checklist Item": "Is fire equipment installed and maintained?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "2",
+        "Checklist Item": "Are tenant escape routes clear?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "3",
+        "Checklist Item": "Are electrical DB boards accessible and labelled?",
+        "Answer Type": "Yes/No"
+      }
+    ]
+  },
+
+  "Industrial": {
+    "Compliance Inspection": [
+      {
+        "Item Number": "1",
+        "Checklist Item": "Are hazardous processes separated from general areas?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "2",
+        "Checklist Item": "Is combustible storage controlled?",
+        "Answer Type": "Yes/No"
+      },
+      {
+        "Item Number": "3",
+        "Checklist Item": "Are fire hydrants / hose reels accessible?",
+        "Answer Type": "Yes/No"
+      }
+    ]
+  }
+};
 let currentProjectId = null;
 let currentPhotos = [];
 
@@ -226,6 +304,8 @@ function initApp() {
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', renderProjectsList);
+  getEl('productType').addEventListener('change', updateDisplay);
+  getEl('inspectionType').addEventListener('change', updateDisplay);
   toggleMallFields();
 }
 
@@ -506,6 +586,20 @@ function updateDisplay() {
   }
 
   renderChecklist(selected);
+}
+
+function getActiveTemplateChecklist() {
+  const productType = getEl('productType').value;
+  const inspectionType = getEl('inspectionType').value;
+
+  if (
+    inspectionTemplates[productType] &&
+    inspectionTemplates[productType][inspectionType]
+  ) {
+    return inspectionTemplates[productType][inspectionType];
+  }
+
+  return null;
 }
 
 function renderChecklist(selected) {
