@@ -599,7 +599,8 @@ function updateDisplay() {
 function getActiveTemplateChecklist() {
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
-
+console.log('Product:', productType);
+console.log('Inspection:', inspectionType);
   if (
     inspectionTemplates[productType] &&
     inspectionTemplates[productType][inspectionType]
