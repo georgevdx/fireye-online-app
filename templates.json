@@ -1,0 +1,89 @@
+{
+  "Fire Safety Officer": {
+    "General Fire Inspection": [
+      {
+        "sectionName": "Fire Equipment",
+        "items": [
+          {
+            "Item Number": "1",
+            "Checklist Item": "Are fire extinguishers provided and accessible?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "2",
+            "Checklist Item": "Are fire hose reels accessible and unobstructed?",
+            "Answer Type": "Yes/No"
+          }
+        ]
+      },
+      {
+        "sectionName": "Escape Routes",
+        "items": [
+          {
+            "Item Number": "3",
+            "Checklist Item": "Are escape routes unobstructed?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "4",
+            "Checklist Item": "Are final exits unlocked and immediately openable?",
+            "Answer Type": "Yes/No"
+          }
+        ]
+      },
+      {
+        "sectionName": "Exit Signage",
+        "items": [
+          {
+            "Item Number": "5",
+            "Checklist Item": "Are exit signs visible and illuminated?",
+            "Answer Type": "Yes/No"
+          }
+        ]
+      }
+    ]
+  },
+  "Commercial": {
+    "Compliance Inspection": [
+      {
+        "sectionName": "Fire Equipment",
+        "items": [
+          {
+            "Item Number": "1",
+            "Checklist Item": "Is fire equipment installed and maintained?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "2",
+            "Checklist Item": "Are tenant escape routes clear?",
+            "Answer Type": "Yes/No"
+          }
+        ]
+      }
+    ]
+  },
+  "Industrial": {
+    "Compliance Inspection": [
+      {
+        "sectionName": "Industrial Fire Safety",
+        "items": [
+          {
+            "Item Number": "1",
+            "Checklist Item": "Are hazardous processes separated from general areas?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "2",
+            "Checklist Item": "Is combustible storage controlled?",
+            "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "3",
+            "Checklist Item": "Are fire hydrants / hose reels accessible?",
+            "Answer Type": "Yes/No"
+          }
+        ]
+      }
+    ]
+  }
+}
