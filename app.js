@@ -204,7 +204,15 @@ async function loadData() {
   }
 }
 
+function toggleSection(sectionId) {
+  const section = document.getElementById(sectionId);
 
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+  } else {
+    section.style.display = 'none';
+  }
+}
 
 function initApp() {
   populateOccupancies();
@@ -586,42 +594,43 @@ function renderChecklist(selected) {
   }
 
  let lastSection = '';
+let sectionIndex = -1;
 
 selectedChecklist.forEach((c, index) => {
   const itemId = `check_${index}`;
 
-  const sectionHeader = c.Section && c.Section !== lastSection
-    ? `<div class="section-heading">${c.Section}</div>`
-    : '';
+  if (c.Section && c.Section !== lastSection) {
+    sectionIndex++;
 
-  if (c.Section) {
+    chkDiv.innerHTML += `
+      <div class="section-container">
+        <div class="section-heading" onclick="toggleSection(${sectionIndex})">
+          ${c.Section.toUpperCase()}
+        </div>
+        <div class="section-content" id="section_${sectionIndex}">
+    `;
+
     lastSection = c.Section;
   }
 
   chkDiv.innerHTML += `
-    ${sectionHeader}
-    <div class="checklist-row">
+    <div class="checklist-item">
+      <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
 
-   
-    <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>    <div class="note">Answer type: ${c["Answer Type"]}</div>
+      <select id="${itemId}">
+        <option value="">Select</option>
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+        <option value="N/A">N/A</option>
+      </select>
+    </div>
+  `;
 
-    <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
-      <option value="">Select answer</option>
-      <option value="Yes">Yes</option>
-      <option value="No">No</option>
-      <option value="N/A">N/A</option>
-    </select>
-
-    <textarea
-      class="note-input"
-      id="note_${index}"
-      placeholder="Add note for this item..."
-      oninput="scheduleAutoSave()"
-    ></textarea>
-  </div>
-`;
-  });
-}
+  const next = selectedChecklist[index + 1];
+  if (!next || next.Section !== lastSection) {
+    chkDiv.innerHTML += `</div></div>`;
+  }
+});
 
 function escapeHtml(value) {
   return String(value)
