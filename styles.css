@@ -283,30 +283,5 @@ button:hover {
   border-radius: 8px;
   letter-spacing: 0.03em;
 }
-.section-heading {
-  margin-top: 18px;
-  margin-bottom: 6px;
-  padding: 12px;
-  background: #b71c1c;
-  color: white;
-  font-weight: 800;
-  text-transform: uppercase;
-  border-radius: 8px;
-  cursor: pointer;
-  letter-spacing: 0.05em;
-}
 
-.section-heading:hover {
-  background: #8e0000;
-}
-
-.section-content {
-  margin-bottom: 12px;
-}
-
-.check-item {
-  margin-bottom: 10px;
-  padding: 8px;
-  border-bottom: 1px solid #eee;
-}
 

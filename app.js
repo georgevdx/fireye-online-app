@@ -204,15 +204,7 @@ async function loadData() {
   }
 }
 
-function toggleSection(sectionId) {
-  const section = document.getElementById(sectionId);
 
-  if (section.style.display === 'none') {
-    section.style.display = 'block';
-  } else {
-    section.style.display = 'none';
-  }
-}
 
 function initApp() {
   populateOccupancies();
@@ -593,44 +585,31 @@ function renderChecklist(selected) {
     return;
   }
 
- let lastSection = '';
-let sectionIndex = -1;
-
-selectedChecklist.forEach((c, index) => {
-  const itemId = `check_${index}`;
-
-  if (c.Section && c.Section !== lastSection) {
-    sectionIndex++;
-
+  selectedChecklist.forEach((c, index) => {
+    const itemId = `check_${index}`;
     chkDiv.innerHTML += `
-      <div class="section-container">
-        <div class="section-heading" onclick="toggleSection(${sectionIndex})">
-          ${c.Section.toUpperCase()}
-        </div>
-        <div class="section-content" id="section_${sectionIndex}">
-    `;
+    <div class="checklist-row">
 
-    lastSection = c.Section;
-  }
+    ${c.Section ? `<div class="section-label">${c.Section}</div>` : ''}
+    <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>    <div class="note">Answer type: ${c["Answer Type"]}</div>
 
-  chkDiv.innerHTML += `
-    <div class="checklist-item">
-      <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
+    <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
+      <option value="">Select answer</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+      <option value="N/A">N/A</option>
+    </select>
 
-      <select id="${itemId}">
-        <option value="">Select</option>
-        <option value="Yes">Yes</option>
-        <option value="No">No</option>
-        <option value="N/A">N/A</option>
-      </select>
-    </div>
-  `;
-
-  const next = selectedChecklist[index + 1];
-  if (!next || next.Section !== lastSection) {
-    chkDiv.innerHTML += `</div></div>`;
-  }
-});
+    <textarea
+      class="note-input"
+      id="note_${index}"
+      placeholder="Add note for this item..."
+      oninput="scheduleAutoSave()"
+    ></textarea>
+  </div>
+`;
+  });
+}
 
 function escapeHtml(value) {
   return String(value)
