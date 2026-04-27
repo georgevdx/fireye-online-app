@@ -585,12 +585,24 @@ function renderChecklist(selected) {
     return;
   }
 
-  selectedChecklist.forEach((c, index) => {
-    const itemId = `check_${index}`;
-    chkDiv.innerHTML += `
+ let lastSection = '';
+
+selectedChecklist.forEach((c, index) => {
+  const itemId = `check_${index}`;
+
+  const sectionHeader = c.Section && c.Section !== lastSection
+    ? `<div class="section-heading">${c.Section}</div>`
+    : '';
+
+  if (c.Section) {
+    lastSection = c.Section;
+  }
+
+  chkDiv.innerHTML += `
+    ${sectionHeader}
     <div class="checklist-row">
 
-    ${c.Section ? `<div class="section-label">${c.Section}</div>` : ''}
+   
     <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>    <div class="note">Answer type: ${c["Answer Type"]}</div>
 
     <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">

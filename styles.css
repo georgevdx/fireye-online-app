@@ -273,3 +273,14 @@ button:hover {
   letter-spacing: 0.04em;
 }
 
+.section-heading {
+  margin-top: 18px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  background: #b71c1c;
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  letter-spacing: 0.03em;
+}
+
