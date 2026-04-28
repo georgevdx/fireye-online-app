@@ -628,6 +628,14 @@ function renderChecklist(selected) {
   const chkDiv = getEl('checklist');
   chkDiv.innerHTML = "";
 
+  chkDiv.innerHTML = `
+  <div class="checklist-toolbar">
+    <button type="button" onclick="expandAllSections()">Expand All</button>
+    <button type="button" onclick="collapseAllSections()">Collapse All</button>
+    <div id="answerSummary" class="answer-summary">Yes: 0 | No: 0 | N/A: 0</div>
+  </div>
+`;
+
   const templateChecklist = getActiveTemplateChecklist();
 
   const selectedChecklist = templateChecklist || checklists.filter(c =>
@@ -651,7 +659,8 @@ function renderChecklist(selected) {
 
       chkDiv.innerHTML += `
         <div class="section-header" onclick="toggleSection(${sectionIndex})">
-          ${sectionName.toUpperCase()}
+         <span id="arrow_${sectionIndex}">▼</span>
+         ${sectionName.toUpperCase()}
         </div>
         <div class="section-group" id="section_${sectionIndex}">
       `;
@@ -667,7 +676,7 @@ function renderChecklist(selected) {
         <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
         <div class="note">Answer type: ${c["Answer Type"]}</div>
 
-        <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
+        <select class="answer-select" id="${itemId}" onchange="handleAnswerChange(this)">
           <option value="">Select answer</option>
           <option value="Yes">Yes</option>
           <option value="No">No</option>
@@ -1027,10 +1036,72 @@ async function shareReport() {
 
 function toggleSection(index) {
   const section = document.getElementById(`section_${index}`);
+  const arrow = document.getElementById(`arrow_${index}`);
+
   if (!section) return;
 
-  section.style.display =
-    section.style.display === "none" ? "block" : "none";
+  const isClosed = section.style.display === "none";
+
+  section.style.display = isClosed ? "block" : "none";
+  if (arrow) arrow.textContent = isClosed ? "▼" : "▶";
+}
+
+function expandAllSections() {
+  document.querySelectorAll(".section-group").forEach(section => {
+    section.style.display = "block";
+  });
+
+  document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
+    arrow.textContent = "▼";
+  });
+}
+
+function collapseAllSections() {
+  document.querySelectorAll(".section-group").forEach(section => {
+    section.style.display = "none";
+  });
+
+  document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
+    arrow.textContent = "▶";
+  });
+}
+
+function handleAnswerChange(selectEl) {
+  selectEl.classList.remove("answer-yes", "answer-no", "answer-na");
+
+  if (selectEl.value === "Yes") {
+    selectEl.classList.add("answer-yes");
+  }
+
+  if (selectEl.value === "No") {
+    selectEl.classList.add("answer-no");
+  }
+
+  if (selectEl.value === "N/A") {
+    selectEl.classList.add("answer-na");
+  }
+
+  updateAnswerSummary();
+  scheduleAutoSave();
+}
+
+function updateAnswerSummary() {
+  const answers = document.querySelectorAll(".answer-select");
+
+  let yes = 0;
+  let no = 0;
+  let na = 0;
+
+  answers.forEach(a => {
+    if (a.value === "Yes") yes++;
+    if (a.value === "No") no++;
+    if (a.value === "N/A") na++;
+  });
+
+  const summary = document.getElementById("answerSummary");
+  if (summary) {
+    summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
+  }
 }
 
 loadData();
