@@ -661,11 +661,11 @@ function renderChecklist(selected) {
 
       html += `
         <div class="section-header" onclick="toggleSection(${sectionIndex})">
-          <span id="arrow_${sectionIndex}">▼</span>
+          <span id="arrow_${sectionIndex}">▶</span>
           ${sectionName.toUpperCase()}
         </div>
 
-        <div class="section-group" id="section_${sectionIndex}">
+        <div class="section-group hidden" id="section_${sectionIndex}">
       `;
 
       currentSection = sectionName;

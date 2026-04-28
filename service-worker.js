@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fireye-cache-v2';
+const CACHE_NAME = 'fireye-cache-v4';
 
 const FILES_TO_CACHE = [
   '/fireye-online-app/',
