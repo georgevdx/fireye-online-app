@@ -177,12 +177,13 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
       .then(res => res.json())
       .then(data => {
 
         console.log("WE GOT DATA", data);
-
+        console.log("ADDRESS:", data.address);
+        
         const streetAddress = buildStreetAddress(data.address || {});
 
         document.getElementById("projectAddress").value =
