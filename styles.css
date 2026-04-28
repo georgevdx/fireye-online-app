@@ -296,18 +296,15 @@ button:hover {
 }
 
 .section-heading {
-  margin-top: 18px;
-  margin-bottom: 8px;
-  padding: 10px 12px;
+  margin-top: 22px;
+  margin-bottom: 10px;
+  padding: 12px 14px;
   background: #b71c1c;
   color: white;
   font-weight: 900;
   text-transform: uppercase;
   border-radius: 8px;
   letter-spacing: 0.05em;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 
