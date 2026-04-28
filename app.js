@@ -1045,6 +1045,8 @@ function toggleSection(index) {
   const section = document.getElementById(`section_${index}`);
   const arrow = document.getElementById(`arrow_${index}`);
 
+  console.log("Clicked section:", index, section);
+
   if (!section) return;
 
   section.classList.toggle("hidden");
