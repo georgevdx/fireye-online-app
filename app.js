@@ -1035,17 +1035,21 @@ async function shareReport() {
 }
 
 function toggleSection(index) {
+  console.log("TOGGLE CLICKED:", index);
+  
   const section = document.getElementById(`section_${index}`);
   const arrow = document.getElementById(`arrow_${index}`);
 
   if (!section) return;
 
-  const isClosed = section.style.display === "none";
+  const isOpen = section.style.display !== "none";
 
-  section.style.display = isClosed ? "block" : "none";
-  if (arrow) arrow.textContent = isClosed ? "▼" : "▶";
+  section.style.display = isOpen ? "none" : "block";
+
+  if (arrow) {
+    arrow.textContent = isOpen ? "▶" : "▼";
+  }
 }
-
 function expandAllSections() {
   document.querySelectorAll(".section-group").forEach(section => {
     section.style.display = "block";
