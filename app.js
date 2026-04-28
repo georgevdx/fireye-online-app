@@ -180,37 +180,31 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
       .then(res => res.json())
       .then(data => {
-        console.log("FULL ADDRESS DATA:", data.address);
-        console.log("DISPLAY NAME:", data.display_name);
+
+        console.log("WE GOT DATA", data);
 
         const streetAddress = buildStreetAddress(data.address || {});
 
         document.getElementById("projectAddress").value =
           streetAddress || data.display_name || `${lat}, ${lon}`;
 
-        // change this ID if your status element has another name
-        const gpsStatus = document.getElementById("gpsStatus");
-        if (gpsStatus) gpsStatus.textContent = "Location captured";
+        // 👇 BELANGRIK: reset jou status
+        getEl('saveMessage').textContent = 'Location captured';
+
       })
       .catch(err => {
         console.error("Address fetch failed:", err);
 
         document.getElementById("projectAddress").value = `${lat}, ${lon}`;
 
-        const gpsStatus = document.getElementById("gpsStatus");
-        if (gpsStatus) gpsStatus.textContent = "Location captured, address unavailable";
+        // 👇 reset status selfs as dit fail
+        getEl('saveMessage').textContent = 'Location captured (no address)';
       });
   },
   error => {
     console.error("GPS failed:", error);
 
-    const gpsStatus = document.getElementById("gpsStatus");
-    if (gpsStatus) gpsStatus.textContent = "Could not get location";
-  },
-  {
-    enableHighAccuracy: true,
-    timeout: 10000,
-    maximumAge: 0
+    getEl('saveMessage').textContent = 'Location failed';
   }
 );
 }
