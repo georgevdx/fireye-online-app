@@ -1047,14 +1047,15 @@ function toggleSection(index) {
 
   if (!section) return;
 
-  if (section.style.display === "none") {
-    section.style.display = "block";
-    if (arrow) arrow.textContent = "▼";
-  } else {
-    section.style.display = "none";
-    if (arrow) arrow.textContent = "▶";
+  section.classList.toggle("hidden");
+
+  const isHidden = section.classList.contains("hidden");
+
+  if (arrow) {
+    arrow.textContent = isHidden ? "▶" : "▼";
   }
 }
+
 function expandAllSections() {
   document.querySelectorAll(".section-group").forEach(section => {
     section.style.display = "block";
