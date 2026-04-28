@@ -172,32 +172,47 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
 
   getEl('saveMessage').textContent = 'Getting location...';
 
-  navigator.geolocation.getCurrentPosition(position => {
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
+  navigator.geolocation.getCurrentPosition(
+  position => {
+    const lat = position.coords.latitude;
+    const lon = position.coords.longitude;
 
-  // 👇 NEW: reverse geocoding
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
-    .then(res => res.json())
-    .then(data => {
-       // 👉 SIT DIT HIER 👇
-      console.log("FULL ADDRESS DATA:", data.address);
-      console.log("DISPLAY NAME:", data.display_name);
-      
-      const streetAddress = buildStreetAddress(data.address);
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log("FULL ADDRESS DATA:", data.address);
+        console.log("DISPLAY NAME:", data.display_name);
 
-      document.getElementById("projectAddress").value =
-        streetAddress || data.display_name || "";
+        const streetAddress = buildStreetAddress(data.address || {});
 
-    })
-    .catch(err => {
-      console.error("Address fetch failed:", err);
+        document.getElementById("projectAddress").value =
+          streetAddress || data.display_name || `${lat}, ${lon}`;
 
-      // fallback: show coords if something breaks
-      document.getElementById("projectAddress").value = `${lat}, ${lon}`;
-    });
+        // change this ID if your status element has another name
+        const gpsStatus = document.getElementById("gpsStatus");
+        if (gpsStatus) gpsStatus.textContent = "Location captured";
+      })
+      .catch(err => {
+        console.error("Address fetch failed:", err);
 
-});
+        document.getElementById("projectAddress").value = `${lat}, ${lon}`;
+
+        const gpsStatus = document.getElementById("gpsStatus");
+        if (gpsStatus) gpsStatus.textContent = "Location captured, address unavailable";
+      });
+  },
+  error => {
+    console.error("GPS failed:", error);
+
+    const gpsStatus = document.getElementById("gpsStatus");
+    if (gpsStatus) gpsStatus.textContent = "Could not get location";
+  },
+  {
+    enableHighAccuracy: true,
+    timeout: 10000,
+    maximumAge: 0
+  }
+);
 }
 
 function toggleMallFields() {
