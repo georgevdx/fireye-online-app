@@ -181,9 +181,11 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       .then(res => res.json())
       .then(data => {
 
-        console.log("WE GOT DATA", data);
+     
+        console.log("FULL DATA:", data);
         console.log("ADDRESS:", data.address);
-        
+        console.log("DISPLAY NAME:", data.display_name);
+
         const streetAddress = buildStreetAddress(data.address || {});
 
         document.getElementById("projectAddress").value =
