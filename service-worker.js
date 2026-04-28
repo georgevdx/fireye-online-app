@@ -1,16 +1,14 @@
-const CACHE_NAME = 'fireye-cache-v1';
+const CACHE_NAME = 'fireye-cache-v2';
 
 const FILES_TO_CACHE = [
   '/fireye-online-app/',
   '/fireye-online-app/index.html',
-  '/fireye-online-app/style.css',
   '/fireye-online-app/app.js',
   '/fireye-online-app/manifest.json',
   '/fireye-online-app/occupancies.json',
   '/fireye-online-app/requirements.json',
   '/fireye-online-app/checklists.json',
-  '/fireye-online-app/icon-192.png',
-  '/fireye-online-app/icon-512.png'
+  '/fireye-online-app/templates.json'
 ];
 
 self.addEventListener('install', event => {
