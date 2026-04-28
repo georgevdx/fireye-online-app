@@ -1070,18 +1070,14 @@ function collapseAllSections() {
 }
 
 function handleAnswerChange(selectEl) {
-  selectEl.classList.remove("answer-yes", "answer-no", "answer-na");
+  const row = selectEl.closest(".checklist-row");
 
-  if (selectEl.value === "Yes") {
-    selectEl.classList.add("answer-yes");
-  }
+  if (row) {
+    row.classList.remove("has-yes", "has-no", "has-na");
 
-  if (selectEl.value === "No") {
-    selectEl.classList.add("answer-no");
-  }
-
-  if (selectEl.value === "N/A") {
-    selectEl.classList.add("answer-na");
+    if (selectEl.value === "Yes") row.classList.add("has-yes");
+    if (selectEl.value === "No") row.classList.add("has-no");
+    if (selectEl.value === "N/A") row.classList.add("has-na");
   }
 
   updateAnswerSummary();
