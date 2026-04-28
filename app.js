@@ -5,11 +5,12 @@ let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
 
-function buildStreetAddress(address) {
+function buildStreetAddress(address = {}) {
   const houseNumber =
     address.house_number ||
     address.house ||
     address.building ||
+    address.building_number ||
     "";
 
   const road =
@@ -17,17 +18,20 @@ function buildStreetAddress(address) {
     address.street ||
     address.residential ||
     address.pedestrian ||
+    address.footway ||
     "";
 
   const suburb =
     address.suburb ||
     address.neighbourhood ||
     address.city_district ||
+    address.quarter ||
     "";
 
   const city =
     address.city ||
     address.town ||
+    address.village ||
     address.municipality ||
     "";
 
@@ -176,7 +180,10 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
     .then(res => res.json())
     .then(data => {
-
+       // 👉 SIT DIT HIER 👇
+      console.log("FULL ADDRESS DATA:", data.address);
+      console.log("DISPLAY NAME:", data.display_name);
+      
       const streetAddress = buildStreetAddress(data.address);
 
       document.getElementById("projectAddress").value =
