@@ -306,5 +306,19 @@ button:hover {
   border-radius: 8px;
   letter-spacing: 0.05em;
 }
+.section-header {
+  font-weight: bold;
+  text-transform: uppercase;
+  background: #eee;
+  padding: 10px;
+  margin-top: 10px;
+  cursor: pointer;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
 
+.section-group {
+  padding: 5px 10px;
+}
 

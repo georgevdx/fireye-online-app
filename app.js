@@ -631,7 +631,7 @@ function renderChecklist(selected) {
   const templateChecklist = getActiveTemplateChecklist();
 
   const selectedChecklist = templateChecklist || checklists.filter(c =>
-   c["Applicable To"] === "All occupancies" || c["Applicable To"] === selected
+    c["Applicable To"] === "All occupancies" || c["Applicable To"] === selected
   );
 
   if (selectedChecklist.length === 0) {
@@ -639,29 +639,56 @@ function renderChecklist(selected) {
     return;
   }
 
+  let currentSection = null;
+  let sectionIndex = -1;
+
   selectedChecklist.forEach((c, index) => {
+    const sectionName = c.Section || "GENERAL";
+
+    // 🔥 New section
+    if (sectionName !== currentSection) {
+      sectionIndex++;
+
+      chkDiv.innerHTML += `
+        <div class="section-header" onclick="toggleSection(${sectionIndex})">
+          ${sectionName.toUpperCase()}
+        </div>
+        <div class="section-group" id="section_${sectionIndex}">
+      `;
+
+      currentSection = sectionName;
+    }
+
     const itemId = `check_${index}`;
+
     chkDiv.innerHTML += `
-    <div class="checklist-row">
+      <div class="checklist-row">
 
-    ${c.Section ? `<div class="section-label">${c.Section}</div>` : ''}
-    <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>    <div class="note">Answer type: ${c["Answer Type"]}</div>
+        <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
+        <div class="note">Answer type: ${c["Answer Type"]}</div>
 
-    <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
-      <option value="">Select answer</option>
-      <option value="Yes">Yes</option>
-      <option value="No">No</option>
-      <option value="N/A">N/A</option>
-    </select>
+        <select class="answer-select" id="${itemId}" onchange="scheduleAutoSave()">
+          <option value="">Select answer</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+          <option value="N/A">N/A</option>
+        </select>
 
-    <textarea
-      class="note-input"
-      id="note_${index}"
-      placeholder="Add note for this item..."
-      oninput="scheduleAutoSave()"
-    ></textarea>
-  </div>
-`;
+        <textarea
+          class="note-input"
+          id="note_${index}"
+          placeholder="Add note for this item..."
+          oninput="scheduleAutoSave()"
+        ></textarea>
+
+      </div>
+    `;
+
+    // 🔚 Close section group if next item is different section
+    const next = selectedChecklist[index + 1];
+    if (!next || next.Section !== sectionName) {
+      chkDiv.innerHTML += `</div>`;
+    }
   });
 }
 
@@ -998,6 +1025,13 @@ async function shareReport() {
   }
 }
 
+function toggleSection(index) {
+  const section = document.getElementById(`section_${index}`);
+  if (!section) return;
+
+  section.style.display =
+    section.style.display === "none" ? "block" : "none";
+}
 
 loadData();
 window.openProject = openProject;
