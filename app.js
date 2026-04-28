@@ -1051,7 +1051,7 @@ function toggleSection(index) {
 
 function expandAllSections() {
   document.querySelectorAll(".section-group").forEach(section => {
-    section.style.display = "block";
+    section.classList.remove("hidden");
   });
 
   document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
@@ -1061,7 +1061,7 @@ function expandAllSections() {
 
 function collapseAllSections() {
   document.querySelectorAll(".section-group").forEach(section => {
-    section.style.display = "none";
+    section.classList.add("hidden");
   });
 
   document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
