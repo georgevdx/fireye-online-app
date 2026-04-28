@@ -628,13 +628,14 @@ function renderChecklist(selected) {
   const chkDiv = getEl('checklist');
   chkDiv.innerHTML = "";
 
+  // 1. Toolbar bo-aan
   chkDiv.innerHTML = `
-  <div class="checklist-toolbar">
-    <button type="button" onclick="expandAllSections()">Expand All</button>
-    <button type="button" onclick="collapseAllSections()">Collapse All</button>
-    <div id="answerSummary" class="answer-summary">Yes: 0 | No: 0 | N/A: 0</div>
-  </div>
-`;
+    <div class="checklist-toolbar">
+      <button type="button" onclick="expandAllSections()">Expand All</button>
+      <button type="button" onclick="collapseAllSections()">Collapse All</button>
+      <div id="answerSummary" class="answer-summary">Yes: 0 | No: 0 | N/A: 0</div>
+    </div>
+  `;
 
   const templateChecklist = getActiveTemplateChecklist();
 
@@ -643,7 +644,7 @@ function renderChecklist(selected) {
   );
 
   if (selectedChecklist.length === 0) {
-    chkDiv.innerHTML = `<div class="note">No checklist items found for this occupancy yet.</div>`;
+    chkDiv.innerHTML += `<div class="note">No checklist items found for this occupancy yet.</div>`;
     return;
   }
 
@@ -653,16 +654,17 @@ function renderChecklist(selected) {
   selectedChecklist.forEach((c, index) => {
     const sectionName = c.Section || "GENERAL";
 
-    // 🔥 New section
+    // 2. Begin nuwe section
     if (sectionName !== currentSection) {
       sectionIndex++;
 
       chkDiv.innerHTML += `
         <div class="section-header" onclick="toggleSection(${sectionIndex})">
-         <span id="arrow_${sectionIndex}">▼</span>
-         ${sectionName.toUpperCase()}
+          <span id="arrow_${sectionIndex}">▼</span>
+          ${sectionName.toUpperCase()}
         </div>
-        <div class="section-group" id="section_${sectionIndex}">
+
+        <div class="section-group" id="section_${sectionIndex}" style="display:block;">
       `;
 
       currentSection = sectionName;
@@ -670,6 +672,7 @@ function renderChecklist(selected) {
 
     const itemId = `check_${index}`;
 
+    // 3. Checklist vraag
     chkDiv.innerHTML += `
       <div class="checklist-row">
 
@@ -693,12 +696,16 @@ function renderChecklist(selected) {
       </div>
     `;
 
-    // 🔚 Close section group if next item is different section
+    // 4. Sluit section as volgende item ander section is
     const next = selectedChecklist[index + 1];
-    if (!next || next.Section !== sectionName) {
+    const nextSectionName = next ? (next.Section || "GENERAL") : null;
+
+    if (!next || nextSectionName !== sectionName) {
       chkDiv.innerHTML += `</div>`;
     }
   });
+
+  updateAnswerSummary();
 }
 
 function escapeHtml(value) {
@@ -1035,19 +1042,17 @@ async function shareReport() {
 }
 
 function toggleSection(index) {
-  console.log("TOGGLE CLICKED:", index);
-  
   const section = document.getElementById(`section_${index}`);
   const arrow = document.getElementById(`arrow_${index}`);
 
   if (!section) return;
 
-  const isOpen = section.style.display !== "none";
-
-  section.style.display = isOpen ? "none" : "block";
-
-  if (arrow) {
-    arrow.textContent = isOpen ? "▶" : "▼";
+  if (section.style.display === "none") {
+    section.style.display = "block";
+    if (arrow) arrow.textContent = "▼";
+  } else {
+    section.style.display = "none";
+    if (arrow) arrow.textContent = "▶";
   }
 }
 function expandAllSections() {
