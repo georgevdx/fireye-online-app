@@ -184,6 +184,18 @@ function toggleMallFields() {
   }
 }
 
+function toggleChecklistSection(sectionId) {
+  const section = document.getElementById(sectionId);
+
+  if (!section) return;
+
+  if (section.style.display === 'none') {
+    section.style.display = 'block';
+  } else {
+    section.style.display = 'none';
+  }
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -948,3 +960,4 @@ async function shareReport() {
 loadData();
 window.openProject = openProject;
 window.scheduleAutoSave = scheduleAutoSave;
+window.toggleChecklistSection = toggleChecklistSection;
