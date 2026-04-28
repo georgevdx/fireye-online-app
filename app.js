@@ -131,7 +131,10 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
-      projectAddress,
+      projectAddress: [
+        getEl('streetNumber').value.trim(),
+        getEl('projectAddress').value.trim()
+      ].filter(Boolean).join(' '),
       gps,
       inMall,
       mallName,
