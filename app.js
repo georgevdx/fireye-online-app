@@ -5,6 +5,41 @@ let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
 
+function buildStreetAddress(address) {
+  const houseNumber =
+    address.house_number ||
+    address.house ||
+    address.building ||
+    "";
+
+  const road =
+    address.road ||
+    address.street ||
+    address.residential ||
+    address.pedestrian ||
+    "";
+
+  const suburb =
+    address.suburb ||
+    address.neighbourhood ||
+    address.city_district ||
+    "";
+
+  const city =
+    address.city ||
+    address.town ||
+    address.municipality ||
+    "";
+
+  return [
+    [houseNumber, road].filter(Boolean).join(" "),
+    suburb,
+    city
+  ]
+    .filter(Boolean)
+    .join(", ");
+}
+
 async function loadJson(url) {
   const response = await fetch(url);
   if (!response.ok) {
@@ -133,44 +168,29 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
 
   getEl('saveMessage').textContent = 'Getting location...';
 
-  navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const lat = position.coords.latitude.toFixed(6);
-      const lon = position.coords.longitude.toFixed(6);
+  navigator.geolocation.getCurrentPosition(position => {
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
 
-      getEl('gps').value = `${lat}, ${lon}`;
+  // 👇 NEW: reverse geocoding
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+    .then(res => res.json())
+    .then(data => {
 
-      // 🔥 Reverse geocoding
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
-        );
+      const streetAddress = buildStreetAddress(data.address);
 
-        const data = await response.json();
+      document.getElementById("projectAddress").value =
+        streetAddress || data.display_name || "";
 
-        if (data && data.display_name) {
-          getEl('projectAddress').value = data.display_name;
-          getEl('saveMessage').textContent = 'Location + address captured.';
-        } else {
-          getEl('saveMessage').textContent = 'GPS captured. Address not found.';
-        }
-      } catch (err) {
-        getEl('saveMessage').textContent = 'GPS captured. Could not fetch address.';
-        console.error('Reverse geocode error:', err);
-      }
+    })
+    .catch(err => {
+      console.error("Address fetch failed:", err);
 
-      scheduleAutoSave();
-    },
-    (error) => {
-      getEl('saveMessage').textContent = 'Could not get location.';
-      console.error(error);
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    }
-  );
+      // fallback: show coords if something breaks
+      document.getElementById("projectAddress").value = `${lat}, ${lon}`;
+    });
+
+});
 }
 
 function toggleMallFields() {
