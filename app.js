@@ -626,10 +626,8 @@ function getActiveTemplateChecklist() {
 
 function renderChecklist(selected) {
   const chkDiv = getEl('checklist');
-  chkDiv.innerHTML = "";
 
-  // 1. Toolbar bo-aan
-  chkDiv.innerHTML = `
+  let html = `
     <div class="checklist-toolbar">
       <button type="button" onclick="expandAllSections()">Expand All</button>
       <button type="button" onclick="collapseAllSections()">Collapse All</button>
@@ -644,7 +642,7 @@ function renderChecklist(selected) {
   );
 
   if (selectedChecklist.length === 0) {
-    chkDiv.innerHTML += `<div class="note">No checklist items found for this occupancy yet.</div>`;
+    chkDiv.innerHTML = `<div class="note">No checklist items found for this occupancy yet.</div>`;
     return;
   }
 
@@ -654,17 +652,20 @@ function renderChecklist(selected) {
   selectedChecklist.forEach((c, index) => {
     const sectionName = c.Section || "GENERAL";
 
-    // 2. Begin nuwe section
     if (sectionName !== currentSection) {
+      if (currentSection !== null) {
+        html += `</div>`;
+      }
+
       sectionIndex++;
 
-      chkDiv.innerHTML += `
+      html += `
         <div class="section-header" onclick="toggleSection(${sectionIndex})">
           <span id="arrow_${sectionIndex}">▼</span>
           ${sectionName.toUpperCase()}
         </div>
 
-        <div class="section-group" id="section_${sectionIndex}" style="display:block;">
+        <div class="section-group" id="section_${sectionIndex}">
       `;
 
       currentSection = sectionName;
@@ -672,10 +673,8 @@ function renderChecklist(selected) {
 
     const itemId = `check_${index}`;
 
-    // 3. Checklist vraag
-    chkDiv.innerHTML += `
+    html += `
       <div class="checklist-row">
-
         <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
         <div class="note">Answer type: ${c["Answer Type"]}</div>
 
@@ -692,19 +691,13 @@ function renderChecklist(selected) {
           placeholder="Add note for this item..."
           oninput="scheduleAutoSave()"
         ></textarea>
-
       </div>
     `;
-
-    // 4. Sluit section as volgende item ander section is
-    const next = selectedChecklist[index + 1];
-    const nextSectionName = next ? (next.Section || "GENERAL") : null;
-
-    if (!next || nextSectionName !== sectionName) {
-      chkDiv.innerHTML += `</div>`;
-    }
   });
 
+  html += `</div>`;
+
+  chkDiv.innerHTML = html;
   updateAnswerSummary();
 }
 
@@ -1044,8 +1037,6 @@ async function shareReport() {
 function toggleSection(index) {
   const section = document.getElementById(`section_${index}`);
   const arrow = document.getElementById(`arrow_${index}`);
-
-  console.log("Clicked section:", index, section);
 
   if (!section) return;
 
