@@ -775,54 +775,42 @@ function generateReport() {
   let noCount = 0;
   let naCount = 0;
   let notAnsweredCount = 0;
-  let currentReportSection = '';
 
   // Checklist
-selectedChecklist.forEach((item, index) => {
-  const field = document.getElementById(`check_${index}`);
-  const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
-  const answer = rawAnswer.trim();
+  selectedChecklist.forEach((item, index) => {
+    const field = document.getElementById(`check_${index}`);
+    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+    const answer = rawAnswer.trim();
+    const noteField = document.getElementById(`note_${index}`);
+    const itemNote = noteField ? noteField.value.trim() : '';
 
-  const noteField = document.getElementById(`note_${index}`);
-  const itemNote = noteField ? noteField.value.trim() : '';
+    if (answer.toLowerCase() === 'yes') {
+  yesCount++;
+} else if (answer.toLowerCase() === 'no') {
+  noCount++;
+} else if (answer.toUpperCase() === 'N/A') {
+  naCount++;
+} else {
+  notAnsweredCount++;
+}
 
-  if (answer.toLowerCase() === 'yes') {
-    yesCount++;
-  } else if (answer.toLowerCase() === 'no') {
-    noCount++;
-  } else if (answer.toUpperCase() === 'N/A') {
-    naCount++;
-  } else {
-    notAnsweredCount++;
-  }
+let answerClass = '';
 
-  let answerClass = '';
-
-  if (answer.toLowerCase() === 'no') {
-    answerClass = 'answer-no';
-  } else if (answer.toLowerCase() === 'yes') {
-    answerClass = 'answer-yes';
-  } else if (answer.toUpperCase() === 'N/A') {
-    answerClass = 'answer-na';
-  }
-
-  const sectionName = item.Section || 'General';
-
-  if (sectionName !== currentReportSection) {
-    currentReportSection = sectionName;
+if (answer.toLowerCase() === 'no') {
+  answerClass = 'answer-no';
+} else if (answer.toLowerCase() === 'yes') {
+  answerClass = 'answer-yes';
+} else if (answer.toUpperCase() === 'N/A') {
+  answerClass = 'answer-na';
+}
     answersHtml += `
-      <div class="report-section-heading">${escapeHtml(sectionName)}</div>
-    `;
-  }
-
-  answersHtml += `
     <div class="report-answer ${answerClass}">
       <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-      <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
-      ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
+      Answer: ${escapeHtml(rawAnswer)}
+      ${itemNote ? `<br><em>Note:</em> ${escapeHtml(itemNote)}` : ''}
     </div>
   `;
-});
+  });
 
   const totalItems = selectedChecklist.length;
 
@@ -970,62 +958,32 @@ function deletePhoto(index) {
 
 
 async function shareReport() {
-  const projectName = getEl('projectName').value.trim() || 'Untitled Inspection';
-  const projectAddress = getEl('projectAddress').value.trim() || '-';
-  const gps = getEl('gps').value.trim() || '-';
-  const inMall = getEl('inMall').value || 'No';
-  const mallName = getEl('mallName').value.trim() || '-';
-  const unitNumber = getEl('unitNumber').value.trim() || '-';
-  const productType = getEl('productType').value || '-';
-  const inspectionType = getEl('inspectionType').value || '-';
+  const projectName = getEl('projectName').value.trim() || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const occupancy = getEl('occupancySelect').value || '-';
 
-  const selectedChecklist = getActiveTemplateChecklist() || checklists.filter(c =>
+  const selectedChecklist = checklists.filter(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
   );
-console.log('Share checklist:', selectedChecklist);
+
   let yesCount = 0;
   let noCount = 0;
   let naCount = 0;
   let notAnsweredCount = 0;
 
-  let checklistText = '';
-  let currentSection = '';
-
   selectedChecklist.forEach((item, index) => {
     const field = document.getElementById(`check_${index}`);
-    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
-    const answer = rawAnswer.trim();
+    const answer = field ? (field.value || 'Not answered') : 'Not answered';
 
-    const noteField = document.getElementById(`note_${index}`);
-    const itemNote = noteField ? noteField.value.trim() : '';
-
-    if (answer.toLowerCase() === 'yes') {
+    if (answer === 'Yes') {
       yesCount++;
-    } else if (answer.toLowerCase() === 'no') {
+    } else if (answer === 'No') {
       noCount++;
-    } else if (answer.toUpperCase() === 'N/A') {
+    } else if (answer === 'N/A') {
       naCount++;
     } else {
       notAnsweredCount++;
     }
-
-    const sectionName = item.Section || 'General';
-
-    if (sectionName !== currentSection) {
-      currentSection = sectionName;
-      checklistText += `\n${sectionName.toUpperCase()}\n`;
-    }
-
-    checklistText += `${item["Item Number"]}. ${item["Checklist Item"]}\n`;
-    checklistText += `Answer: ${rawAnswer}\n`;
-
-    if (itemNote) {
-      checklistText += `Note: ${itemNote}\n`;
-    }
-
-    checklistText += `\n`;
   });
 
   const totalItems = selectedChecklist.length;
@@ -1038,29 +996,20 @@ console.log('Share checklist:', selectedChecklist);
   }
 
   const shareText =
-`Fireye Fire Safety Report
+    `Fireye Fire Safety Report
 
-INSPECTION DETAILS
-Place Name: ${projectName}
-Address: ${projectAddress}
-GPS: ${gps}
-In Mall/Centre: ${inMall}
-${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}\nUnit / Shop Number: ${unitNumber}\n` : ''}Product Type: ${productType}
-Inspection Type: ${inspectionType}
-Inspector Name: ${inspectorName}
-Occupancy: ${occupancy}
-Inspection Date: ${new Date().toLocaleDateString()}
+    Project Name: ${projectName}
+    Inspector Name: ${inspectorName}
+    Occupancy: ${occupancy}
+    Inspection Date: ${new Date().toLocaleDateString()}
 
-INSPECTION SUMMARY
-Total Items: ${totalItems}
-Yes: ${yesCount}
-No: ${noCount}
-N/A: ${naCount}
-Not Answered: ${notAnsweredCount}
-Overall Status: ${overallStatus}
-
-CHECKLIST RESULTS
-${checklistText}`;
+    Inspection Summary
+    Total Items: ${totalItems}
+    Yes: ${yesCount}
+    No: ${noCount}
+    N/A: ${naCount}
+    Not Answered: ${notAnsweredCount}
+    Overall Status: ${overallStatus}`;
 
   if (navigator.share) {
     try {
