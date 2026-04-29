@@ -775,42 +775,54 @@ function generateReport() {
   let noCount = 0;
   let naCount = 0;
   let notAnsweredCount = 0;
+  let currentReportSection = '';
 
   // Checklist
-  selectedChecklist.forEach((item, index) => {
-    const field = document.getElementById(`check_${index}`);
-    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
-    const answer = rawAnswer.trim();
-    const noteField = document.getElementById(`note_${index}`);
-    const itemNote = noteField ? noteField.value.trim() : '';
+ selectedChecklist.forEach((item, index) => {
+  const field = document.getElementById(`check_${index}`);
+  const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+  const answer = rawAnswer.trim();
 
-    if (answer.toLowerCase() === 'yes') {
-  yesCount++;
-} else if (answer.toLowerCase() === 'no') {
-  noCount++;
-} else if (answer.toUpperCase() === 'N/A') {
-  naCount++;
-} else {
-  notAnsweredCount++;
-}
+  const noteField = document.getElementById(`note_${index}`);
+  const itemNote = noteField ? noteField.value.trim() : '';
 
-let answerClass = '';
+  if (answer.toLowerCase() === 'yes') {
+    yesCount++;
+  } else if (answer.toLowerCase() === 'no') {
+    noCount++;
+  } else if (answer.toUpperCase() === 'N/A') {
+    naCount++;
+  } else {
+    notAnsweredCount++;
+  }
 
-if (answer.toLowerCase() === 'no') {
-  answerClass = 'answer-no';
-} else if (answer.toLowerCase() === 'yes') {
-  answerClass = 'answer-yes';
-} else if (answer.toUpperCase() === 'N/A') {
-  answerClass = 'answer-na';
-}
+  let answerClass = '';
+
+  if (answer.toLowerCase() === 'no') {
+    answerClass = 'answer-no';
+  } else if (answer.toLowerCase() === 'yes') {
+    answerClass = 'answer-yes';
+  } else if (answer.toUpperCase() === 'N/A') {
+    answerClass = 'answer-na';
+  }
+
+  const sectionName = item.Section || 'General';
+
+  if (sectionName !== currentReportSection) {
+    currentReportSection = sectionName;
     answersHtml += `
+      <div class="report-section-heading">${escapeHtml(sectionName)}</div>
+    `;
+  }
+
+  answersHtml += `
     <div class="report-answer ${answerClass}">
       <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-      Answer: ${escapeHtml(rawAnswer)}
-      ${itemNote ? `<br><em>Note:</em> ${escapeHtml(itemNote)}` : ''}
+      <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
+      ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
     </div>
   `;
-  });
+});
 
   const totalItems = selectedChecklist.length;
 
