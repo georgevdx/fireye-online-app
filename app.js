@@ -984,7 +984,7 @@ aasync function shareReport() {
   const selectedChecklist = getActiveTemplateChecklist() || checklists.filter(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
   );
-
+console.log('Share checklist:', selectedChecklist);
   let yesCount = 0;
   let noCount = 0;
   let naCount = 0;
