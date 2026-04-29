@@ -815,7 +815,9 @@ function generateReport() {
     answerClass = 'answer-na';
   }
 
-  
+  if (rawAnswer === 'Not answered' && !itemNote) {
+  return;
+  }
   const sectionName = item.Section || 'General';
 
   if (sectionName !== currentReportSection) {
@@ -831,7 +833,6 @@ function generateReport() {
       <div class="report-section-status">${sectionStatus}</div>
     `;
   }
-  
 
   // Reset vir nuwe section
   sectionYes = 0;
@@ -862,9 +863,6 @@ function generateReport() {
     answersHtml += `
       <div class="report-section-status">${sectionStatus}</div>
     `;
-  }
-  if (rawAnswer === 'Not answered' && !itemNote) {
-    return;
   }
   const totalItems = selectedChecklist.length;
 
