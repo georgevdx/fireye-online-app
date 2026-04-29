@@ -779,6 +779,10 @@ function generateReport() {
   let notAnsweredCount = 0;
   let currentReportSection = '';
 
+  let sectionYes = 0;
+  let sectionNo = 0;
+  let sectionNa = 0;
+
   // Checklist
  selectedChecklist.forEach((item, index) => {
   const field = document.getElementById(`check_${index}`);
@@ -791,14 +795,17 @@ function generateReport() {
   return;
 }
   if (answer.toLowerCase() === 'yes') {
-    yesCount++;
-  } else if (answer.toLowerCase() === 'no') {
-    noCount++;
-  } else if (answer.toUpperCase() === 'N/A') {
-    naCount++;
-  } else {
-    notAnsweredCount++;
-  }
+  yesCount++;
+  sectionYes++;
+} else if (answer.toLowerCase() === 'no') {
+  noCount++;
+  sectionNo++;
+} else if (answer.toUpperCase() === 'N/A') {
+  naCount++;
+  sectionNa++;
+} else {
+  notAnsweredCount++;
+}
 
   let answerClass = '';
 
@@ -813,12 +820,31 @@ function generateReport() {
   const sectionName = item.Section || 'General';
 
   if (sectionName !== currentReportSection) {
-    currentReportSection = sectionName;
+
+  // As ons klaar is met vorige section → wys sy status
+  if (currentReportSection !== '') {
+    const sectionStatus =
+      sectionNo > 0
+        ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
+        : `Compliant (${sectionYes} Yes)`;
+
     answersHtml += `
-      <div class="report-section-heading">${escapeHtml(sectionName)}</div>
+      <div class="report-section-status">${sectionStatus}</div>
     `;
   }
 
+  // Reset vir nuwe section
+  sectionYes = 0;
+  sectionNo = 0;
+  sectionNa = 0;
+
+  currentReportSection = sectionName;
+
+  answersHtml += `
+    <div class="report-section-heading">${escapeHtml(sectionName)}</div>
+  `;
+}
+    
   answersHtml += `
     <div class="report-answer ${answerClass}">
       <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
@@ -827,7 +853,16 @@ function generateReport() {
     </div>
   `;
 });
+  if (currentReportSection !== '') {
+    const sectionStatus =
+      sectionNo > 0
+        ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
+        : `Compliant (${sectionYes} Yes)`;
 
+    answersHtml += `
+      <div class="report-section-status">${sectionStatus}</div>
+    `;
+  }
   const totalItems = selectedChecklist.length;
 
   let overallStatus = 'Compliant / Acceptable';
@@ -847,7 +882,7 @@ function generateReport() {
           <img src="${photo}" alt="Inspection photo ${index + 1}">
         </div>
       `;
-    });
+});
   } else {
     photosHtml = `<div class="note">No photo evidence added.</div>`;
   }
