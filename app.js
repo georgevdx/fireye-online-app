@@ -787,7 +787,9 @@ function generateReport() {
 
   const noteField = document.getElementById(`note_${index}`);
   const itemNote = noteField ? noteField.value.trim() : '';
-
+  if (rawAnswer === 'Not answered' && !itemNote) {
+  return;
+}
   if (answer.toLowerCase() === 'yes') {
     yesCount++;
   } else if (answer.toLowerCase() === 'no') {
