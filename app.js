@@ -762,7 +762,9 @@ function generateReport() {
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
 
-  const selectedChecklist = checklists.filter(c =>
+  const templateChecklist = getActiveTemplateChecklist();
+
+  const selectedChecklist = templateChecklist || checklists.filter(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
   );
 
