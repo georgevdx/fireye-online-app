@@ -969,12 +969,19 @@ function deletePhoto(index) {
 }
 
 
-async function shareReport() {
-  const projectName = getEl('projectName').value.trim() || 'Untitled Project';
+aasync function shareReport() {
+  const projectName = getEl('projectName').value.trim() || 'Untitled Inspection';
+  const projectAddress = getEl('projectAddress').value.trim() || '-';
+  const gps = getEl('gps').value.trim() || '-';
+  const inMall = getEl('inMall').value || 'No';
+  const mallName = getEl('mallName').value.trim() || '-';
+  const unitNumber = getEl('unitNumber').value.trim() || '-';
+  const productType = getEl('productType').value || '-';
+  const inspectionType = getEl('inspectionType').value || '-';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const occupancy = getEl('occupancySelect').value || '-';
 
-  const selectedChecklist = checklists.filter(c =>
+  const selectedChecklist = getActiveTemplateChecklist() || checklists.filter(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
   );
 
@@ -983,19 +990,42 @@ async function shareReport() {
   let naCount = 0;
   let notAnsweredCount = 0;
 
+  let checklistText = '';
+  let currentSection = '';
+
   selectedChecklist.forEach((item, index) => {
     const field = document.getElementById(`check_${index}`);
-    const answer = field ? (field.value || 'Not answered') : 'Not answered';
+    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+    const answer = rawAnswer.trim();
 
-    if (answer === 'Yes') {
+    const noteField = document.getElementById(`note_${index}`);
+    const itemNote = noteField ? noteField.value.trim() : '';
+
+    if (answer.toLowerCase() === 'yes') {
       yesCount++;
-    } else if (answer === 'No') {
+    } else if (answer.toLowerCase() === 'no') {
       noCount++;
-    } else if (answer === 'N/A') {
+    } else if (answer.toUpperCase() === 'N/A') {
       naCount++;
     } else {
       notAnsweredCount++;
     }
+
+    const sectionName = item.Section || 'General';
+
+    if (sectionName !== currentSection) {
+      currentSection = sectionName;
+      checklistText += `\n${sectionName.toUpperCase()}\n`;
+    }
+
+    checklistText += `${item["Item Number"]}. ${item["Checklist Item"]}\n`;
+    checklistText += `Answer: ${rawAnswer}\n`;
+
+    if (itemNote) {
+      checklistText += `Note: ${itemNote}\n`;
+    }
+
+    checklistText += `\n`;
   });
 
   const totalItems = selectedChecklist.length;
@@ -1008,20 +1038,29 @@ async function shareReport() {
   }
 
   const shareText =
-    `Fireye Fire Safety Report
+`Fireye Fire Safety Report
 
-    Project Name: ${projectName}
-    Inspector Name: ${inspectorName}
-    Occupancy: ${occupancy}
-    Inspection Date: ${new Date().toLocaleDateString()}
+INSPECTION DETAILS
+Place Name: ${projectName}
+Address: ${projectAddress}
+GPS: ${gps}
+In Mall/Centre: ${inMall}
+${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}\nUnit / Shop Number: ${unitNumber}\n` : ''}Product Type: ${productType}
+Inspection Type: ${inspectionType}
+Inspector Name: ${inspectorName}
+Occupancy: ${occupancy}
+Inspection Date: ${new Date().toLocaleDateString()}
 
-    Inspection Summary
-    Total Items: ${totalItems}
-    Yes: ${yesCount}
-    No: ${noCount}
-    N/A: ${naCount}
-    Not Answered: ${notAnsweredCount}
-    Overall Status: ${overallStatus}`;
+INSPECTION SUMMARY
+Total Items: ${totalItems}
+Yes: ${yesCount}
+No: ${noCount}
+N/A: ${naCount}
+Not Answered: ${notAnsweredCount}
+Overall Status: ${overallStatus}
+
+CHECKLIST RESULTS
+${checklistText}`;
 
   if (navigator.share) {
     try {
