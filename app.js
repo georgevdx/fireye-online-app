@@ -831,9 +831,7 @@ function generateReport() {
       <div class="report-section-status">${sectionStatus}</div>
     `;
   }
-  if (rawAnswer === 'Not answered' && !itemNote) {
-    return;
-  }
+  
 
   // Reset vir nuwe section
   sectionYes = 0;
@@ -846,7 +844,9 @@ function generateReport() {
     <div class="report-section-heading">${escapeHtml(sectionName)}</div>
   `;
 }
-    
+if (rawAnswer === 'Not answered' && !itemNote) {
+    return;
+  }    
   answersHtml += `
     <div class="report-answer ${answerClass}">
       <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
