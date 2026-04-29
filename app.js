@@ -844,9 +844,7 @@ function generateReport() {
     <div class="report-section-heading">${escapeHtml(sectionName)}</div>
   `;
 }
-if (rawAnswer === 'Not answered' && !itemNote) {
-    return;
-  }    
+    
   answersHtml += `
     <div class="report-answer ${answerClass}">
       <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
@@ -864,6 +862,9 @@ if (rawAnswer === 'Not answered' && !itemNote) {
     answersHtml += `
       <div class="report-section-status">${sectionStatus}</div>
     `;
+  }
+  if (rawAnswer === 'Not answered' && !itemNote) {
+    return;
   }
   const totalItems = selectedChecklist.length;
 
