@@ -791,9 +791,7 @@ function generateReport() {
 
   const noteField = document.getElementById(`note_${index}`);
   const itemNote = noteField ? noteField.value.trim() : '';
-  if (rawAnswer === 'Not answered' && !itemNote) {
-  return;
-}
+  
   if (answer.toLowerCase() === 'yes') {
   yesCount++;
   sectionYes++;
@@ -817,6 +815,7 @@ function generateReport() {
     answerClass = 'answer-na';
   }
 
+  
   const sectionName = item.Section || 'General';
 
   if (sectionName !== currentReportSection) {
@@ -831,6 +830,9 @@ function generateReport() {
     answersHtml += `
       <div class="report-section-status">${sectionStatus}</div>
     `;
+  }
+  if (rawAnswer === 'Not answered' && !itemNote) {
+    return;
   }
 
   // Reset vir nuwe section
