@@ -969,7 +969,7 @@ function deletePhoto(index) {
 }
 
 
-aasync function shareReport() {
+async function shareReport() {
   const projectName = getEl('projectName').value.trim() || 'Untitled Inspection';
   const projectAddress = getEl('projectAddress').value.trim() || '-';
   const gps = getEl('gps').value.trim() || '-';
