@@ -77,8 +77,12 @@ button:hover {
 }
 
 .checklist-row {
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.checklist-row:last-child {
+  border-bottom: none;
 }
 
 .answer-select {
@@ -427,4 +431,34 @@ button:hover {
   border-left: 5px solid #777;
   padding: 8px;
   margin-bottom: 6px;
+}
+
+.hidden {
+  display: none;
+}
+
+.section-header {
+  margin-top: 18px;
+  padding: 12px 14px;
+  background: #b71c1c;
+  color: white;
+  font-weight: 900;
+  text-transform: uppercase;
+  border-radius: 8px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.section-header:hover {
+  background: #8e0000;
+}
+
+.section-group {
+  padding: 10px 12px;
+  border: 1px solid #eee;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  margin-bottom: 14px;
+  background: #fafafa;
 }

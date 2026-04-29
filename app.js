@@ -1040,12 +1040,10 @@ function toggleSection(index) {
 
   if (!section) return;
 
-  section.classList.toggle("hidden");
-
-  const isHidden = section.classList.contains("hidden");
+  section.classList.toggle('hidden');
 
   if (arrow) {
-    arrow.textContent = isHidden ? "▶" : "▼";
+    arrow.textContent = section.classList.contains('hidden') ? '▶' : '▼';
   }
 }
 
@@ -1107,3 +1105,6 @@ loadData();
 window.openProject = openProject;
 window.scheduleAutoSave = scheduleAutoSave;
 window.toggleChecklistSection = toggleChecklistSection;
+window.toggleSection = toggleSection;
+window.expandAllSections = expandAllSections;
+window.collapseAllSections = collapseAllSections;
