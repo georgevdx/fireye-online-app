@@ -522,3 +522,13 @@ button:hover {
   font-weight: 700;
   text-transform: uppercase;
 }
+
+.action-item {
+  margin-bottom: 8px;
+  padding: 10px;
+  background: #ffe5e5;
+  border-left: 5px solid #b71c1c;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}

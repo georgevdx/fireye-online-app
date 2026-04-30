@@ -771,7 +771,7 @@ function generateReport() {
   const reportContent = getEl('reportContent');
 
   let answersHtml = '';
-  let actionSections = new Set();
+  let actionSections = {};
   let photosHtml = '';   // ✅ BELANGRIK: hier bo
   
   let yesCount = 0;
@@ -809,6 +809,12 @@ function generateReport() {
       }
 
       const sectionName = item.Section || 'General';
+
+      if (!actionSections[sectionName]) {
+        actionSections[sectionName] = 0;
+      }
+
+      actionSections[sectionName]++;
 
       if (sectionName !== currentReportSection) {
         closeReportSection();
@@ -862,11 +868,18 @@ function generateReport() {
 
     let actionHtml = '';
 
-    if (actionSections.size > 0) {
-      actionSections.forEach(section => {
+   let actionHtml = '';
+
+    const sections = Object.keys(actionSections);
+
+    if (sections.length > 0) {
+      sections.forEach(section => {
+        const count = actionSections[section];
+        const label = count === 1 ? 'item' : 'items';
+
         actionHtml += `
           <div class="action-item">
-            • ${escapeHtml(section.toUpperCase())}
+            • ${escapeHtml(section.toUpperCase())} — ${count} No ${label}
           </div>
         `;
       });
