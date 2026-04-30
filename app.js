@@ -873,7 +873,8 @@ function generateReport() {
     });
 
     closeReportSection();
-
+  const answeredCount = yesCount + noCount + naCount;
+    notAnsweredCount = totalItems - answeredCount;  
   const totalItems = selectedChecklist.length;
 
   let overallStatus = 'Compliant / Acceptable';
