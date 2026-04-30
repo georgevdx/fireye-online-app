@@ -552,3 +552,23 @@ button:hover {
   color: #666;
   font-weight: bold;
 }
+
+.risk-low {
+  color: #2e7d32;
+  font-weight: 900;
+}
+
+.risk-medium {
+  color: #d97706;
+  font-weight: 900;
+}
+
+.risk-high {
+  color: #b71c1c;
+  font-weight: 900;
+}
+
+.risk-incomplete {
+  color: #555;
+  font-weight: 900;
+}

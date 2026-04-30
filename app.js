@@ -925,16 +925,22 @@ function generateReport() {
     overallStatus = 'Incomplete Inspection';
   }
   
-  let riskRating = 'Low';
+  
+  let riskRating = 'LOW RISK';
+  let riskComment = 'No significant fire safety risks identified.';
 
   if (noCount >= 5) {
-    riskRating = 'High';
-  } else if (noCount >= 1) {
-    riskRating = 'Medium';
+    riskRating = 'HIGH RISK';
+    riskComment = 'Immediate attention required. Multiple fire safety non-compliances identified.';
+  }
+  else if (noCount >= 1) {
+    riskRating = 'MEDIUM RISK';
+    riskComment = 'Fire safety deficiencies identified. Corrective action required.';
   }
 
   if (notAnsweredCount > 0 && noCount === 0) {
-    riskRating = 'Incomplete';
+    riskRating = 'INCOMPLETE';
+    riskComment = 'Inspection incomplete. Some items were not assessed.';
   }
 
   // Photos
@@ -988,16 +994,22 @@ reportContent.innerHTML = `
         ? 'status-warning'
         : 'status-incomplete'
     }">${overallStatus}</span></div>
-    <div class="report-line"><strong>Risk Rating:</strong> <span class="${
-      riskRating === 'High'
-        ? 'risk-high'
-        : riskRating === 'Medium'
-        ? 'risk-medium'
-        : riskRating === 'Incomplete'
-        ? 'risk-incomplete'
-        : 'risk-low'
-    }">${riskRating}</span></div>
-  </div>
+    <div class="report-line">
+      <strong>Risk Rating:</strong> 
+      <span class="${
+        riskRating === 'HIGH RISK'
+          ? 'risk-high'
+          : riskRating === 'MEDIUM RISK'
+          ? 'risk-medium'
+          : riskRating === 'INCOMPLETE'
+          ? 'risk-incomplete'
+          : 'risk-low'
+      }">${riskRating}</span>
+    </div>
+
+    <div class="report-line note">
+      ${riskComment}
+    </div>
 
   <div class="report-block">
   <h3>Action Required</h3>
