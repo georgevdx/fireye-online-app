@@ -778,92 +778,85 @@ function generateReport() {
   let naCount = 0;
   let notAnsweredCount = 0;
   let currentReportSection = '';
+    let sectionYes = 0;
+    let sectionNo = 0;
+    let sectionHasItems = false;
 
-  let sectionYes = 0;
-  let sectionNo = 0;
-  let sectionNa = 0;
+    function closeReportSection() {
+      if (!currentReportSection || !sectionHasItems) return;
 
-  // Checklist
- selectedChecklist.forEach((item, index) => {
-  const field = document.getElementById(`check_${index}`);
-  const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
-  const answer = rawAnswer.trim();
+      const sectionStatus =
+        sectionNo > 0
+          ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
+          : `Compliant (${sectionYes} Yes)`;
 
-  const noteField = document.getElementById(`note_${index}`);
-  const itemNote = noteField ? noteField.value.trim() : '';
-  
-  if (answer.toLowerCase() === 'yes') {
-  yesCount++;
-  sectionYes++;
-} else if (answer.toLowerCase() === 'no') {
-  noCount++;
-  sectionNo++;
-} else if (answer.toUpperCase() === 'N/A') {
-  naCount++;
-  sectionNa++;
-} else {
-  notAnsweredCount++;
-}
+      answersHtml += `
+        <div class="report-section-status">${sectionStatus}</div>
+      `;
+    }
 
-  let answerClass = '';
+    selectedChecklist.forEach((item, index) => {
+      const field = document.getElementById(`check_${index}`);
+      const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+      const answer = rawAnswer.trim();
 
-  if (answer.toLowerCase() === 'no') {
-    answerClass = 'answer-no';
-  } else if (answer.toLowerCase() === 'yes') {
-    answerClass = 'answer-yes';
-  } else if (answer.toUpperCase() === 'N/A') {
-    answerClass = 'answer-na';
-  }
+      const noteField = document.getElementById(`note_${index}`);
+      const itemNote = noteField ? noteField.value.trim() : '';
 
-  if (rawAnswer === 'Not answered' && !itemNote) {
-  return;
-  }
-  const sectionName = item.Section || 'General';
+      if (rawAnswer === 'Not answered' && !itemNote) {
+        return;
+      }
 
-  if (sectionName !== currentReportSection) {
+      const sectionName = item.Section || 'General';
 
-  // As ons klaar is met vorige section → wys sy status
-  if (currentReportSection !== '') {
-    const sectionStatus =
-      sectionNo > 0
-        ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
-        : `Compliant (${sectionYes} Yes)`;
+      if (sectionName !== currentReportSection) {
+        closeReportSection();
 
-    answersHtml += `
-      <div class="report-section-status">${sectionStatus}</div>
-    `;
-  }
+        currentReportSection = sectionName;
+        sectionYes = 0;
+        sectionNo = 0;
+        sectionHasItems = false;
 
-  // Reset vir nuwe section
-  sectionYes = 0;
-  sectionNo = 0;
-  sectionNa = 0;
+        answersHtml += `
+          <div class="report-section-heading">${escapeHtml(sectionName)}</div>
+        `;
+      }
 
-  currentReportSection = sectionName;
+      if (answer.toLowerCase() === 'yes') {
+        yesCount++;
+        sectionYes++;
+      } else if (answer.toLowerCase() === 'no') {
+        noCount++;
+        sectionNo++;
+      } else if (answer.toUpperCase() === 'N/A') {
+        naCount++;
+      } else {
+        notAnsweredCount++;
+      }
 
-  answersHtml += `
-    <div class="report-section-heading">${escapeHtml(sectionName)}</div>
-  `;
-}
-    
-  answersHtml += `
-    <div class="report-answer ${answerClass}">
-      <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-      <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
-      ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
-    </div>
-  `;
-});
-  if (currentReportSection !== '') {
-    const sectionStatus =
-      sectionNo > 0
-        ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
-        : `Compliant (${sectionYes} Yes)`;
+      sectionHasItems = true;
 
-    answersHtml += `
-      <div class="report-section-status">${sectionStatus}</div>
-    `;
-  }
+      let answerClass = '';
+
+      if (answer.toLowerCase() === 'no') {
+        answerClass = 'answer-no';
+      } else if (answer.toLowerCase() === 'yes') {
+        answerClass = 'answer-yes';
+      } else if (answer.toUpperCase() === 'N/A') {
+        answerClass = 'answer-na';
+      }
+
+      answersHtml += `
+        <div class="report-answer ${answerClass}">
+          <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
+          <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
+          ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
+        </div>
+      `;
+    });
+
+    closeReportSection();
+
   const totalItems = selectedChecklist.length;
 
   let overallStatus = 'Compliant / Acceptable';
@@ -906,7 +899,6 @@ reportContent.innerHTML = `
     <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
     ${inMall === 'Yes' ? `<div class="report-line"><strong>Mall/Centre Name:</strong> ${escapeHtml(mallName)}</div>` : ''}
     ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
-    <div class="report-line"><strong>Project Name:</strong> ${escapeHtml(projectName)}</div>
     <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
     <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
     <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
