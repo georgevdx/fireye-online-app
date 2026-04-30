@@ -810,11 +810,7 @@ function generateReport() {
 
       const sectionName = item.Section || 'General';
 
-      if (!actionSections[sectionName]) {
-        actionSections[sectionName] = 0;
-      }
-
-      actionSections[sectionName]++;
+      
 
       if (sectionName !== currentReportSection) {
         closeReportSection();
@@ -835,8 +831,14 @@ function generateReport() {
       } else if (answer.toLowerCase() === 'no') {
         noCount++;
         sectionNo++;
-        const sectionName = item.Section || 'General';
-        actionSections.add(sectionName);
+
+        const actionSectionName = item.Section || 'General';
+
+        if (!actionSections[actionSectionName]) {
+          actionSections[actionSectionName] = 0;
+        }
+
+        actionSections[actionSectionName]++;
       } else if (answer.toUpperCase() === 'N/A') {
         naCount++;
       } else {
@@ -867,8 +869,6 @@ function generateReport() {
     closeReportSection();
 
     let actionHtml = '';
-
-   let actionHtml = '';
 
     const sections = Object.keys(actionSections);
 
