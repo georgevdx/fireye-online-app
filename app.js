@@ -783,6 +783,7 @@ function generateReport() {
   const reportContent = getEl('reportContent');
 
   let answersHtml = '';
+  let actionHtml = '';
   let photosHtml = '';   // ✅ BELANGRIK: hier bo
   
   let yesCount = 0;
@@ -838,8 +839,12 @@ function generateReport() {
         yesCount++;
         sectionYes++;
       } else if (answer.toLowerCase() === 'no') {
-        noCount++;
-        sectionNo++;
+        actionHtml += `
+          <div class="action-item">
+            • ${item["Checklist Item"]}
+            ${itemNote ? `<br><span class="action-note">Note: ${escapeHtml(itemNote)}</span>` : ''}
+          </div>
+        `;
       } else if (answer.toUpperCase() === 'N/A') {
         naCount++;
       } else {
@@ -933,6 +938,11 @@ reportContent.innerHTML = `
   </div>
 
   <div class="report-block">
+    <div class="report-block">
+    <h3>Action Required</h3>
+      ${actionHtml || '<div class="note">No action required.</div>'}
+  </div>
+
     <h3>Checklist Results</h3>
     ${answersHtml}
   </div>
