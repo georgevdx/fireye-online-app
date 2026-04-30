@@ -766,6 +766,7 @@ function deletePhoto(index) {
 function generateReport() {
   const projectName = getEl('projectName').value.trim() || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
+  const finalComments = getEl('finalComments').value.trim();
   const occupancy = getEl('occupancySelect').value || '-';
   
   const projectAddress = getEl('projectAddress').value.trim();
@@ -1021,13 +1022,19 @@ reportContent.innerHTML = `
       ${answersHtml}
     </div>
     
-
+    <div class="report-block">
+      <h3>Inspector Comments / Conclusion</h3>
+      <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
+    </div> 
+    
   <div class="report-block">
     <h3>Photo Evidence</h3>
     <div class="report-photos">
       ${photosHtml}
     </div>
   </div>
+
+
 `;
 
   getEl('reportSection').style.display = 'block';
