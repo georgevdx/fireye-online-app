@@ -820,8 +820,14 @@ function generateReport() {
         sectionNo = 0;
         sectionHasItems = false;
 
+        const reportSectionId = `report-section-${sectionName
+          .toLowerCase()
+          .replaceAll(' ', '-')
+          .replaceAll('/', '-')
+          .replaceAll('&', 'and')}`;
+
         answersHtml += `
-          <div class="report-section-heading">${escapeHtml(sectionName)}</div>
+          <div id="${reportSectionId}" class="report-section-heading">${escapeHtml(sectionName)}</div>
         `;
       }
 
@@ -877,10 +883,16 @@ function generateReport() {
         const count = actionSections[section];
         const label = count === 1 ? 'item' : 'items';
 
+        const actionSectionId = `report-section-${section
+          .toLowerCase()
+          .replaceAll(' ', '-')
+          .replaceAll('/', '-')
+          .replaceAll('&', 'and')}`;
+
         actionHtml += `
-          <div class="action-item">
+          <a class="action-item action-link" href="#${actionSectionId}">
             • ${escapeHtml(section.toUpperCase())} — ${count} No ${label}
-          </div>
+          </a>
         `;
       });
     } else {

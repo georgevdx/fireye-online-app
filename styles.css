@@ -523,3 +523,12 @@ button:hover {
   text-transform: uppercase;
 }
 
+.action-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.action-link:hover {
+  opacity: 0.85;
+}
