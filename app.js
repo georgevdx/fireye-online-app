@@ -783,6 +783,7 @@ function generateReport() {
   const reportContent = getEl('reportContent');
 
   let answersHtml = '';
+  let actionSections = new Set();
   let actionHtml = '';
   let photosHtml = '';   // ✅ BELANGRIK: hier bo
   
@@ -839,12 +840,11 @@ function generateReport() {
         yesCount++;
         sectionYes++;
       } else if (answer.toLowerCase() === 'no') {
-        actionHtml += `
-          <div class="action-item">
-            • ${item["Checklist Item"]}
-            ${itemNote ? `<br><span class="action-note">Note: ${escapeHtml(itemNote)}</span>` : ''}
-          </div>
-        `;
+        noCount++;
+        sectionNo++;
+
+        const sectionName = item.Section || 'General';
+        actionSections.add(sectionName);
       } else if (answer.toUpperCase() === 'N/A') {
         naCount++;
       } else {
@@ -873,8 +873,19 @@ function generateReport() {
     });
 
     closeReportSection();
-  const answeredCount = yesCount + noCount + naCount;
-    notAnsweredCount = totalItems - answeredCount;  
+    let actionHtml = '';
+
+    if (actionSections.size > 0) {
+      actionSections.forEach(section => {
+        actionHtml += `
+          <div class="action-item">
+            • ${escapeHtml(section.toUpperCase())}
+          </div>
+        `;
+      });
+    } else {
+      actionHtml = `<div class="note">No action required.</div>`;
+    }
   const totalItems = selectedChecklist.length;
 
   let overallStatus = 'Compliant / Acceptable';
@@ -939,11 +950,10 @@ reportContent.innerHTML = `
   </div>
 
   <div class="report-block">
-    <div class="report-block">
+  <div class="report-block">
     <h3>Action Required</h3>
-      ${actionHtml || '<div class="note">No action required.</div>'}
+    ${actionHtml}
   </div>
-
     <h3>Checklist Results</h3>
     ${answersHtml}
   </div>
