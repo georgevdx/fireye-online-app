@@ -782,9 +782,7 @@ function generateReport() {
 
   const reportContent = getEl('reportContent');
 
-  let answersHtml = '';
-  let actionSections = new Set();
-  let actionHtml = '';
+
   let photosHtml = '';   // ✅ BELANGRIK: hier bo
   
   let yesCount = 0;
@@ -842,9 +840,6 @@ function generateReport() {
       } else if (answer.toLowerCase() === 'no') {
         noCount++;
         sectionNo++;
-
-        const sectionName = item.Section || 'General';
-        actionSections.add(sectionName);
       } else if (answer.toUpperCase() === 'N/A') {
         naCount++;
       } else {
@@ -873,19 +868,7 @@ function generateReport() {
     });
 
     closeReportSection();
-    let actionHtml = '';
 
-    if (actionSections.size > 0) {
-      actionSections.forEach(section => {
-        actionHtml += `
-          <div class="action-item">
-            • ${escapeHtml(section.toUpperCase())}
-          </div>
-        `;
-      });
-    } else {
-      actionHtml = `<div class="note">No action required.</div>`;
-    }
   const totalItems = selectedChecklist.length;
 
   let overallStatus = 'Compliant / Acceptable';
@@ -950,10 +933,6 @@ reportContent.innerHTML = `
   </div>
 
   <div class="report-block">
-  <div class="report-block">
-    <h3>Action Required</h3>
-    ${actionHtml}
-  </div>
     <h3>Checklist Results</h3>
     ${answersHtml}
   </div>
