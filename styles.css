@@ -532,3 +532,23 @@ button:hover {
 .action-link:hover {
   opacity: 0.85;
 }
+
+.risk-low {
+  color: green;
+  font-weight: bold;
+}
+
+.risk-medium {
+  color: #d97706;
+  font-weight: bold;
+}
+
+.risk-high {
+  color: #b71c1c;
+  font-weight: bold;
+}
+
+.risk-incomplete {
+  color: #666;
+  font-weight: bold;
+}

@@ -559,23 +559,36 @@ function updateDisplay() {
   const selected = getEl('occupancySelect').value;
 
   const reqDiv = getEl('requirements');
+  const requirementsSection = document.getElementById('requirementsSection');
+
   reqDiv.innerHTML = "";
 
   const selectedRequirements = requirements.filter(r => r["Occupancy Code"] === selected);
 
   if (selectedRequirements.length === 0) {
-    reqDiv.innerHTML = `<div class="note">No requirements found for this occupancy yet.</div>`;
-  } else {
-    selectedRequirements.forEach(r => {
-      reqDiv.innerHTML += `
-        <div class="requirement-item">
-          <div class="requirement-type">${r["Requirement Type"]}</div>
-          <div>${r["Requirement"]}</div>
-          <div class="note">Source: ${r["Source"]} | Access: ${r["Free or Paid"]}</div>
-        </div>
-      `;
-    });
+    reqDiv.innerHTML = '';
+
+    if (requirementsSection) {
+      requirementsSection.style.display = 'none';
+    }
+
+    renderChecklist(selected);
+    return;
   }
+
+  if (requirementsSection) {
+    requirementsSection.style.display = 'block';
+  }
+
+  selectedRequirements.forEach(r => {
+    reqDiv.innerHTML += `
+      <div class="requirement-item">
+        <div class="requirement-type">${r["Requirement Type"]}</div>
+        <div>${r["Requirement"]}</div>
+        <div class="note">Source: ${r["Source"]} | Access: ${r["Free or Paid"]}</div>
+      </div>
+    `;
+  });
 
   renderChecklist(selected);
 }
@@ -911,6 +924,18 @@ function generateReport() {
   } else if (notAnsweredCount > 0) {
     overallStatus = 'Incomplete Inspection';
   }
+  
+  let riskRating = 'Low';
+
+  if (noCount >= 5) {
+    riskRating = 'High';
+  } else if (noCount >= 1) {
+    riskRating = 'Medium';
+  }
+
+  if (notAnsweredCount > 0 && noCount === 0) {
+    riskRating = 'Incomplete';
+  }
 
   // Photos
   if (currentPhotos.length > 0) {
@@ -963,6 +988,15 @@ reportContent.innerHTML = `
         ? 'status-warning'
         : 'status-incomplete'
     }">${overallStatus}</span></div>
+    <div class="report-line"><strong>Risk Rating:</strong> <span class="${
+      riskRating === 'High'
+        ? 'risk-high'
+        : riskRating === 'Medium'
+        ? 'risk-medium'
+        : riskRating === 'Incomplete'
+        ? 'risk-incomplete'
+        : 'risk-low'
+    }">${riskRating}</span></div>
   </div>
 
   <div class="report-block">
