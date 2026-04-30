@@ -180,6 +180,9 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
+    const gpsText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+    getEl('gps').value = gpsText;
+    
     fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
       .then(res => res.json())
       .then(data => {
@@ -876,7 +879,8 @@ function generateReport() {
 
     let actionHtml = '';
 
-    const sections = Object.keys(actionSections);
+    const sections = Object.keys(actionSections)
+      .sort((a, b) => actionSections[b] - actionSections[a]);
 
     if (sections.length > 0) {
       sections.forEach(section => {
@@ -962,13 +966,15 @@ reportContent.innerHTML = `
   </div>
 
   <div class="report-block">
-    <div class="report-block">
-      <h3>Action Required</h3>
-      ${actionHtml}
-    </div>
-    <h3>Checklist Results</h3>
-    ${answersHtml}
+  <h3>Action Required</h3>
+  ${actionHtml}
   </div>
+
+    <div class="report-block">
+      <h3>Checklist Results</h3>
+      ${answersHtml}
+    </div>
+    
 
   <div class="report-block">
     <h3>Photo Evidence</h3>
@@ -1051,7 +1057,7 @@ async function shareReport() {
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const occupancy = getEl('occupancySelect').value || '-';
 
-  const selectedChecklist = checklists.filter(c =>
+  const selectedChecklist = getActiveTemplateChecklist(c =>
     c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
   );
 
