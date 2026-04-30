@@ -182,7 +182,12 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       const gpsText = `${lat}, ${lon}`;
 
       // ✅ Vul GPS EERSTE in
-      getEl('gps').value = gpsText;
+     const gpsField = document.getElementById('gps');
+      if (gpsField) {
+        gpsField.value = gpsText;
+        gpsField.setAttribute('value', gpsText);
+        gpsField.dispatchEvent(new Event('input', { bubbles: true }));
+      }
       getEl('saveMessage').textContent = `GPS captured: ${gpsText}`;
 
       // ✅ Save GPS dadelik
