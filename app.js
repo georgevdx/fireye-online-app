@@ -1099,58 +1099,148 @@ function deletePhoto(index) {
 
 
 async function shareReport() {
-  const projectName = getEl('projectName').value.trim() || 'Untitled Project';
+  const projectName = getEl('projectName').value.trim() || 'Untitled Inspection';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const occupancy = getEl('occupancySelect').value || '-';
 
-  const selectedChecklist = getActiveTemplateChecklist(c =>
-    c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
-  );
+  const projectAddress = getEl('projectAddress').value.trim() || '-';
+  const gps = getEl('gps').value.trim() || '-';
+
+  const inMall = getEl('inMall').value || 'No';
+  const mallName = getEl('mallName').value.trim() || '-';
+  const unitNumber = getEl('unitNumber').value.trim() || '-';
+
+  const productType = getEl('productType').value || '-';
+  const inspectionType = getEl('inspectionType').value || '-';
+
+  const selectedChecklist = getActiveTemplateChecklist() || [];
 
   let yesCount = 0;
   let noCount = 0;
   let naCount = 0;
-  let notAnsweredCount = 0;
+
+  let actionSections = {};
+  let checklistText = '';
+  let currentSection = '';
 
   selectedChecklist.forEach((item, index) => {
     const field = document.getElementById(`check_${index}`);
-    const answer = field ? (field.value || 'Not answered') : 'Not answered';
+    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+    const answer = rawAnswer.trim();
 
-    if (answer === 'Yes') {
-      yesCount++;
-    } else if (answer === 'No') {
-      noCount++;
-    } else if (answer === 'N/A') {
-      naCount++;
-    } else {
-      notAnsweredCount++;
+    const noteField = document.getElementById(`note_${index}`);
+    const itemNote = noteField ? noteField.value.trim() : '';
+
+    if (rawAnswer === 'Not answered' && !itemNote) {
+      return;
     }
+
+    const sectionName = item.Section || 'General';
+
+    if (sectionName !== currentSection) {
+      currentSection = sectionName;
+      checklistText += `\n${sectionName.toUpperCase()}\n`;
+    }
+
+    if (answer.toLowerCase() === 'yes') {
+      yesCount++;
+    } else if (answer.toLowerCase() === 'no') {
+      noCount++;
+
+      if (!actionSections[sectionName]) {
+        actionSections[sectionName] = 0;
+      }
+
+      actionSections[sectionName]++;
+    } else if (answer.toUpperCase() === 'N/A') {
+      naCount++;
+    }
+
+    checklistText += `${item["Item Number"]}. ${item["Checklist Item"]}\n`;
+    checklistText += `Answer: ${rawAnswer}\n`;
+
+    if (itemNote) {
+      checklistText += `Note: ${itemNote}\n`;
+    }
+
+    checklistText += `\n`;
   });
 
   const totalItems = selectedChecklist.length;
+  const answeredCount = yesCount + noCount + naCount;
+  const notAnsweredCount = totalItems - answeredCount;
 
   let overallStatus = 'Compliant / Acceptable';
+
   if (noCount > 0) {
     overallStatus = 'Attention Required';
   } else if (notAnsweredCount > 0) {
     overallStatus = 'Incomplete Inspection';
   }
 
+  let riskRating = 'LOW RISK';
+  let riskComment = 'No significant fire safety risks identified.';
+
+  if (noCount >= 5) {
+    riskRating = 'HIGH RISK';
+    riskComment = 'Immediate attention required. Multiple fire safety non-compliances identified.';
+  } else if (noCount >= 1) {
+    riskRating = 'MEDIUM RISK';
+    riskComment = 'Fire safety deficiencies identified. Corrective action required.';
+  }
+
+  if (notAnsweredCount > 0 && noCount === 0) {
+    riskRating = 'INCOMPLETE';
+    riskComment = 'Inspection incomplete. Some items were not assessed.';
+  }
+
+  let actionText = '';
+
+  const sections = Object.keys(actionSections)
+    .sort((a, b) => actionSections[b] - actionSections[a]);
+
+  if (sections.length > 0) {
+    sections.forEach(section => {
+      const count = actionSections[section];
+      const label = count === 1 ? 'item' : 'items';
+      actionText += `• ${section.toUpperCase()} — ${count} No ${label}\n`;
+    });
+  } else {
+    actionText = 'No action required.\n';
+  }
+
   const shareText =
-    `Fireye Fire Safety Report
+`Fireye Fire Safety Report
 
-    Project Name: ${projectName}
-    Inspector Name: ${inspectorName}
-    Occupancy: ${occupancy}
-    Inspection Date: ${new Date().toLocaleDateString()}
+INSPECTION DETAILS
+Place Name: ${projectName}
+Product Type: ${productType}
+Inspection Type: ${inspectionType}
+Address: ${projectAddress}
+GPS: ${gps}
+In Mall/Centre: ${inMall}
+${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}
+Unit / Shop Number: ${unitNumber}
+` : ''}Inspector Name: ${inspectorName}
+Occupancy: ${occupancy}
+Inspection Date: ${new Date().toLocaleDateString()}
 
-    Inspection Summary
-    Total Items: ${totalItems}
-    Yes: ${yesCount}
-    No: ${noCount}
-    N/A: ${naCount}
-    Not Answered: ${notAnsweredCount}
-    Overall Status: ${overallStatus}`;
+INSPECTION SUMMARY
+Total Items: ${totalItems}
+Answered: ${answeredCount}
+Yes: ${yesCount}
+No: ${noCount}
+N/A: ${naCount}
+Not Answered: ${notAnsweredCount}
+Overall Status: ${overallStatus}
+Risk Rating: ${riskRating}
+${riskComment}
+
+ACTION REQUIRED
+${actionText}
+
+CHECKLIST RESULTS
+${checklistText || 'No checklist answers or notes captured.'}`;
 
   if (navigator.share) {
     try {
