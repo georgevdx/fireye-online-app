@@ -176,43 +176,50 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   getEl('saveMessage').textContent = 'Getting location...';
 
   navigator.geolocation.getCurrentPosition(
-  position => {
-    const lat = position.coords.latitude;
-    const lon = position.coords.longitude;
+    async (position) => {
+      const lat = position.coords.latitude.toFixed(6);
+      const lon = position.coords.longitude.toFixed(6);
+      const gpsText = `${lat}, ${lon}`;
 
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
-      .then(res => res.json())
-      .then(data => {
+      // ✅ Vul GPS EERSTE in
+      getEl('gps').value = gpsText;
+      getEl('saveMessage').textContent = `GPS captured: ${gpsText}`;
 
-     
-        console.log("FULL DATA:", data);
-        console.log("ADDRESS:", data.address);
-        console.log("DISPLAY NAME:", data.display_name);
+      // ✅ Save GPS dadelik
+      scheduleAutoSave();
 
-        const streetAddress = buildStreetAddress(data.address || {});
+      // ✅ Probeer nou eers address kry
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+        );
 
-        document.getElementById("projectAddress").value =
-          streetAddress || data.display_name || `${lat}, ${lon}`;
+        const data = await response.json();
 
-        // 👇 BELANGRIK: reset jou status
-        getEl('saveMessage').textContent = 'Location captured';
+        if (data && data.display_name) {
+          getEl('projectAddress').value = data.display_name;
+          getEl('saveMessage').textContent = `Location captured: ${gpsText}`;
+        } else {
+          getEl('saveMessage').textContent = `GPS captured: ${gpsText}. Address not found.`;
+        }
+      } catch (err) {
+        getEl('saveMessage').textContent = `GPS captured: ${gpsText}. Could not fetch address.`;
+        console.error('Reverse geocode error:', err);
+      }
 
-      })
-      .catch(err => {
-        console.error("Address fetch failed:", err);
-
-        document.getElementById("projectAddress").value = `${lat}, ${lon}`;
-
-        // 👇 reset status selfs as dit fail
-        getEl('saveMessage').textContent = 'Location captured (no address)';
-      });
-  },
-  error => {
-    console.error("GPS failed:", error);
-
-    getEl('saveMessage').textContent = 'Location failed';
-  }
-);
+      // ✅ Save weer nadat address moontlik ingevul is
+      scheduleAutoSave();
+    },
+    (error) => {
+      getEl('saveMessage').textContent = 'Could not get location.';
+      console.error('Geolocation error:', error);
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
+  );
 }
 
 function toggleMallFields() {
