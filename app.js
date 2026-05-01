@@ -241,78 +241,6 @@ function toggleChecklistSection(sectionId) {
   }
 }
 
-function generateSuggestedConclusion() {
-  const selectedChecklist = getActiveTemplateChecklist() || [];
-
-  let yesCount = 0;
-  let noCount = 0;
-  let naCount = 0;
-  let actionSections = {};
-
-  selectedChecklist.forEach((item, index) => {
-    const field = document.getElementById(`check_${index}`);
-    const answer = field ? field.value : '';
-
-    if (answer === 'Yes') {
-      yesCount++;
-    } else if (answer === 'No') {
-      noCount++;
-
-      const sectionName = item.Section || 'General';
-      if (!actionSections[sectionName]) {
-        actionSections[sectionName] = 0;
-      }
-      actionSections[sectionName]++;
-    } else if (answer === 'N/A') {
-      naCount++;
-    }
-  });
-
-  const totalItems = selectedChecklist.length;
-  const answeredCount = yesCount + noCount + naCount;
-  const notAnsweredCount = totalItems - answeredCount;
-
-  let conclusion = '';
-
-  if (noCount >= 5) {
-    conclusion =
-      `Based on the inspection conducted, multiple fire safety deficiencies were identified. ` +
-      `The premises should be regarded as requiring urgent corrective action. ` +
-      `The responsible person should address the identified non-compliances as a priority, particularly in the affected fire safety sections.`;
-  } else if (noCount >= 1) {
-    conclusion =
-      `Based on the inspection conducted, fire safety deficiencies were identified. ` +
-      `Corrective action is required to address the noted non-compliances. ` +
-      `The affected areas should be reviewed and rectified to improve the fire safety condition of the premises.`;
-  } else if (notAnsweredCount > 0) {
-    conclusion =
-      `The inspection was partially completed. No fire safety non-compliances were recorded in the answered items; however, some checklist items were not assessed. ` +
-      `A follow-up inspection or completion of the outstanding items is recommended.`;
-  } else {
-    conclusion =
-      `Based on the inspection conducted, no significant fire safety deficiencies were identified in the assessed items. ` +
-      `The premises appear acceptable in respect of the inspection scope, subject to continued maintenance and good housekeeping.`;
-  }
-
-  const sections = Object.keys(actionSections);
-
-  if (sections.length > 0) {
-    conclusion += `\n\nThe following sections require attention:\n`;
-    sections.forEach(section => {
-      const count = actionSections[section];
-      conclusion += `- ${section}: ${count} item${count === 1 ? '' : 's'}\n`;
-    });
-  }
-
-  getEl('finalComments').value = conclusion;
-  scheduleAutoSave();
-
-  const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    saveMessage.textContent = 'Suggested conclusion generated.';
-  }
-}
-
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -361,10 +289,6 @@ function initApp() {
     updateInspectionTypeOptions();
     updateDisplay();
     scheduleAutoSave();
-  const generateConclusionBtn = document.getElementById('generateConclusionBtn');
-  if (generateConclusionBtn) {
-    generateConclusionBtn.addEventListener('click', generateSuggestedConclusion);
-  }
   });
 
   getEl('inspectionType').addEventListener('change', () => {
