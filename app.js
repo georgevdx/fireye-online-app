@@ -361,6 +361,10 @@ function initApp() {
     updateInspectionTypeOptions();
     updateDisplay();
     scheduleAutoSave();
+  const generateConclusionBtn = document.getElementById('generateConclusionBtn');
+  if (generateConclusionBtn) {
+    generateConclusionBtn.addEventListener('click', generateSuggestedConclusion);
+  }
   });
 
   getEl('inspectionType').addEventListener('change', () => {
