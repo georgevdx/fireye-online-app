@@ -217,75 +217,76 @@
           "Item Number": "6",
           "Checklist Item": "Are hose reels intact, with no visible leaks or damage?",
           "Answer Type": "Yes/No"
+        }        
+      ]
+    },
+    {
+      "sectionName": "Hydrants and Fire Brigade Connections",
+      "items": [
+        {
+          "Item Number": "7",
+          "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
+          "Answer Type": "Yes/No"
         },
         {
-          "sectionName": "Hydrants and Fire Brigade Connections",
-          "items": [
-            {
-              "Item Number": "7",
-              "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "8",
-              "Checklist Item": "Are hydrant outlets, caps and couplings intact and not damaged?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "9",
-              "Checklist Item": "Is adequate clearance maintained around hydrants for fire brigade access?",
-              "Answer Type": "Yes/No"
-            }
-          ]
+          "Item Number": "8",
+          "Checklist Item": "Are hydrant outlets, caps and couplings intact and not damaged?",
+          "Answer Type": "Yes/No"
         },
         {
-          "sectionName": "Fire Detection and Alarm Systems",
-          "items": [
-            {
-              "Item Number": "10",
-              "Checklist Item": "Is the fire detection or alarm panel accessible and operational?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "11",
-              "Checklist Item": "Are there no visible fault, isolate or disablement indications on the panel?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "12",
-              "Checklist Item": "Are detectors, call points and sounders unobstructed and not visibly damaged?",
-              "Answer Type": "Yes/No"
-            }
-          ]
+          "Item Number": "9",
+          "Checklist Item": "Is adequate clearance maintained around hydrants for fire brigade access?",
+          "Answer Type": "Yes/No"
+        }
+      ]
+    },
+    {
+      "sectionName": "Fire Detection and Alarm Systems",
+      "items": [
+        {
+          "Item Number": "10",
+          "Checklist Item": "Is the fire detection or alarm panel accessible and operational?",
+          "Answer Type": "Yes/No"
         },
         {
-          "sectionName": "Fixed Fire Suppression Systems",
-          "items": [
-            {
-              "Item Number": "13",
-              "Checklist Item": "Is a fixed fire suppression system installed where required or provided?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "14",
-              "Checklist Item": "Are control valves open, secured and not tampered with?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "15",
-              "Checklist Item": "Are there no visible leaks, damage or impairments to the system?",
-              "Answer Type": "Yes/No"
-            },
-            {
-              "Item Number": "16",
-              "Checklist Item": "Are system control panels or interfaces accessible and indicating normal operation?",
-              "Answer Type": "Yes/No"
-            }
-          ]
+          "Item Number": "11",
+          "Checklist Item": "Are there no visible fault, isolate or disablement indications on the panel?",
+          "Answer Type": "Yes/No"
+        },
+        {
+          "Item Number": "12",
+          "Checklist Item": "Are detectors, call points and sounders unobstructed and not visibly damaged?",
+          "Answer Type": "Yes/No"
+        }
+      ]
+    },
+    {
+      "sectionName": "Fixed Fire Suppression Systems",
+      "items": [
+        {
+          "Item Number": "13",
+          "Checklist Item": "Is a fixed fire suppression system installed where required or provided?",
+          "Answer Type": "Yes/No"
+        },
+        {
+          "Item Number": "14",
+          "Checklist Item": "Are control valves open, secured and not tampered with?",
+          "Answer Type": "Yes/No"
+        },
+        {
+          "Item Number": "15",
+          "Checklist Item": "Are there no visible leaks, damage or impairments to the system?",
+          "Answer Type": "Yes/No"
+        },
+        {
+          "Item Number": "16",
+          "Checklist Item": "Are system control panels or interfaces accessible and indicating normal operation?",
+          "Answer Type": "Yes/No"
         }
       ]
     }
   ],
+  
 
   "Housekeeping Inspection": [
     {
@@ -337,7 +338,7 @@
       ]
     },
     {
-      "sectionName": "Temporary Wiring",
+      "sectionName": "Temporary",
       "items": [
         {
           "Item Number": "3",
