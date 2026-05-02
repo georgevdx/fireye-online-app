@@ -79,8 +79,7 @@ function autoSaveProject() {
   const inMallField = document.getElementById('inMall');
   const mallNameField = document.getElementById('mallName');
   const unitNumberField = document.getElementById('unitNumber');
-  const organisationName = getEl('organisationName').value.trim();
-  const siteName = getEl('siteName').value.trim();
+  
  
 if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
@@ -290,7 +289,7 @@ function initApp() {
     updateDisplay();
     scheduleAutoSave();
   });
-
+  
   getEl('inspectionType').addEventListener('change', () => {
     updateDisplay();
     scheduleAutoSave();
@@ -1011,12 +1010,12 @@ reportContent.innerHTML = `
     <div class="report-line note">
       ${riskComment}
     </div>
+    </div>
 
-  <div class="report-block">
-  <h3>Action Required</h3>
-  ${actionHtml}
-  </div>
-
+    <div class="report-block">
+      <h3>Action Required</h3>
+      ${actionHtml}
+    </div>
     <div class="report-block">
       <h3>Checklist Results</h3>
       ${answersHtml}
@@ -1040,6 +1039,8 @@ reportContent.innerHTML = `
   getEl('reportSection').style.display = 'block';
   window.print();
 }
+
+
 function handlePhotoUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
