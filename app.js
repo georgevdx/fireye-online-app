@@ -1085,7 +1085,7 @@ function handlePhotoUpload(event) {
         src: compressedDataUrl,
         timestamp: new Date().toISOString()
       });
-      
+
       renderPhotos();
     };
 
@@ -1104,8 +1104,14 @@ function renderPhotos() {
     const div = document.createElement('div');
     div.className = 'photo-item';
 
+    const photoSrc = typeof photo === "string" ? photo : photo.src;
+    const photoTime = typeof photo === "string"
+      ? "Not recorded"
+      : new Date(photo.timestamp).toLocaleString();
+
     div.innerHTML = `
-      <img src="${photo}">
+      <img src="${photoSrc}">
+      <small class="photo-timestamp">Captured: ${photoTime}</small>
       <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
     `;
 
