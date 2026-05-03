@@ -621,6 +621,7 @@ function updateInspectionTypeOptions() {
 function getActiveTemplateChecklist() {
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
+  const occupancy = getEl('occupancySelect').value;
 
   if (
     inspectionTemplates[productType] &&
@@ -629,10 +630,19 @@ function getActiveTemplateChecklist() {
     const template = inspectionTemplates[productType][inspectionType];
 
     return template.flatMap(section =>
-      section.items.map(item => ({
-        ...item,
-        Section: section.sectionName
-      }))
+      section.items
+        .filter(item => {
+          const applicableTo = item["Applicable To"] || ["All"];
+
+          return (
+            applicableTo.includes("All") ||
+            applicableTo.includes(occupancy)
+          );
+        })
+        .map(item => ({
+          ...item,
+          Section: section.sectionName
+        }))
     );
   }
 
