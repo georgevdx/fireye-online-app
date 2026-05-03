@@ -572,3 +572,10 @@ button:hover {
   color: #555;
   font-weight: 900;
 }
+
+.photo-timestamp {
+  display: block;
+  font-size: 11px;
+  color: #333;
+  margin-top: 4px;
+}
