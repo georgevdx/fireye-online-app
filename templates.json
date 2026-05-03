@@ -13,20 +13,17 @@
           {
             "Item Number": "2",
             "Checklist Item": "Are fire extinguishers serviced and within valid service date?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Answer Type": "Yes/No"           
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are fire hose reels accessible, intact and unobstructed?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Answer Type": "Yes/No"
           },
           {
             "Item Number": "4",
             "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Answer Type": "Yes/No"
           }
         ]
       },
@@ -36,20 +33,17 @@
           {
             "Item Number": "5",
             "Checklist Item": "Are escape routes clear of storage, furniture or obstructions?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Answer Type": "Yes/No"
           },
           {
             "Item Number": "6",
             "Checklist Item": "Are final exit doors unlocked and immediately openable during occupation?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Answer Type": "Yes/No"
           },
           {
             "Item Number": "7",
             "Checklist Item": "Do exit doors open freely without special knowledge or tools?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
+            "Answer Type": "Yes/No"
           },
           {
             "Item Number": "8",
@@ -115,6 +109,12 @@
             "Item Number": "17",
             "Checklist Item": "Are obvious electrical hazards, damaged fittings or exposed wiring absent?",
             "Answer Type": "Yes/No"
+          },
+          {
+            "Item Number": "18",
+            "Checklist Item": "Are sleeping or resting areas free from combustible clutter and hazards?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["A3"]
           }
         ]
       },
