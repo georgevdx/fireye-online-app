@@ -117,6 +117,16 @@
             "Answer Type": "Yes/No"
           }
         ]
+      },
+      {
+        "sectionName": "Building Plans",
+        "items": [
+          {
+            "Item Number": "18",
+            "Checklist Item": "Is there an approved fire/internal layout plan?",
+            "Answer Type": "Yes/No"
+          }
+        ]
       }
     ],
 
@@ -146,16 +156,11 @@
         "items": [
           {
             "Item Number": "4",
-            "Checklist Item": "Are exit doors unlocked during occupation?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "5",
             "Checklist Item": "Do exit doors open easily without keys, tools or special knowledge?",
             "Answer Type": "Yes/No"
           },
           {
-            "Item Number": "6",
+            "Item Number": "5",
             "Checklist Item": "Are final exits clear on both the inside and outside?",
             "Answer Type": "Yes/No"
           }
