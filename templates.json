@@ -14,7 +14,7 @@
             "Item Number": "2",
             "Checklist Item": "Are fire extinguishers serviced and within valid service date?",
             "Answer Type": "Yes/No",
-            "Applicable To": ["All"]           
+            "Applicable To": ["All"]
           },
           {
             "Item Number": "3",
@@ -31,22 +31,62 @@
         ]
       },
       {
-        "sectionName": "Means of Escape",
+        "sectionName": "Fire Detection and Alarm",
         "items": [
           {
             "Item Number": "5",
-            "Checklist Item": "Are escape routes clear of storage, furniture or obstructions?",
+            "Checklist Item": "Is the fire alarm or detection panel accessible and indicating normal condition?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "6",
-            "Checklist Item": "Do exit doors open freely without special knowledge or tools?",
+            "Checklist Item": "Are detectors, manual call points and sounders unobstructed and not visibly damaged?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          }
+        ]
+      },
+      {
+        "sectionName": "Fixed Fire Suppression Systems",
+        "items": [
+          {
+            "Item Number": "7",
+            "Checklist Item": "Are sprinkler, gas suppression or fixed firefighting systems accessible and free from visible impairment?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "7",
+            "Item Number": "8",
+            "Checklist Item": "Are control valves, panels or system interfaces accessible and not tampered with?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          }
+        ]
+      },
+      {
+        "sectionName": "Means of Escape",
+        "items": [
+          {
+            "Item Number": "9",
+            "Checklist Item": "Are escape routes clear of storage, furniture, stock or obstruction?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          },
+          {
+            "Item Number": "10",
+            "Checklist Item": "Are final exit doors unlocked and immediately openable during occupation?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          },
+          {
+            "Item Number": "11",
+            "Checklist Item": "Do exit doors open freely without special knowledge, tools or keys?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          },
+          {
+            "Item Number": "12",
             "Checklist Item": "Are stairways, corridors and lobbies free from combustible storage?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
@@ -57,20 +97,20 @@
         "sectionName": "Exit Signage and Emergency Lighting",
         "items": [
           {
-            "Item Number": "8",
+            "Item Number": "13",
             "Checklist Item": "Are exit signs visible, correctly positioned and unobstructed?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "9",
-            "Checklist Item": "Are emergency lights installed where required and operational?",
+            "Item Number": "14",
+            "Checklist Item": "Are emergency lights installed where required and visibly operational?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "10",
-            "Checklist Item": "Is directional signage adequate to guide occupants to exits?",
+            "Item Number": "15",
+            "Checklist Item": "Is directional escape signage adequate to guide occupants to exits?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           }
@@ -80,20 +120,20 @@
         "sectionName": "Housekeeping and Fire Load",
         "items": [
           {
-            "Item Number": "11",
+            "Item Number": "16",
             "Checklist Item": "Is combustible storage controlled and kept away from ignition sources?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "12",
+            "Item Number": "17",
             "Checklist Item": "Are waste materials removed regularly and not accumulating?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "13",
-            "Checklist Item": "Are electrical rooms, plant rooms and service areas free from storage?",
+            "Item Number": "18",
+            "Checklist Item": "Are plant rooms, electrical rooms and service areas free from unrelated storage?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           }
@@ -103,297 +143,72 @@
         "sectionName": "Electrical and Ignition Sources",
         "items": [
           {
-            "Item Number": "14",
-            "Checklist Item": "Are DB boards accessible, closed and clearly labelled?",
+            "Item Number": "19",
+            "Checklist Item": "Are DB boards accessible, closed and clearly identifiable?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "15",
-            "Checklist Item": "Are extension leads, multiplugs and temporary wiring controlled?",
+            "Item Number": "20",
+            "Checklist Item": "Are extension leads, multiplugs and temporary wiring controlled and not overloaded?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
-            "Item Number": "16",
-            "Checklist Item": "Are obvious electrical hazards, damaged fittings or exposed wiring absent?",
+            "Item Number": "21",
+            "Checklist Item": "Are there no visible exposed wires, damaged fittings or unsafe electrical conditions?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
-          }
-        ]
-      }
-    ],
-
-    "Hazardous Substances Inspection": [
-      {
-        "sectionName": "Hazardous substances",
-        "items": [
-          {
-            "Item Number": "1",
-            "Checklist Item": "Do the hazardous substances require a certificate?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          },
-          {
-            "Item Number": "2",
-            "Checklist Item": "If required, is the hazardous substances certificate still valid?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          },
-          {
-            "Item Number": "3",
-            "Checklist Item": "Is the quantity of hazardous substances less than the reqistered volume?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          },
-          {
-            "Item Number": "4",
-            "Checklist Item": "Does the hazardous substance installation comply to the necessary Legislative requirements?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          },
-          {
-            "Item Number": "5",
-            "Checklist Item": "Are all fire safety protection equipment installed around the hazardous substance installation?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          }
-        ]
-      }
-    ],
-
-    "Means of Escape Inspection": [
-      {
-        "sectionName": "Escape Routes",
-        "items": [
-          {
-            "Item Number": "1",
-            "Checklist Item": "Are all escape routes clear, continuous and usable?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "2",
-            "Checklist Item": "Are corridors and passageways free from storage and obstruction?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "3",
-            "Checklist Item": "Are escape routes adequately illuminated?",
-            "Answer Type": "Yes/No"
           }
         ]
       },
       {
-        "sectionName": "Exit Doors",
+        "sectionName": "Fire Doors and Compartmentation",
         "items": [
           {
-            "Item Number": "4",
-            "Checklist Item": "Do exit doors open easily without keys, tools or special knowledge?",
-            "Answer Type": "Yes/No"
+            "Item Number": "22",
+            "Checklist Item": "Are fire doors closed, unobstructed and not wedged open?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
           },
           {
-            "Item Number": "5",
-            "Checklist Item": "Are final exits clear on both the inside and outside?",
-            "Answer Type": "Yes/No"
+            "Item Number": "23",
+            "Checklist Item": "Are visible fire doors, seals, closers and hinges in acceptable condition?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          },
+          {
+            "Item Number": "24",
+            "Checklist Item": "Are visible fire separation elements and service penetrations intact where observable?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          }
+        ]
+      },
+      {
+        "sectionName": "Special Occupancy Risks",
+        "items": [
+          {
+            "Item Number": "25",
+            "Checklist Item": "Are sleeping or resting areas free from combustible clutter and hazards?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["A3", "E2", "E3", "E4", "H1", "H2", "H3", "H5"]
+          },
+          {
+            "Item Number": "26",
+            "Checklist Item": "Are storage areas arranged to maintain aisles, access and clear firefighting routes?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["J1", "J2", "J3", "J4"]
+          },
+          {
+            "Item Number": "27",
+            "Checklist Item": "Are hazardous or high-risk processes separated or controlled from general occupancy areas?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["B2", "D2", "D3", "D4", "J3", "J4"]
           }
         ]
       }
-    ],
-
-    "Compliance Inspection": [
-      {
-        "sectionName": "General Compliance",
-        "items": [
-          {
-            "Item Number": "1",
-            "Checklist Item": "Is there an approved fire/internal layout plan?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          },
-          {
-            "Item Number": "2",
-            "Checklist Item": "Is the occupancy use consistent with the approved or observed building use?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          }          
-        ]
-      }
     ]
-    ,
-  "Fire Equipment Inspection": [
-    {
-      "sectionName": "Portable Fire Extinguishers",
-      "items": [
-        {
-          "Item Number": "1",
-          "Checklist Item": "Are fire extinguishers provided in adequate numbers for the area?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "2",
-          "Checklist Item": "Are fire extinguishers clearly visible and accessible?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "3",
-          "Checklist Item": "Are extinguishers serviced and within valid service date?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "4",
-          "Checklist Item": "Are extinguishers correctly mounted and not placed on the floor?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    },
-    {
-      "sectionName": "Hose Reels",
-      "items": [
-        {
-          "Item Number": "5",
-          "Checklist Item": "Are fire hose reels accessible and unobstructed?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "6",
-          "Checklist Item": "Are hose reels intact, with no visible leaks or damage?",
-          "Answer Type": "Yes/No"
-        }        
-      ]
-    },
-    {
-      "sectionName": "Hydrants and Fire Brigade Connections",
-      "items": [
-        {
-          "Item Number": "7",
-          "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "8",
-          "Checklist Item": "Are hydrant outlets, caps and couplings intact and not damaged?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "9",
-          "Checklist Item": "Is adequate clearance maintained around hydrants for fire brigade access?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    },
-    {
-      "sectionName": "Fire Detection and Alarm Systems",
-      "items": [
-        {
-          "Item Number": "10",
-          "Checklist Item": "Is the fire detection or alarm panel accessible and operational?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "11",
-          "Checklist Item": "Are there no visible fault, isolate or disablement indications on the panel?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "12",
-          "Checklist Item": "Are detectors, call points and sounders unobstructed and not visibly damaged?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    },
-    {
-      "sectionName": "Fixed Fire Suppression Systems",
-      "items": [
-        {
-          "Item Number": "13",
-          "Checklist Item": "Is a fixed fire suppression system installed where required or provided?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "14",
-          "Checklist Item": "Are control valves open, secured and not tampered with?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "15",
-          "Checklist Item": "Are there no visible leaks, damage or impairments to the system?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "16",
-          "Checklist Item": "Are system control panels or interfaces accessible and indicating normal operation?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    }
-  ],
-  
-
-  "Housekeeping Inspection": [
-    {
-      "sectionName": "General Housekeeping",
-      "items": [
-        {
-          "Item Number": "1",
-          "Checklist Item": "Is combustible material controlled and not accumulating excessively?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "2",
-          "Checklist Item": "Are waste materials removed regularly?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    },
-    {
-      "sectionName": "Storage Practices",
-      "items": [
-        {
-          "Item Number": "3",
-          "Checklist Item": "Is storage kept clear of ignition sources such as DB boards?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "4",
-          "Checklist Item": "Are plant rooms and electrical rooms free from storage?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    }
-  ],
-
-  "Electrical Safety Inspection": [
-    {
-      "sectionName": "Electrical Installations",
-      "items": [
-        {
-          "Item Number": "1",
-          "Checklist Item": "Are DB boards accessible and not obstructed?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "2",
-          "Checklist Item": "Are DB boards closed and in good condition?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    },
-    {
-      "sectionName": "Temporary",
-      "items": [
-        {
-          "Item Number": "3",
-          "Checklist Item": "Are extension leads and multiplugs used safely and not overloaded?",
-          "Answer Type": "Yes/No"
-        },
-        {
-          "Item Number": "4",
-          "Checklist Item": "Are there no exposed wires or damaged fittings?",
-          "Answer Type": "Yes/No"
-        }
-      ]
-    }
-  ]
   },
 
   "Commercial": {
