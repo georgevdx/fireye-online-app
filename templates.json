@@ -23,17 +23,50 @@
           {
             "Item Number": "2",
             "Checklist Item": "Are fire extinguishers serviced and within valid service date?",
-            "Answer Type": "Yes/No"           
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]           
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are fire hose reels accessible, intact and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "4",
             "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -43,22 +76,66 @@
           {
             "Item Number": "5",
             "Checklist Item": "Are escape routes clear of storage, furniture or obstructions?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "6",
             "Checklist Item": "Are final exit doors unlocked and immediately openable during occupation?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "7",
             "Checklist Item": "Do exit doors open freely without special knowledge or tools?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "8",
             "Checklist Item": "Are stairways, corridors and lobbies free from combustible storage?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -68,17 +145,50 @@
           {
             "Item Number": "9",
             "Checklist Item": "Are exit signs visible, correctly positioned and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "10",
             "Checklist Item": "Are emergency lights installed where required and operational?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "11",
             "Checklist Item": "Is directional signage adequate to guide occupants to exits?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -88,17 +198,50 @@
           {
             "Item Number": "12",
             "Checklist Item": "Is combustible storage controlled and kept away from ignition sources?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "13",
             "Checklist Item": "Are waste materials removed regularly and not accumulating?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "14",
             "Checklist Item": "Are electrical rooms, plant rooms and service areas free from storage?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -108,23 +251,50 @@
           {
             "Item Number": "15",
             "Checklist Item": "Are DB boards accessible, closed and clearly labelled?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "16",
             "Checklist Item": "Are extension leads, multiplugs and temporary wiring controlled?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "17",
             "Checklist Item": "Are obvious electrical hazards, damaged fittings or exposed wiring absent?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "18",
-            "Checklist Item": "Are sleeping or resting areas free from combustible clutter and hazards?",
             "Answer Type": "Yes/No",
-            "Applicable To": ["A3"]
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -134,7 +304,18 @@
           {
             "Item Number": "18",
             "Checklist Item": "Is there an approved fire/internal layout plan?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H4", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -147,17 +328,50 @@
           {
             "Item Number": "1",
             "Checklist Item": "Are all escape routes clear, continuous and usable?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are corridors and passageways free from storage and obstruction?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are escape routes adequately illuminated?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -167,12 +381,34 @@
           {
             "Item Number": "4",
             "Checklist Item": "Do exit doors open easily without keys, tools or special knowledge?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "5",
             "Checklist Item": "Are final exits clear on both the inside and outside?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -185,17 +421,50 @@
           {
             "Item Number": "1",
             "Checklist Item": "Is the occupancy use consistent with the approved or observed building use?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are fire safety installations maintained and accessible?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are visible fire safety contraventions present requiring corrective action?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -208,22 +477,66 @@
         {
           "Item Number": "1",
           "Checklist Item": "Are fire extinguishers provided in adequate numbers for the area?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "2",
           "Checklist Item": "Are fire extinguishers clearly visible and accessible?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "3",
           "Checklist Item": "Are extinguishers serviced and within valid service date?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "4",
           "Checklist Item": "Are extinguishers correctly mounted and not placed on the floor?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     },
@@ -233,12 +546,34 @@
         {
           "Item Number": "5",
           "Checklist Item": "Are fire hose reels accessible and unobstructed?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "6",
           "Checklist Item": "Are hose reels intact, with no visible leaks or damage?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }        
       ]
     },
@@ -248,17 +583,50 @@
         {
           "Item Number": "7",
           "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "8",
           "Checklist Item": "Are hydrant outlets, caps and couplings intact and not damaged?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "9",
           "Checklist Item": "Is adequate clearance maintained around hydrants for fire brigade access?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     },
@@ -268,17 +636,50 @@
         {
           "Item Number": "10",
           "Checklist Item": "Is the fire detection or alarm panel accessible and operational?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "11",
           "Checklist Item": "Are there no visible fault, isolate or disablement indications on the panel?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "12",
           "Checklist Item": "Are detectors, call points and sounders unobstructed and not visibly damaged?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     },
@@ -288,22 +689,66 @@
         {
           "Item Number": "13",
           "Checklist Item": "Is a fixed fire suppression system installed where required or provided?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "14",
           "Checklist Item": "Are control valves open, secured and not tampered with?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "15",
           "Checklist Item": "Are there no visible leaks, damage or impairments to the system?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "16",
           "Checklist Item": "Are system control panels or interfaces accessible and indicating normal operation?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     }
@@ -317,12 +762,34 @@
         {
           "Item Number": "1",
           "Checklist Item": "Is combustible material controlled and not accumulating excessively?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "2",
           "Checklist Item": "Are waste materials removed regularly?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     },
@@ -332,12 +799,34 @@
         {
           "Item Number": "3",
           "Checklist Item": "Is storage kept clear of ignition sources such as DB boards?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "4",
           "Checklist Item": "Are plant rooms and electrical rooms free from storage?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     }
@@ -350,12 +839,34 @@
         {
           "Item Number": "1",
           "Checklist Item": "Are DB boards accessible and not obstructed?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "2",
           "Checklist Item": "Are DB boards closed and in good condition?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     },
@@ -365,12 +876,34 @@
         {
           "Item Number": "3",
           "Checklist Item": "Are extension leads and multiplugs used safely and not overloaded?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         },
         {
           "Item Number": "4",
           "Checklist Item": "Are there no exposed wires or damaged fittings?",
-          "Answer Type": "Yes/No"
+          "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
         }
       ]
     }
@@ -385,17 +918,50 @@
           {
             "Item Number": "1",
             "Checklist Item": "Are tenant escape routes clear and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are fire extinguishers visible, accessible and serviced?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are exit signs and emergency lights visible and operational?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -405,12 +971,34 @@
           {
             "Item Number": "4",
             "Checklist Item": "Are DB boards accessible and not blocked by stock or furniture?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "5",
             "Checklist Item": "Is stock storage controlled and not obstructing exits or fire equipment?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -423,12 +1011,34 @@
           {
             "Item Number": "1",
             "Checklist Item": "Are common malls, corridors and escape routes clear of obstructions?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are fire doors in common areas kept closed and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -438,12 +1048,34 @@
           {
             "Item Number": "3",
             "Checklist Item": "Are hose reels, hydrants, extinguishers and fire panels accessible?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "4",
             "Checklist Item": "Are fire detection or alarm panels free from fault or isolation indications?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -458,17 +1090,50 @@
           {
             "Item Number": "1",
             "Checklist Item": "Is storage arranged to maintain access aisles and firefighting access?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Is storage kept below lights, electrical fittings and fire safety installations where required?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are combustible materials stored away from ignition sources?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -478,12 +1143,34 @@
           {
             "Item Number": "4",
             "Checklist Item": "Are hose reels, hydrants or fire extinguishers accessible and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "5",
             "Checklist Item": "Are fire doors, smoke doors or compartment lines unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -496,17 +1183,50 @@
           {
             "Item Number": "1",
             "Checklist Item": "Is the plant room free from unrelated storage and combustible materials?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are electrical panels accessible and clearly labelled?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are ventilation openings clear and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -521,12 +1241,34 @@
           {
             "Item Number": "1",
             "Checklist Item": "Are customer escape routes clear and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are displays and stock not blocking fire equipment or exits?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -536,12 +1278,34 @@
           {
             "Item Number": "3",
             "Checklist Item": "Are storerooms kept orderly with controlled combustible storage?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "4",
             "Checklist Item": "Are staff exits and escape paths clear?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
@@ -556,12 +1320,34 @@
           {
             "Item Number": "1",
             "Checklist Item": "Are guest escape routes clearly indicated and unobstructed?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are bedroom or corridor exit signs visible where required?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       },
@@ -571,12 +1357,34 @@
           {
             "Item Number": "3",
             "Checklist Item": "Are fire extinguishers accessible and maintained?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           },
           {
             "Item Number": "4",
             "Checklist Item": "Are staff aware of emergency procedures?",
-            "Answer Type": "Yes/No"
+            "Answer Type": "Yes/No",
+            "Applicable To": [
+              "A1", "A2", "A3", "A4", "A5",
+              "B1", "B2", "B3",
+              "C1", "C2",
+              "D1", "D2", "D3", "D4",
+              "E1", "E2", "E3", "E4",
+              "F1", "F2", "F3",
+              "G1",
+              "H1", "H2", "H3", "H5",
+              "J1", "J2", "J3", "J4"
+            ]
           }
         ]
       }
