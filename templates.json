@@ -121,17 +121,6 @@
             "Applicable To": ["All"]
           }
         ]
-      },
-      {
-        "sectionName": "Building Plans",
-        "items": [
-          {
-            "Item Number": "17",
-            "Checklist Item": "Is there an approved fire/internal layout plan?",
-            "Answer Type": "Yes/No",
-            "Applicable To": ["All"]
-          }
-        ]
       }
     ],
 
@@ -141,24 +130,30 @@
         "items": [
           {
             "Item Number": "1",
-            "Checklist Item": "Does the hazardous substances require a certificate?",
+            "Checklist Item": "Do the hazardous substances require a certificate?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "2",
-            "Checklist Item": "Is the quantity of hazardous substances less than the reqistered volume?",
+            "Checklist Item": "If required, is the hazardous substances certificate still valid?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "3",
-            "Checklist Item": "Does the hazardous substance installation comply to the necessary Legislative requirements?",
+            "Checklist Item": "Is the quantity of hazardous substances less than the reqistered volume?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "4",
+            "Checklist Item": "Does the hazardous substance installation comply to the necessary Legislative requirements?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          },
+          {
+            "Item Number": "5",
             "Checklist Item": "Are all fire safety protection equipment installed around the hazardous substance installation?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
@@ -211,19 +206,16 @@
         "items": [
           {
             "Item Number": "1",
-            "Checklist Item": "Is the occupancy use consistent with the approved or observed building use?",
-            "Answer Type": "Yes/No"
+            "Checklist Item": "Is there an approved fire/internal layout plan?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
           },
           {
             "Item Number": "2",
-            "Checklist Item": "Are fire safety installations maintained and accessible?",
-            "Answer Type": "Yes/No"
-          },
-          {
-            "Item Number": "3",
-            "Checklist Item": "Are visible fire safety contraventions present requiring corrective action?",
-            "Answer Type": "Yes/No"
-          }
+            "Checklist Item": "Is the occupancy use consistent with the approved or observed building use?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          }          
         ]
       }
     ]
