@@ -1104,10 +1104,12 @@ function renderPhotos() {
     const div = document.createElement('div');
     div.className = 'photo-item';
 
-    const photoSrc = photo.src; // ← BELANGRIK
+    const photoSrc = photo.src;
+    const photoTime = new Date(photo.timestamp).toLocaleString();
 
     div.innerHTML = `
       <img src="${photoSrc}">
+      <small class="photo-timestamp">Captured: ${photoTime}</small>
       <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
     `;
 
