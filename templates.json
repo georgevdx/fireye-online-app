@@ -251,7 +251,13 @@
             "Checklist Item": "Is there an approved fire or internal layout plan available?",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
-          }          
+          },
+          {
+            "Item Number": "34",
+            "Checklist Item": "Are kitchen extraction systems serviced and certificate available?",
+            "Answer Type": "Yes/No",
+            "Applicable To": ["All"]
+          }            
         ]
       }
     ]
