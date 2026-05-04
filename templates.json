@@ -7,6 +7,7 @@
                     {
             "Item Number": "1",
             "Checklist Item": "Are fire equipment provided, accessible, visible and unobstructed?",
+            "Non Compliance Text": "Fire equipment is insufficient, non-accessible, not clearly visible or obstructed",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
@@ -226,6 +227,7 @@
           {
             "Item Number": "30",
             "Checklist Item": "Are sleeping or resting areas free from combustible clutter and hazards?",
+            
             "Answer Type": "Yes/No",
             "Applicable To": ["A3", "E2", "E3", "E4", "H1", "H2", "H3", "H5"]
           },
