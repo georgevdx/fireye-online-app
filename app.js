@@ -811,10 +811,10 @@ function generateReport() {
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const finalComments = getEl('finalComments').value.trim();
   const occupancy = getEl('occupancySelect').value || '-';
-  
+
   const projectAddress = getEl('projectAddress').value.trim();
   const gps = getEl('gps').value.trim();
-  
+
   const inMall = getEl('inMall').value || 'No';
   const mallName = getEl('mallName').value.trim();
   const unitNumber = getEl('unitNumber').value.trim();
@@ -822,144 +822,120 @@ function generateReport() {
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
 
-  const templateChecklist = getActiveTemplateChecklist();
-
-  const selectedChecklist = templateChecklist || checklists.filter(c =>
-    c["Applicable To"] === "All occupancies" || c["Applicable To"] === occupancy
-  );
+  const selectedChecklist = getActiveTemplateChecklist() || [];
 
   const reportContent = getEl('reportContent');
 
   let answersHtml = '';
   let actionSections = {};
-  let photosHtml = '';   // ✅ BELANGRIK: hier bo
-  
+  let nonCompliance = {};
+  let photosHtml = '';
+
   let yesCount = 0;
   let noCount = 0;
   let naCount = 0;
-  let notAnsweredCount = 0;
+
   let currentReportSection = '';
-    let sectionYes = 0;
-    let sectionNo = 0;
-    let sectionHasItems = false;
+  let sectionYes = 0;
+  let sectionNo = 0;
+  let sectionHasItems = false;
 
-    function closeReportSection() {
-      if (!currentReportSection || !sectionHasItems) return;
+  function closeReportSection() {
+    if (!currentReportSection || !sectionHasItems) return;
 
-      const sectionStatus =
-        sectionNo > 0
-          ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
-          : `Compliant (${sectionYes} Yes)`;
+    const sectionStatus =
+      sectionNo > 0
+        ? `Attention Required (${sectionNo} No / ${sectionYes} Yes)`
+        : `Compliant (${sectionYes} Yes)`;
+
+    answersHtml += `
+      <div class="report-section-status">${sectionStatus}</div>
+    `;
+  }
+
+  selectedChecklist.forEach((item, index) => {
+    const field = document.getElementById(`check_${index}`);
+    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+    const answer = rawAnswer.trim();
+
+    const noteField = document.getElementById(`note_${index}`);
+    const itemNote = noteField ? noteField.value.trim() : '';
+
+    if (rawAnswer === 'Not answered' && !itemNote) {
+      return;
+    }
+
+    const sectionName = item.Section || 'General';
+
+    if (sectionName !== currentReportSection) {
+      closeReportSection();
+
+      currentReportSection = sectionName;
+      sectionYes = 0;
+      sectionNo = 0;
+      sectionHasItems = false;
+
+      const reportSectionId = `report-section-${sectionName
+        .toLowerCase()
+        .replaceAll(' ', '-')
+        .replaceAll('/', '-')
+        .replaceAll('&', 'and')}`;
 
       answersHtml += `
-        <div class="report-section-status">${sectionStatus}</div>
+        <div id="${reportSectionId}" class="report-section-heading">${escapeHtml(sectionName)}</div>
       `;
     }
 
-    selectedChecklist.forEach((item, index) => {
-      const field = document.getElementById(`check_${index}`);
-      const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
-      const answer = rawAnswer.trim();
+    if (answer.toLowerCase() === 'yes') {
+      yesCount++;
+      sectionYes++;
+    } else if (answer.toLowerCase() === 'no') {
+      noCount++;
+      sectionNo++;
 
-      const noteField = document.getElementById(`note_${index}`);
-      const itemNote = noteField ? noteField.value.trim() : '';
+      if (!actionSections[sectionName]) {
+        actionSections[sectionName] = 0;
+      }
+      actionSections[sectionName]++;
 
-      if (rawAnswer === 'Not answered' && !itemNote) {
-        return;
+      if (!nonCompliance[sectionName]) {
+        nonCompliance[sectionName] = [];
       }
 
-      const sectionName = item.Section || 'General';
-
-      
-
-      if (sectionName !== currentReportSection) {
-        closeReportSection();
-
-        currentReportSection = sectionName;
-        sectionYes = 0;
-        sectionNo = 0;
-        sectionHasItems = false;
-
-        const reportSectionId = `report-section-${sectionName
-          .toLowerCase()
-          .replaceAll(' ', '-')
-          .replaceAll('/', '-')
-          .replaceAll('&', 'and')}`;
-
-        answersHtml += `
-          <div id="${reportSectionId}" class="report-section-heading">${escapeHtml(sectionName)}</div>
-        `;
-      }
-
-      if (answer.toLowerCase() === 'yes') {
-        yesCount++;
-        sectionYes++;
-      } else if (answer.toLowerCase() === 'no') {
-        noCount++;
-        sectionNo++;
-
-        const actionSectionName = item.Section || 'General';
-
-        if (!actionSections[actionSectionName]) {
-          actionSections[actionSectionName] = 0;
-        }
-
-        actionSections[actionSectionName]++;
-      } else if (answer.toUpperCase() === 'N/A') {
-        naCount++;
-      } else {
-        notAnsweredCount++;
-      }
-
-      sectionHasItems = true;
-
-      let answerClass = '';
-
-      if (answer.toLowerCase() === 'no') {
-        answerClass = 'answer-no';
-      } else if (answer.toLowerCase() === 'yes') {
-        answerClass = 'answer-yes';
-      } else if (answer.toUpperCase() === 'N/A') {
-        answerClass = 'answer-na';
-      }
-
-      answersHtml += `
-        <div class="report-answer ${answerClass}">
-          <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
-          <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
-          ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
-        </div>
-      `;
-    });
-
-    closeReportSection();
-
-    let actionHtml = '';
-
-    const sections = Object.keys(actionSections)
-      .sort((a, b) => actionSections[b] - actionSections[a]);
-
-    if (sections.length > 0) {
-      sections.forEach(section => {
-        const count = actionSections[section];
-        const label = count === 1 ? 'item' : 'items';
-
-        const actionSectionId = `report-section-${section
-          .toLowerCase()
-          .replaceAll(' ', '-')
-          .replaceAll('/', '-')
-          .replaceAll('&', 'and')}`;
-
-        actionHtml += `
-          <a class="action-item action-link" href="#${actionSectionId}">
-            • ${escapeHtml(section.toUpperCase())} — ${count} No ${label}
-          </a>
-        `;
+      nonCompliance[sectionName].push({
+        question: item["Checklist Item"],
+        note: itemNote
       });
-    } else {
-      actionHtml = `<div class="note">No action required.</div>`;
+    } else if (answer.toUpperCase() === 'N/A') {
+      naCount++;
     }
+
+    sectionHasItems = true;
+
+    let answerClass = '';
+
+    if (answer.toLowerCase() === 'no') {
+      answerClass = 'answer-no';
+    } else if (answer.toLowerCase() === 'yes') {
+      answerClass = 'answer-yes';
+    } else if (answer.toUpperCase() === 'N/A') {
+      answerClass = 'answer-na';
+    }
+
+    answersHtml += `
+      <div class="report-answer ${answerClass}">
+        <strong>${item["Item Number"]}. ${item["Checklist Item"]}</strong><br>
+        <strong>Answer:</strong> ${escapeHtml(rawAnswer)}
+        ${itemNote ? `<br><strong>Note:</strong> ${escapeHtml(itemNote)}` : ''}
+      </div>
+    `;
+  });
+
+  closeReportSection();
+
   const totalItems = selectedChecklist.length;
+  const answeredCount = yesCount + noCount + naCount;
+  const notAnsweredCount = totalItems - answeredCount;
 
   let overallStatus = 'Compliant / Acceptable';
 
@@ -968,16 +944,14 @@ function generateReport() {
   } else if (notAnsweredCount > 0) {
     overallStatus = 'Incomplete Inspection';
   }
-  
-  
+
   let riskRating = 'LOW RISK';
   let riskComment = 'No significant fire safety risks identified.';
 
   if (noCount >= 5) {
     riskRating = 'HIGH RISK';
     riskComment = 'Immediate attention required. Multiple fire safety non-compliances identified.';
-  }
-  else if (noCount >= 1) {
+  } else if (noCount >= 1) {
     riskRating = 'MEDIUM RISK';
     riskComment = 'Fire safety deficiencies identified. Corrective action required.';
   }
@@ -987,7 +961,58 @@ function generateReport() {
     riskComment = 'Inspection incomplete. Some items were not assessed.';
   }
 
-  // Photos
+  let actionHtml = '';
+
+  const sections = Object.keys(actionSections)
+    .sort((a, b) => actionSections[b] - actionSections[a]);
+
+  if (sections.length > 0) {
+    sections.forEach(section => {
+      const count = actionSections[section];
+      const label = count === 1 ? 'item' : 'items';
+
+      const actionSectionId = `report-section-${section
+        .toLowerCase()
+        .replaceAll(' ', '-')
+        .replaceAll('/', '-')
+        .replaceAll('&', 'and')}`;
+
+      actionHtml += `
+        <a class="action-item action-link" href="#${actionSectionId}">
+          • ${escapeHtml(section.toUpperCase())} — ${count} No ${label}
+        </a>
+      `;
+    });
+  } else {
+    actionHtml = `<div class="note">No action required.</div>`;
+  }
+
+  let nonComplianceHtml = '';
+
+  const ncSections = Object.keys(nonCompliance);
+
+  if (ncSections.length > 0) {
+    ncSections.forEach(section => {
+      nonComplianceHtml += `
+        <div class="nc-section">
+          <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
+      `;
+
+      nonCompliance[section].forEach(item => {
+        nonComplianceHtml += `
+          <div class="nc-item">
+            - ${escapeHtml(item.question)}
+            ${item.note ? `<br><span class="note">Note: ${escapeHtml(item.note)}</span>` : ''}
+          </div>
+        `;
+      });
+
+      nonComplianceHtml += `</div>`;
+    });
+  } else {
+    nonComplianceHtml = `<div class="note">No non-compliances recorded.</div>`;
+  }
+
   if (currentPhotos.length > 0) {
     currentPhotos.forEach((photo, index) => {
       photosHtml += `
@@ -996,92 +1021,93 @@ function generateReport() {
           <img src="${photo}" alt="Inspection photo ${index + 1}">
         </div>
       `;
-});
+    });
   } else {
     photosHtml = `<div class="note">No photo evidence added.</div>`;
   }
 
-  // Final report
-reportContent.innerHTML = `
-  <div class="report-header">
-  <div class="report-title">Fireye Fire Safety Report</div>
-  <div class="report-subtitle">Inspection and checklist summary</div>
-  </div>
-  
-  <div class="report-block">
-    <h3>Project Information</h3>
-    <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
-    <div class="report-line"><strong>Product Type:</strong> ${escapeHtml(productType)}</div>
-    <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
-    <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
-    <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
-
-    <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
-    ${inMall === 'Yes' ? `<div class="report-line"><strong>Mall/Centre Name:</strong> ${escapeHtml(mallName)}</div>` : ''}
-    ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
-    <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
-    <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
-    <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
-  </div>
-
-  <div class="report-block">
-    <h3>Inspection Summary</h3>
-    <div class="report-line"><strong>Total Items:</strong> ${totalItems}</div>
-    <div class="report-line"><strong>Yes:</strong> ${yesCount}</div>
-    <div class="report-line"><strong>No:</strong> ${noCount}</div>
-    <div class="report-line"><strong>N/A:</strong> ${naCount}</div>
-    <div class="report-line"><strong>Not Answered:</strong> ${notAnsweredCount}</div>
-    <div class="report-line"><strong>Overall Status:</strong> <span class="${
-      overallStatus === 'Compliant / Acceptable'
-        ? 'status-good'
-        : overallStatus === 'Attention Required'
-        ? 'status-warning'
-        : 'status-incomplete'
-    }">${overallStatus}</span></div>
-    <div class="report-line">
-      <strong>Risk Rating:</strong> 
-      <span class="${
-        riskRating === 'HIGH RISK'
-          ? 'risk-high'
-          : riskRating === 'MEDIUM RISK'
-          ? 'risk-medium'
-          : riskRating === 'INCOMPLETE'
-          ? 'risk-incomplete'
-          : 'risk-low'
-      }">${riskRating}</span>
+  reportContent.innerHTML = `
+    <div class="report-header">
+      <div class="report-title">Fireye Fire Safety Report</div>
+      <div class="report-subtitle">Inspection and checklist summary</div>
     </div>
 
-    <div class="report-line note">
-      ${riskComment}
+    <div class="report-block">
+      <h3>Project Information</h3>
+      <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
+      <div class="report-line"><strong>Product Type:</strong> ${escapeHtml(productType)}</div>
+      <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
+      <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
+      <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
+      <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
+      ${inMall === 'Yes' ? `<div class="report-line"><strong>Mall/Centre Name:</strong> ${escapeHtml(mallName)}</div>` : ''}
+      ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
+      <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
+      <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
+      <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
     </div>
+
+    <div class="report-block">
+      <h3>Inspection Summary</h3>
+      <div class="report-line"><strong>Total Items:</strong> ${totalItems}</div>
+      <div class="report-line"><strong>Answered:</strong> ${answeredCount}</div>
+      <div class="report-line"><strong>Yes:</strong> ${yesCount}</div>
+      <div class="report-line"><strong>No:</strong> ${noCount}</div>
+      <div class="report-line"><strong>N/A:</strong> ${naCount}</div>
+      <div class="report-line"><strong>Not Answered:</strong> ${notAnsweredCount}</div>
+      <div class="report-line"><strong>Overall Status:</strong> <span class="${
+        overallStatus === 'Compliant / Acceptable'
+          ? 'status-good'
+          : overallStatus === 'Attention Required'
+          ? 'status-warning'
+          : 'status-incomplete'
+      }">${overallStatus}</span></div>
+
+      <div class="report-line">
+        <strong>Risk Rating:</strong> 
+        <span class="${
+          riskRating === 'HIGH RISK'
+            ? 'risk-high'
+            : riskRating === 'MEDIUM RISK'
+            ? 'risk-medium'
+            : riskRating === 'INCOMPLETE'
+            ? 'risk-incomplete'
+            : 'risk-low'
+        }">${riskRating}</span>
+      </div>
+
+      <div class="report-line note">${riskComment}</div>
     </div>
 
     <div class="report-block">
       <h3>Action Required</h3>
       ${actionHtml}
     </div>
+
+    <div class="report-block">
+      <h3>Non-Compliance Details</h3>
+      ${nonComplianceHtml}
+    </div>
+
     <div class="report-block">
       <h3>Checklist Results</h3>
       ${answersHtml}
     </div>
-    
+
     <div class="report-block">
       <h3>Inspector Comments / Conclusion</h3>
       <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
-    </div> 
-    
-  <div class="report-block">
-    <h3>Photo Evidence</h3>
-    <div class="report-photos">
-      ${photosHtml}
     </div>
-  </div>
 
-
-`;
+    <div class="report-block">
+      <h3>Photo Evidence</h3>
+      <div class="report-photos">
+        ${photosHtml}
+      </div>
+    </div>
+  `;
 
   getEl('reportSection').style.display = 'block';
-  
 }
 
 
