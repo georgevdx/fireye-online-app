@@ -8,7 +8,7 @@
             "Item Number": "1",
             "Checklist Item": "Are fire equipment provided, accessible, visible and unobstructed?",
             "Non Compliance Text": "Fire equipment is insufficient, non-accessible, not clearly visible or obstructed",
-            "Reference": "Reference: SANS 10400-T (4.32) Fire-fighting equipment to be maintained and accessible at all times.",
+            "Reference": "SANS 10400-T (4.32) Fire-fighting equipment to be accessible at all times.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
@@ -16,6 +16,7 @@
             "Item Number": "2",
             "Checklist Item": "Are fire equipment serviced and within valid service date?",
             "Non Compliance Text": "Fire equipment not serviced.",
+            "Reference": "SANS 10400-T (4.32) Fire-fighting equipment to be maintained at all times.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
@@ -23,6 +24,7 @@
             "Item Number": "3",
             "Checklist Item": "Are fire extinguishers the correct size and type as per occupancy?",
             "Non Compliance Text": "Fire extinguishers are not the correct size or type.",
+            "Reference": "SANS 10400-T (4.37) Fire extinguishers to be provided in accordance with Table 15 for the applicable occupancy.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
@@ -30,6 +32,7 @@
             "Item Number": "4",
             "Checklist Item": "Are fire extinguishers correctly positioned and installed?",
             "Non Compliance Text": "Fire extinguishers are not correctly positioned or installed.",
+            "Reference": "SANS 10400-T (4.37) Fire extinguishers to be positioned in accordance with Table 15 for the applicable occupancy.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
@@ -37,6 +40,7 @@
             "Item Number": "5",
             "Checklist Item": "Are fire hose reels accessible, intact and unobstructed?",
             "Non Compliance Text": "Fire hose reels are not accessible, not intact or obstructed.",
+            "Reference": "SANS 10400-T (4.32) Fire-fighting equipment to be maintained in a ready, accessible and serviceable condition.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
@@ -44,6 +48,7 @@
             "Item Number": "6",
             "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
             "Non Compliance Text": "Fire hydrants or fire brigade connections are not accessible or obstructed.",
+            "Reference": "SANS 10400-T (4.32) Fire-fighting equipment and fire brigade connections to be maintained, accessible and ready for use.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           }
