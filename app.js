@@ -463,6 +463,9 @@ function openProject(projectId) {
   getEl('inMall').value = project.inMall || 'No';
   getEl('mallName').value = project.mallName || '';
   getEl('unitNumber').value = project.unitNumber || '';
+  getEl('followUpRequired').value = project.followUpRequired || 'No';
+  getEl('followUpDate').value = project.followUpDate || '';
+  getEl('followUpNotes').value = project.followUpNotes || '';
   toggleMallFields();
 
   currentPhotos = project.photos || [];
@@ -551,6 +554,9 @@ function saveProject() {
       occupancy,
       answers,
       photos: currentPhotos,
+      followUpRequired: getEl('followUpRequired').value,
+      followUpDate: getEl('followUpDate').value,
+      followUpNotes: getEl('followUpNotes').value.trim(),
       lastSaved: new Date().toISOString()
     };
       currentProjectId = newProject.id;
