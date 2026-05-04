@@ -665,14 +665,14 @@ button:hover {
 }
 
 .filter-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* 2 langs mekaar */
   gap: 8px;
   margin: 12px 0;
 }
 
 .filter-bar button {
-  padding: 8px 12px;
+  padding: 10px;
   border-radius: 8px;
-  min-width: 90px;
+  width: 100%;
 }
