@@ -1,3 +1,8 @@
+let currentFilter = 'all';
+function setFilter(filter) {
+  currentFilter = filter;
+  renderProjectsList();
+}
 let occupancies = [];
 let requirements = [];
 let checklists = [];
@@ -428,21 +433,41 @@ function renderProjectsList() {
 
   container.innerHTML = '';
 
-  const filteredProjects = projects.filter(project => {
-    if (!searchText) return true;
+ const filteredProjects = projects.filter(project => {
 
+  const followStatus = getFollowUpStatus(project);
+
+  // 🔍 SEARCH FILTER
+  if (searchText) {
     const placeName = (project.projectName || '').toLowerCase();
     const address = (project.projectAddress || '').toLowerCase();
     const mallName = (project.mallName || '').toLowerCase();
     const unitNumber = (project.unitNumber || '').toLowerCase();
 
-    return (
+    const matchesSearch =
       placeName.includes(searchText) ||
       address.includes(searchText) ||
       mallName.includes(searchText) ||
-      unitNumber.includes(searchText)
-    );
-  });
+      unitNumber.includes(searchText);
+
+    if (!matchesSearch) return false;
+  }
+
+  // 🔥 FOLLOW-UP FILTER
+  if (currentFilter === 'overdue') {
+    return followStatus.class === 'status-overdue';
+  }
+
+  if (currentFilter === 'soon') {
+    return followStatus.class === 'status-soon';
+  }
+
+  if (currentFilter === 'none') {
+    return followStatus.class === 'status-none';
+  }
+
+  return true; // default = all
+});
 
   filteredProjects.sort((a, b) => {
       const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
@@ -472,7 +497,7 @@ function renderProjectsList() {
         Inspector: ${escapeHtml(project.inspectorName || '-')}<br>
         Occupancy: ${escapeHtml(project.occupancy || '-')}
       </div>
-      
+
       <div class="project-actions">
         <button class="small-btn" onclick="openProject('${project.id}')">Open</button>
       </div>

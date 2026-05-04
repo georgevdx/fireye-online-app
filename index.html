@@ -17,7 +17,12 @@
     <p class="subtitle">Fire Safety App</p>
   </div>
 </header>
-
+  <div class="filter-bar">
+    <button onclick="setFilter('all')">All</button>
+    <button onclick="setFilter('soon')">Due Soon</button>
+    <button onclick="setFilter('overdue')">Overdue</button>
+    <button onclick="setFilter('none')">No Follow-up</button>
+  </div>
     <section id="projectListSection" class="card">
       <div class="toolbar">
         <h2>Projects</h2>
@@ -158,7 +163,7 @@
   ></textarea>
 </div>
   </section>
-  
+
 <div class="form-section">
   <h3>Follow-up / Re-Inspection</h3>
 
