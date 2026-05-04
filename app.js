@@ -425,8 +425,37 @@ function getFollowUpStatus(project) {
   return { label: 'Scheduled', class: 'status-scheduled' };
 }
 
+function renderDashboard(projects) {
+  const dashboard = document.getElementById('dashboardSummary');
+  if (!dashboard) return;
+
+  let total = projects.length;
+  let overdue = 0;
+  let soon = 0;
+  let scheduled = 0;
+  let none = 0;
+
+  projects.forEach(project => {
+    const status = getFollowUpStatus(project);
+
+    if (status.class === 'status-overdue') overdue++;
+    else if (status.class === 'status-soon') soon++;
+    else if (status.class === 'status-scheduled') scheduled++;
+    else none++;
+  });
+
+  dashboard.innerHTML = `
+    <div class="dash-card">Total<br><strong>${total}</strong></div>
+    <div class="dash-card dash-overdue">Overdue<br><strong>${overdue}</strong></div>
+    <div class="dash-card dash-soon">Due Soon<br><strong>${soon}</strong></div>
+    <div class="dash-card dash-scheduled">Scheduled<br><strong>${scheduled}</strong></div>
+    <div class="dash-card dash-none">No Follow-up<br><strong>${none}</strong></div>
+  `;
+}
+
 function renderProjectsList() {
   const projects = getProjects();
+  renderDashboard(projects);
   const container = getEl('projectsList');
   const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
