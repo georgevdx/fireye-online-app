@@ -163,8 +163,22 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
 }
 
   function exportReport() {
-    generateReport();
-  }
+  generateReport(); // maak seker report is nuut
+
+  const element = document.getElementById('reportSection');
+
+  const projectName = getEl('projectName').value.trim() || 'Inspection';
+
+  const opt = {
+    margin:       10,
+    filename:     `Fireye_Report_${projectName}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save();
+}
 
   async function useCurrentLocation() {
   if (!navigator.geolocation) {
@@ -1056,7 +1070,7 @@ reportContent.innerHTML = `
 `;
 
   getEl('reportSection').style.display = 'block';
-  window.print();
+  
 }
 
 

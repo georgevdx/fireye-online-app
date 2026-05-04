@@ -579,3 +579,14 @@ button:hover {
   color: #333;
   margin-top: 4px;
 }
+
+@media print {
+  body {
+    background: white;
+  }
+
+  #reportSection {
+    box-shadow: none;
+    margin: 0;
+  }
+}
