@@ -8,36 +8,42 @@
             "Item Number": "1",
             "Checklist Item": "Are fire equipment provided, accessible, visible and unobstructed?",
             "Non Compliance Text": "Fire equipment is insufficient, non-accessible, not clearly visible or obstructed",
+            "Reference": "Reference: SANS 10400-T (4.32) Fire-fighting equipment to be maintained and accessible at all times.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "2",
             "Checklist Item": "Are fire equipment serviced and within valid service date?",
+            "Non Compliance Text": "Fire equipment not serviced.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "3",
             "Checklist Item": "Are fire extinguishers the correct size and type as per occupancy?",
+            "Non Compliance Text": "Fire extinguishers are not the correct size or type.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "4",
             "Checklist Item": "Are fire extinguishers correctly positioned and installed?",
+            "Non Compliance Text": "Fire extinguishers are not correctly positioned or installed.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "5",
             "Checklist Item": "Are fire hose reels accessible, intact and unobstructed?",
+            "Non Compliance Text": "Fire hose reels are not accessible, not intact or obstructed.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "6",
             "Checklist Item": "Are hydrants or fire brigade connections accessible and not obstructed?",
+            "Non Compliance Text": "Fire hydrants or fire brigade connections are not accessible or obstructed.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           }
@@ -49,18 +55,21 @@
           {
             "Item Number": "7",
             "Checklist Item": "If required, are fire detection and alarm serviced and within valid service date?",
+            "Non Compliance Text": "Fire detection and alarm require to be serviced.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "8",
             "Checklist Item": "Is the fire alarm or detection panel accessible and indicating normal condition?",
+            "Non Compliance Text": "Fire alarm or detection panel is not accessible and/or indicate abnormal condition.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           },
           {
             "Item Number": "9",
             "Checklist Item": "Are detectors, manual call points and sounders unobstructed and not visibly damaged?",
+            "Non Compliance Text": "Detectors, manual call points or sounders are obstructed and visibly damaged.",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
           }

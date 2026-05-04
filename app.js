@@ -903,9 +903,10 @@ function generateReport() {
       }
 
       nonCompliance[sectionName].push({
-        text: item["Non Compliance Text"] || item["Checklist Item"],
-        note: itemNote
-      });
+      text: item["Non Compliance Text"] || item["Checklist Item"],
+      note: itemNote,
+      reference: item["Reference"] || ''
+    });
     } else if (answer.toUpperCase() === 'N/A') {
       naCount++;
     }
@@ -1001,8 +1002,8 @@ function generateReport() {
       nonCompliance[section].forEach(item => {
         nonComplianceHtml += `
           <div class="nc-item">
-            - ${escapeHtml(item.text)}
-            ${item.note ? `<br><span class="note">Note: ${escapeHtml(item.note)}</span>` : ''}
+           - ${escapeHtml(item.text)}
+            ${item.reference ? `<br><span class="note">Reference: ${escapeHtml(item.reference)}</span>` : ''}
           </div>
         `;
       });
