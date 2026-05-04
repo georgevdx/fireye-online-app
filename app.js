@@ -903,7 +903,7 @@ function generateReport() {
       }
 
       nonCompliance[sectionName].push({
-        question: item["Checklist Item"],
+        text: item["Non Compliance Text"] || item["Checklist Item"],
         note: itemNote
       });
     } else if (answer.toUpperCase() === 'N/A') {
@@ -1001,7 +1001,7 @@ function generateReport() {
       nonCompliance[section].forEach(item => {
         nonComplianceHtml += `
           <div class="nc-item">
-            - ${escapeHtml(item.question)}
+            - ${escapeHtml(item.text)}
             ${item.note ? `<br><span class="note">Note: ${escapeHtml(item.note)}</span>` : ''}
           </div>
         `;
