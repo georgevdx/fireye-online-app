@@ -396,6 +396,30 @@ function showProjectForm() {
   getEl('projectFormSection').style.display = 'block';
 }
 
+function getFollowUpStatus(project) {
+  if (project.followUpRequired !== 'Yes' || !project.followUpDate) {
+    return { label: 'No Follow-up', class: 'status-none' };
+  }
+
+  const today = new Date();
+  const dueDate = new Date(project.followUpDate);
+
+  today.setHours(0,0,0,0);
+  dueDate.setHours(0,0,0,0);
+
+  const diffDays = (dueDate - today) / (1000 * 60 * 60 * 24);
+
+  if (diffDays < 0) {
+    return { label: 'Overdue', class: 'status-overdue' };
+  }
+
+  if (diffDays <= 2) {
+    return { label: 'Due Soon', class: 'status-soon' };
+  }
+
+  return { label: 'Scheduled', class: 'status-scheduled' };
+}
+
 function renderProjectsList() {
   const projects = getProjects();
   const container = getEl('projectsList');
@@ -432,14 +456,23 @@ function renderProjectsList() {
   }
 
   filteredProjects.forEach(project => {
+
+    const followStatus = getFollowUpStatus(project);
     const card = document.createElement('div');
     card.className = 'project-card';
     card.innerHTML = `
       <h3>${escapeHtml(project.projectName || 'Untitled Project')}</h3>
+
+      <div class="project-follow ${followStatus.class}">
+        ${followStatus.label}
+        ${project.followUpDate ? `(${project.followUpDate})` : ''}
+      </div>
+
       <div class="project-meta">
         Inspector: ${escapeHtml(project.inspectorName || '-')}<br>
         Occupancy: ${escapeHtml(project.occupancy || '-')}
       </div>
+      
       <div class="project-actions">
         <button class="small-btn" onclick="openProject('${project.id}')">Open</button>
       </div>

@@ -602,3 +602,25 @@ button:hover {
   break-after: avoid;
   page-break-after: avoid;
 }
+
+.project-follow {
+  font-size: 12px;
+  margin: 4px 0;
+  font-weight: bold;
+}
+
+.status-none {
+  color: #666;
+}
+
+.status-scheduled {
+  color: #2e7d32;
+}
+
+.status-soon {
+  color: #d97706;
+}
+
+.status-overdue {
+  color: #b71c1c;
+}
