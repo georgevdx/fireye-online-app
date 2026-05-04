@@ -590,3 +590,15 @@ button:hover {
     margin: 0;
   }
 }
+
+.report-block,
+.report-answer,
+.report-photo-item {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.report-section-heading {
+  break-after: avoid;
+  page-break-after: avoid;
+}
