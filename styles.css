@@ -663,3 +663,16 @@ button:hover {
   background: #eeeeee;
   color: #555;
 }
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.filter-bar button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  min-width: 90px;
+}
