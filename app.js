@@ -123,6 +123,9 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       occupancy,
       answers,
       photos: currentPhotos,
+      followUpRequired: getEl('followUpRequired').value,
+      followUpDate: getEl('followUpDate').value,
+      followUpNotes: getEl('followUpNotes').value.trim(),
       lastSaved: new Date().toISOString()
     };
   }
@@ -832,6 +835,10 @@ function generateReport() {
 
   const reportContent = getEl('reportContent');
 
+  const followUpRequired = getEl('followUpRequired').value;
+  const followUpDate = getEl('followUpDate').value;
+  const followUpNotes = getEl('followUpNotes').value.trim();
+
   let answersHtml = '';
   let actionSections = {};
   let nonCompliance = {};
@@ -1102,9 +1109,27 @@ function generateReport() {
     </div>
 
     <div class="report-block">
-      <h3>Inspector Comments / Conclusion</h3>
-      <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
+  <h3>Inspector Comments / Conclusion</h3>
+  <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
+</div>
+
+<div class="report-block">
+  <h3>Follow-up / Re-Inspection</h3>
+
+  <div class="report-line">
+    <strong>Follow-up Required:</strong> ${escapeHtml(followUpRequired)}
+  </div>
+
+  ${followUpRequired === 'Yes' ? `
+    <div class="report-line">
+      <strong>Follow-up Date:</strong> ${escapeHtml(followUpDate || 'Not specified')}
     </div>
+
+    <div class="report-line">
+      <strong>Reason:</strong> ${escapeHtml(followUpNotes || 'No reason provided')}
+    </div>
+  ` : ''}
+</div>
 
     <div class="report-block">
       <h3>Photo Evidence</h3>
