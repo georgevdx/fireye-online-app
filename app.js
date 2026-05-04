@@ -122,10 +122,10 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       inspectorName,
       occupancy,
       answers,
-      photos: currentPhotos,
       followUpRequired: getEl('followUpRequired').value,
       followUpDate: getEl('followUpDate').value,
       followUpNotes: getEl('followUpNotes').value.trim(),
+      photos: currentPhotos,      
       lastSaved: new Date().toISOString()
     };
   }
@@ -506,6 +506,10 @@ function saveProject() {
   
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
+  
+  const followUpRequired = getEl('followUpRequired').value;
+  const followUpDate = getEl('followUpDate').value;
+  const followUpNotes = getEl('followUpNotes').value.trim();
 
   const answers = [];
 
@@ -538,6 +542,9 @@ function saveProject() {
       inspectorName,
       occupancy,
       answers,
+      followUpRequired,
+      followUpDate,
+      followUpNotes,
       photos: currentPhotos,
       lastSaved: new Date().toISOString()
     };
