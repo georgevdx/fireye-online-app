@@ -453,12 +453,24 @@ function renderDashboard(projects) {
   });
 
   dashboard.innerHTML = `
-    <div class="dash-card">Total<br><strong>${total}</strong></div>
-    <div class="dash-card dash-overdue">Overdue<br><strong>${overdue}</strong></div>
-    <div class="dash-card dash-soon">Due Soon<br><strong>${soon}</strong></div>
-    <div class="dash-card dash-scheduled">Scheduled<br><strong>${scheduled}</strong></div>
-    <div class="dash-card dash-none">No Follow-up<br><strong>${none}</strong></div>
-  `;
+  <div class="dash-card">Total<br><strong>${total}</strong></div>
+
+  <div class="dash-card dash-overdue">
+    🔴 Overdue<br><strong>${overdue}</strong>
+  </div>
+
+  <div class="dash-card dash-soon">
+    🟠 Due Soon<br><strong>${soon}</strong>
+  </div>
+
+  <div class="dash-card dash-scheduled">
+    🟢 Scheduled<br><strong>${scheduled}</strong>
+  </div>
+
+  <div class="dash-card dash-none">
+    ⚪ No Follow-up<br><strong>${none}</strong>
+  </div>
+`;
 }
 
 function renderProjectsList() {
@@ -507,10 +519,25 @@ function renderProjectsList() {
 });
 
   filteredProjects.sort((a, b) => {
-      const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
-      const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
-      return bTime - aTime;
-    });
+    const statusOrder = {
+      'status-overdue': 1,
+      'status-soon': 2,
+      'status-scheduled': 3,
+      'status-none': 4
+    };
+
+    const aStatus = getFollowUpStatus(a).class;
+    const bStatus = getFollowUpStatus(b).class;
+
+    if (statusOrder[aStatus] !== statusOrder[bStatus]) {
+      return statusOrder[aStatus] - statusOrder[bStatus];
+    }
+
+    const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+    const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+    return bTime - aTime;
+  });
 
   if (filteredProjects.length === 0) {
     container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;

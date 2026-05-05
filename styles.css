@@ -676,3 +676,40 @@ button:hover {
   border-radius: 8px;
   width: 100%;
 }
+
+.project-follow {
+  padding: 4px 10px;
+  border-radius: 12px;
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* 🔴 Overdue */
+.status-overdue {
+  background: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #e57373;
+}
+
+/* 🟠 Due Soon */
+.status-soon {
+  background: #fff3e0;
+  color: #ef6c00;
+  border: 1px solid #ffb74d;
+}
+
+/* 🟢 Scheduled */
+.status-scheduled {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+
+/* ⚪ None */
+.status-none {
+  background: #f5f5f5;
+  color: #616161;
+  border: 1px solid #ccc;
+}
