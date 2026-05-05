@@ -149,6 +149,11 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       inspectorName,
       occupancy,
       answers,
+
+      followUpRequired: getEl('followUpRequired').value,
+      followUpDate: getEl('followUpDate').value,
+      followUpNotes: getEl('followUpNotes').value.trim(),
+
       photos: currentPhotos,
       lastSaved: new Date().toISOString()
     };
@@ -316,6 +321,9 @@ function initApp() {
   getEl('inMall').addEventListener('change', toggleMallFields);
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
+  getEl('followUpRequired').addEventListener('change', scheduleAutoSave);
+  getEl('followUpDate').addEventListener('input', scheduleAutoSave);
+  getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', renderProjectsList);
   getEl('productType').addEventListener('change', () => {
     updateInspectionTypeOptions();
