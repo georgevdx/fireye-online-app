@@ -433,6 +433,35 @@ function getFollowUpStatus(project) {
   return { label: 'Scheduled', class: 'status-scheduled' };
 }
 
+function renderReminderBanner(projects) {
+  const banner = document.getElementById('reminderBanner');
+  if (!banner) return;
+
+  let overdue = 0;
+  let soon = 0;
+
+  projects.forEach(project => {
+    const status = getFollowUpStatus(project);
+
+    if (status.class === 'status-overdue') overdue++;
+    if (status.class === 'status-soon') soon++;
+  });
+
+  if (overdue === 0 && soon === 0) {
+    banner.style.display = 'none';
+    banner.innerHTML = '';
+    return;
+  }
+
+  banner.style.display = 'block';
+
+  if (overdue > 0) {
+    banner.innerHTML = `⚠️ You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
+  } else {
+    banner.innerHTML = `🔔 You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
+  }
+}
+
 function renderDashboard(projects) {
   const dashboard = document.getElementById('dashboardSummary');
   if (!dashboard) return;
@@ -475,6 +504,7 @@ function renderDashboard(projects) {
 
 function renderProjectsList() {
   const projects = getProjects();
+  renderReminderBanner(projects);
   renderDashboard(projects);
   const container = getEl('projectsList');
   const searchField = document.getElementById('projectSearch');

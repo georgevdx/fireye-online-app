@@ -713,3 +713,13 @@ button:hover {
   color: #616161;
   border: 1px solid #ccc;
 }
+
+.reminder-banner {
+  padding: 12px 14px;
+  margin: 12px 0;
+  border-radius: 10px;
+  background: #fff3e0;
+  color: #bf360c;
+  border: 1px solid #ffb74d;
+  font-weight: 600;
+}
