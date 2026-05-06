@@ -126,6 +126,9 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       inMall,
       mallName,
       unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
       inspectorName,
       occupancy,
       answers,
@@ -148,6 +151,9 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
       inMall,
       mallName,
       unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
       inspectorName,
       occupancy,
       answers,
@@ -375,7 +381,10 @@ function createNewProject() {
   getEl('gps').value = '';
   getEl('inMall').value = 'No';
   getEl('mallName').value = '';
-  getEl('unitNumber').value = '';  
+  getEl('unitNumber').value = '';
+  getEl('contactPerson').value = '';
+  getEl('contactTel').value = '';
+  getEl('contactEmail').value = '';  
   toggleMallFields();
 
   currentPhotos = [];
@@ -944,51 +953,6 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function handlePhotoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = function(e) {
-  currentPhotos.push({
-    src: e.target.result,
-    timestamp: new Date().toISOString()
-  });
-  renderPhotos();
-};
-
-  reader.readAsDataURL(file);
-  event.target.value = '';
-}
-
-function renderPhotos() {
-  const container = getEl('photoPreview');
-  container.innerHTML = '';
-
-  currentPhotos.forEach((photo, index) => {
-    const div = document.createElement('div');
-    div.className = 'photo-item';
-
-    const photoSrc = typeof photo === "string" ? photo : photo.src;
-    const photoTime = typeof photo === "string"
-      ? "Not recorded"
-      : new Date(photo.timestamp).toLocaleString();
-
-    div.innerHTML = `
-      <img src="${photoSrc}">
-      <small class="photo-timestamp">Captured: ${photoTime}</small>
-      <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
-    `;
-
-    container.appendChild(div);
-  });
-}
-
-function deletePhoto(index) {
-  currentPhotos.splice(index, 1);
-  renderPhotos();
-}
 
 function generateReport() {
   const projectName = getEl('projectName').value.trim() || 'Untitled Project';
@@ -1209,7 +1173,7 @@ function generateReport() {
       photosHtml += `
         <div class="report-photo-item">
           <div><strong>Photo ${index + 1}</strong></div>
-          <img src="${photo}" alt="Inspection photo ${index + 1}">
+          <img src="${photo.src}" alt="Inspection photo ${index + 1}">
         </div>
       `;
     });
