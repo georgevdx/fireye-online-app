@@ -84,7 +84,9 @@ function autoSaveProject() {
   const inMallField = document.getElementById('inMall');
   const mallNameField = document.getElementById('mallName');
   const unitNumberField = document.getElementById('unitNumber');
-  
+  const contactPerson = getEl('contactPerson').value.trim();
+  const contactTel = getEl('contactTel').value.trim();
+  const contactEmail = getEl('contactEmail').value.trim();
  
 if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
@@ -618,6 +620,9 @@ function openProject(projectId) {
   getEl('inMall').value = project.inMall || 'No';
   getEl('mallName').value = project.mallName || '';
   getEl('unitNumber').value = project.unitNumber || '';
+  getEl('contactPerson').value = project.contactPerson || '';
+  getEl('contactTel').value = project.contactTel || '';
+  getEl('contactEmail').value = project.contactEmail || '';
   getEl('followUpRequired').value = project.followUpRequired || 'No';
   getEl('followUpDate').value = project.followUpDate || '';
   getEl('followUpNotes').value = project.followUpNotes || '';
@@ -656,12 +661,17 @@ function saveProject() {
   const mallName = getEl('mallName').value.trim();
   const unitNumber = getEl('unitNumber').value.trim();
   
+  const contactPerson = getEl('contactPerson').value.trim();
+  const contactTel = getEl('contactTel').value.trim();
+  const contactEmail = getEl('contactEmail').value.trim();
+  
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
   
   const followUpRequired = getEl('followUpRequired').value;
   const followUpDate = getEl('followUpDate').value;
   const followUpNotes = getEl('followUpNotes').value.trim();
+
 
   const answers = [];
 
@@ -689,6 +699,9 @@ function saveProject() {
       inMall,
       mallName,
       unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
       productType,
       inspectionType,
       inspectorName,
@@ -710,6 +723,9 @@ function saveProject() {
       inMall,
       mallName,
       unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
       productType,
       inspectionType,
       inspectorName,
@@ -986,7 +1002,9 @@ function generateReport() {
   const inMall = getEl('inMall').value || 'No';
   const mallName = getEl('mallName').value.trim();
   const unitNumber = getEl('unitNumber').value.trim();
-
+  const contactPerson = getEl('contactPerson').value.trim();
+  const contactTel = getEl('contactTel').value.trim();
+  const contactEmail = getEl('contactEmail').value.trim();
   const productType = getEl('productType').value;
   const inspectionType = getEl('inspectionType').value;
 
@@ -1208,6 +1226,9 @@ function generateReport() {
     <div class="report-block">
       <h3>Project Information</h3>
       <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
+      <div class="report-line"><strong>Contact Person:</strong> ${escapeHtml(contactPerson || '-')}</div>
+      <div class="report-line"><strong>Telephone:</strong> ${escapeHtml(contactTel || '-')}</div>
+      <div class="report-line"><strong>Email:</strong> ${escapeHtml(contactEmail || '-')}</div>
       <div class="report-line"><strong>Product Type:</strong> ${escapeHtml(productType)}</div>
       <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
       <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
