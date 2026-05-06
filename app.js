@@ -286,6 +286,79 @@ function toggleChecklistSection(sectionId) {
   }
 }
 
+function exportBackup() {
+  const projects = getProjects();
+
+  const backup = {
+    app: 'Fireye',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    projects
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(backup, null, 2)],
+    { type: 'application/json' }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fireye-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'Backup exported.';
+  }
+}
+
+function importBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+
+      if (!backup.projects || !Array.isArray(backup.projects)) {
+        alert('Invalid backup file.');
+        return;
+      }
+
+      const confirmed = confirm(
+        'Importing this backup will replace the current saved inspections. Continue?'
+      );
+
+      if (!confirmed) return;
+
+      setProjects(backup.projects);
+      currentProjectId = null;
+      currentPhotos = [];
+
+      renderProjectsList();
+      showProjectList();
+
+      const saveMessage = document.getElementById('saveMessage');
+      if (saveMessage) {
+        saveMessage.textContent = 'Backup imported successfully.';
+      }
+    } catch (error) {
+      console.error('Backup import failed:', error);
+      alert('Could not import backup file.');
+    }
+
+    event.target.value = '';
+  };
+
+  reader.readAsText(file);
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -338,7 +411,8 @@ function initApp() {
     updateDisplay();
     scheduleAutoSave();
   });
-  
+  getEl('exportBackupBtn').addEventListener('click', exportBackup);
+  getEl('importBackupInput').addEventListener('change', importBackup);
   getEl('inspectionType').addEventListener('change', () => {
     updateDisplay();
     scheduleAutoSave();

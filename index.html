@@ -24,6 +24,14 @@
     <button onclick="setFilter('overdue')">Overdue</button>
     <button onclick="setFilter('none')">No Follow-up</button>
   </div>
+  <div class="backup-actions">
+    <button id="exportBackupBtn" type="button">Export Backup</button>
+
+    <label class="backup-import-btn">
+      Import Backup
+      <input id="importBackupInput" type="file" accept=".json" style="display:none;">
+    </label>
+  </div>
     <section id="projectListSection" class="card">
       <div class="toolbar">
         <h2>Projects</h2>
