@@ -451,6 +451,79 @@ async function downloadSync() {
   getEl('syncStatus').textContent = `Downloaded ${projects.length} inspection(s) from cloud.`;
 }
 
+async function mergeSync() {
+  const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+
+  if (userError || !userData.user) {
+    getEl('syncStatus').textContent = 'Please login before merge sync.';
+    return;
+  }
+
+  const localProjects = getProjects();
+
+  const { data, error } = await supabaseClient
+    .from('inspections')
+    .select('inspection_data, updated_at');
+
+  if (error) {
+    getEl('syncStatus').textContent = `Merge failed: ${error.message}`;
+    return;
+  }
+
+  const cloudProjects = data.map(row => row.inspection_data);
+
+  const mergedMap = new Map();
+
+  localProjects.forEach(project => {
+    mergedMap.set(project.id, project);
+  });
+
+  cloudProjects.forEach(cloudProject => {
+    const localProject = mergedMap.get(cloudProject.id);
+
+    if (!localProject) {
+      mergedMap.set(cloudProject.id, cloudProject);
+      return;
+    }
+
+    const localTime = localProject.lastSaved
+      ? new Date(localProject.lastSaved).getTime()
+      : 0;
+
+    const cloudTime = cloudProject.lastSaved
+      ? new Date(cloudProject.lastSaved).getTime()
+      : 0;
+
+    if (cloudTime > localTime) {
+      mergedMap.set(cloudProject.id, cloudProject);
+    }
+  });
+
+  const mergedProjects = Array.from(mergedMap.values());
+
+  setProjects(mergedProjects);
+  renderProjectsList();
+  showProjectList();
+
+  const rows = mergedProjects.map(project => ({
+    id: project.id,
+    user_id: userData.user.id,
+    inspection_data: project,
+    updated_at: new Date().toISOString()
+  }));
+
+  const { error: uploadError } = await supabaseClient
+    .from('inspections')
+    .upsert(rows, { onConflict: 'id' });
+
+  if (uploadError) {
+    getEl('syncStatus').textContent = `Merged locally, but upload failed: ${uploadError.message}`;
+    return;
+  }
+
+  getEl('syncStatus').textContent = `Merge complete. ${mergedProjects.length} inspection(s) synced.`;
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -475,6 +548,7 @@ async function loadData() {
 
 function initApp() {
   populateOccupancies();
+  getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
   getEl('loginBtn').addEventListener('click', loginUser);
   getEl('signupBtn').addEventListener('click', signupUser);
