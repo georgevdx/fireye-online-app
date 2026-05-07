@@ -10,6 +10,11 @@ let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
 
+const SUPABASE_URL = "YOUR_SUPABASE_URL";
+const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 function buildStreetAddress(address = {}) {
   const houseNumber =
     address.house_number ||
@@ -359,6 +364,57 @@ function importBackup(event) {
   reader.readAsText(file);
 }
 
+async function signupUser() {
+  const email = getEl('loginEmail').value.trim();
+  const password = getEl('loginPassword').value;
+
+  const { error } = await supabaseClient.auth.signUp({ email, password });
+
+  getEl('syncStatus').textContent = error
+    ? `Sign up failed: ${error.message}`
+    : 'Sign up successful. Check email if confirmation is enabled.';
+}
+
+async function loginUser() {
+  const email = getEl('loginEmail').value.trim();
+  const password = getEl('loginPassword').value;
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  getEl('syncStatus').textContent = error
+    ? `Login failed: ${error.message}`
+    : 'Logged in successfully.';
+}
+
+  async function uploadSync() {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+
+    if (userError || !userData.user) {
+      getEl('syncStatus').textContent = 'Please login before syncing.';
+      return;
+    }
+
+    const projects = getProjects();
+
+    const rows = projects.map(project => ({
+      id: project.id,
+      user_id: userData.user.id,
+      inspection_data: project,
+      updated_at: new Date().toISOString()
+    }));
+
+    const { error } = await supabaseClient
+      .from('inspections')
+      .upsert(rows, { onConflict: 'id' });
+
+    getEl('syncStatus').textContent = error
+      ? `Sync failed: ${error.message}`
+      : `Synced ${rows.length} inspection(s) to cloud.`;
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -383,7 +439,9 @@ async function loadData() {
 
 function initApp() {
   populateOccupancies();
-
+  getEl('loginBtn').addEventListener('click', loginUser);
+  getEl('signupBtn').addEventListener('click', signupUser);
+  getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
   getEl('saveBtn').addEventListener('click', saveProject);
   getEl('reportBtn').addEventListener('click', generateReport);
