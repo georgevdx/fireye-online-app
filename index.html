@@ -18,19 +18,22 @@
     <p class="subtitle">Fire Safety App</p>
   </div>
 </header>
-<div class="card">
+<div class="card cloud-sync-card">
   <h2>Cloud Sync</h2>
 
-    <input id="loginEmail" type="email" placeholder="Email">
-    <input id="loginPassword" type="password" placeholder="Password">
+  <input id="loginEmail" type="email" placeholder="Email">
+  <input id="loginPassword" type="password" placeholder="Password">
 
+  <div class="cloud-sync-actions">
     <button id="loginBtn" type="button">Login</button>
     <button id="signupBtn" type="button">Sign Up</button>
-    <button id="syncUploadBtn" type="button">Upload Sync</button>
+  </div>
+
+  <button id="syncUploadBtn" type="button">Upload Sync</button>
 
   <div id="syncStatus" class="note"></div>
-  </div>
-  
+</div>
+
   <div class="filter-bar">
     <button onclick="setFilter('all')">All</button>
     <button onclick="setFilter('soon')">Due Soon</button>
