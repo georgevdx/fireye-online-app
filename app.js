@@ -415,6 +415,42 @@ async function loginUser() {
       : `Synced ${rows.length} inspection(s) to cloud.`;
 }
 
+async function downloadSync() {
+  const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+
+  if (userError || !userData.user) {
+    getEl('syncStatus').textContent = 'Please login before downloading sync.';
+    return;
+  }
+
+  const confirmed = confirm(
+    'Download Sync will replace the inspections currently saved on this device. Continue?'
+  );
+
+  if (!confirmed) return;
+
+  const { data, error } = await supabaseClient
+    .from('inspections')
+    .select('inspection_data, updated_at')
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    getEl('syncStatus').textContent = `Download failed: ${error.message}`;
+    return;
+  }
+
+  const projects = data.map(row => row.inspection_data);
+
+  setProjects(projects);
+  currentProjectId = null;
+  currentPhotos = [];
+
+  renderProjectsList();
+  showProjectList();
+
+  getEl('syncStatus').textContent = `Downloaded ${projects.length} inspection(s) from cloud.`;
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -439,6 +475,7 @@ async function loadData() {
 
 function initApp() {
   populateOccupancies();
+  getEl('syncDownloadBtn').addEventListener('click', downloadSync);
   getEl('loginBtn').addEventListener('click', loginUser);
   getEl('signupBtn').addEventListener('click', signupUser);
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
