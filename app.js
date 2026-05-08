@@ -391,6 +391,8 @@ async function loginUser() {
   getEl('syncStatus').textContent = error
     ? `Login failed: ${error.message}`
     : 'Logged in successfully.';
+  updateSyncUI();
+
 }
 
   async function uploadSync() {
@@ -569,6 +571,36 @@ async function autoMergeAfterSave() {
   }
 }
 
+async function updateSyncUI() {
+  const connectedView = document.getElementById('cloudConnectedView');
+  const syncTools = document.getElementById('syncTools');
+  const backupTools = document.getElementById('backupTools');
+  const syncStatus = document.getElementById('syncStatus');
+
+  const { data } = await supabaseClient.auth.getUser();
+  const isLoggedIn = !!(data && data.user);
+
+  if (connectedView) connectedView.style.display = isLoggedIn ? 'block' : 'none';
+  if (syncTools) syncTools.style.display = isLoggedIn ? 'none' : 'block';
+
+  // hide backup/import/export for normal view
+  if (backupTools) backupTools.style.display = isLoggedIn ? 'none' : 'grid';
+
+  if (syncStatus) {
+    syncStatus.textContent = isLoggedIn
+      ? 'Connected. Auto sync enabled.'
+      : 'Not connected. Admin login required for cloud sync.';
+  }
+}
+
+function showSyncTools() {
+  const syncTools = document.getElementById('syncTools');
+  const backupTools = document.getElementById('backupTools');
+
+  if (syncTools) syncTools.style.display = 'block';
+  if (backupTools) backupTools.style.display = 'grid';
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -593,6 +625,10 @@ async function loadData() {
 
 
 function initApp() {
+  const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
+  if (showSyncToolsBtn) {
+    showSyncToolsBtn.addEventListener('click', showSyncTools);
+  }
   populateOccupancies();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);

@@ -21,20 +21,25 @@
 <div class="card cloud-sync-card">
   <h2>Cloud Sync</h2>
 
-  <input id="loginEmail" type="email" placeholder="Email">
-  <input id="loginPassword" type="password" placeholder="Password">
-
-  <div class="cloud-sync-actions">
-    <button id="loginBtn" type="button">Login</button>
-    <button id="signupBtn" type="button">Sign Up</button>
+  <div id="cloudConnectedView" style="display:none;">
+    <div class="sync-connected">✅ Cloud Sync: Connected</div>
+    <button id="showSyncToolsBtn" type="button">Admin / Sync Tools</button>
   </div>
 
-  <button id="syncUploadBtn" type="button">Upload Sync</button>
+  <div id="syncTools">
+    <input id="loginEmail" type="email" placeholder="Email">
+    <input id="loginPassword" type="password" placeholder="Password">
 
-  <button id="syncDownloadBtn" type="button">Download Sync</button>
+    <div class="cloud-sync-actions">
+      <button id="loginBtn" type="button">Login</button>
+      <button id="signupBtn" type="button">Sign Up</button>
+    </div>
 
-  <button id="syncMergeBtn" type="button">Merge Sync</button>
-  
+    <button id="syncUploadBtn" type="button">Upload Sync</button>
+    <button id="syncDownloadBtn" type="button">Download Sync</button>
+    <button id="syncMergeBtn" type="button">Merge Sync</button>
+  </div>
+
   <div id="syncStatus" class="note"></div>
 </div>
 
@@ -44,14 +49,14 @@
     <button onclick="setFilter('overdue')">Overdue</button>
     <button onclick="setFilter('none')">No Follow-up</button>
   </div>
-  <div class="backup-actions">
-    <button id="exportBackupBtn" type="button">Export Backup</button>
+  <div id="backupTools" class="backup-actions">
+  <button id="exportBackupBtn" type="button">Export Backup</button>
 
-    <label class="backup-import-btn">
-      Import Backup
-      <input id="importBackupInput" type="file" accept=".json" style="display:none;">
-    </label>
-  </div>
+  <label class="backup-import-btn">
+    Import Backup
+    <input id="importBackupInput" type="file" accept=".json" style="display:none;">
+  </label>
+</div>
     <section id="projectListSection" class="card">
       <div class="toolbar">
         <h2>Projects</h2>
