@@ -86,32 +86,105 @@ function scheduleAutoSave() {
 function autoSaveProject() {
   const projectNameField = document.getElementById('projectName');
   const inspectorNameField = document.getElementById('inspectorName');
+  const occupancyField = document.getElementById('occupancySelect');
+  const projectAddressField = document.getElementById('projectAddress');
+  const gpsField = document.getElementById('gps');
+  const inMallField = document.getElementById('inMall');
+  const mallNameField = document.getElementById('mallName');
+  const unitNumberField = document.getElementById('unitNumber');
+  const contactPerson = getEl('contactPerson').value.trim();
+  const contactTel = getEl('contactTel').value.trim();
+  const contactEmail = getEl('contactEmail').value.trim();
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
 
-  if (!projectNameField || !inspectorNameField) return;
+if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
   const projectName = projectNameField.value.trim();
   const inspectorName = inspectorNameField.value.trim();
+  const occupancy = occupancyField.value;
+  const projectAddress = projectAddressField.value.trim();
+  const gps = gpsField.value.trim();
 
+  const inMall = inMallField.value;
+  const mallName = mallNameField.value.trim();
+  const unitNumber = unitNumberField.value.trim();
+  
   if (!projectName && !inspectorName) return;
+
+  const answers = [];
+  document.querySelectorAll('.answer-select').forEach((field, index) => {
+    const noteField = document.getElementById(`note_${index}`);
+
+    answers.push({
+      itemIndex: index,
+      answer: field.value,
+      note: noteField ? noteField.value.trim() : ''
+    });
+  });
 
   const projects = getProjects();
 
   if (currentProjectId) {
-    const index = projects.findIndex(p => p.id === currentProjectId);
+  const index = projects.findIndex(p => p.id === currentProjectId);
+  if (index !== -1) {
+    projects[index] = {
+      ...projects[index],
+      projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
+      inspectorName,
+      occupancy,
+      answers,
+      followUpRequired: getEl('followUpRequired').value,
+      followUpDate: getEl('followUpDate').value,
+      followUpNotes: getEl('followUpNotes').value.trim(),
+      photos: currentPhotos,      
+      lastSaved: new Date().toISOString()
+    };
+  }
+} else {
+    const newProject = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      projectName,
+      projectAddress: [
+        getEl('streetNumber').value.trim(),
+        getEl('projectAddress').value.trim()
+      ].filter(Boolean).join(' '),
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
+      inspectorName,
+      occupancy,
+      answers,
 
-    if (index !== -1) {
-      projects[index] = buildProjectObject(projects[index]);
-    }
-  } else {
-    const newProject = buildProjectObject();
+      followUpRequired: getEl('followUpRequired').value,
+      followUpDate: getEl('followUpDate').value,
+      followUpNotes: getEl('followUpNotes').value.trim(),
+
+      photos: currentPhotos,
+      lastSaved: new Date().toISOString()
+    };
+
     currentProjectId = newProject.id;
     projects.push(newProject);
   }
 
   setProjects(projects);
   renderProjectsList();
+  
 
-  const saveMessage = document.getElementById('saveMessage');
+ const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
     saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
   }
@@ -929,7 +1002,32 @@ function openProject(projectId) {
   showProjectForm();
 }
 
-function collectAnswers() {
+function saveProject() {
+  const projectName = getEl('projectName').value.trim();
+  const inspectorName = getEl('inspectorName').value.trim();
+  const occupancy = getEl('occupancySelect').value;
+  
+  const projectAddress = getEl('projectAddress').value.trim();
+  const gps = getEl('gps').value.trim();
+  
+  const inMall = getEl('inMall').value;
+  const mallName = getEl('mallName').value.trim();
+  const unitNumber = getEl('unitNumber').value.trim();
+  
+  const contactPerson = getEl('contactPerson').value.trim();
+  const contactTel = getEl('contactTel').value.trim();
+  const contactEmail = getEl('contactEmail').value.trim();
+  
+  const productType = getEl('productType').value;
+  const inspectionType = getEl('inspectionType').value;
+  
+  const followUpRequired = getEl('followUpRequired').value;
+  const followUpDate = getEl('followUpDate').value;
+  const followUpNotes = getEl('followUpNotes').value.trim();
+
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
+
   const answers = [];
 
   document.querySelectorAll('.answer-select').forEach((field, index) => {
@@ -942,68 +1040,59 @@ function collectAnswers() {
     });
   });
 
-  return answers;
-}
-
-function buildProjectObject(existingProject = {}) {
-  const projectAddress = getEl('projectAddress').value.trim();
-
-  return {
-    ...existingProject,
-
-    id: existingProject.id || (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())),
-
-    projectName: getEl('projectName').value.trim(),
-    organisationName: getEl('organisationName').value.trim(),
-    siteName: getEl('siteName').value.trim(),
-
-    projectAddress,
-    gps: getEl('gps').value.trim(),
-
-    inMall: getEl('inMall').value,
-    mallName: getEl('mallName').value.trim(),
-    unitNumber: getEl('unitNumber').value.trim(),
-
-    contactPerson: getEl('contactPerson').value.trim(),
-    contactTel: getEl('contactTel').value.trim(),
-    contactEmail: getEl('contactEmail').value.trim(),
-
-    productType: getEl('productType').value,
-    inspectionType: getEl('inspectionType').value,
-    inspectorName: getEl('inspectorName').value.trim(),
-    occupancy: getEl('occupancySelect').value,
-
-    answers: collectAnswers(),
-    photos: currentPhotos,
-
-    followUpRequired: getEl('followUpRequired').value,
-    followUpDate: getEl('followUpDate').value,
-    followUpNotes: getEl('followUpNotes').value.trim(),
-
-    lastSaved: new Date().toISOString()
-  };
-}
-
-function saveProject() {
-  const projectName = getEl('projectName').value.trim();
-  const inspectorName = getEl('inspectorName').value.trim();
-
-  if (!projectName && !inspectorName) {
-    getEl('saveMessage').textContent = 'Enter at least a place name or inspector name before saving.';
-    return;
-  }
-
   const projects = getProjects();
 
   if (currentProjectId) {
-    const index = projects.findIndex(p => p.id === currentProjectId);
+  const index = projects.findIndex(p => p.id === currentProjectId);
 
-    if (index !== -1) {
-      projects[index] = buildProjectObject(projects[index]);
-    }
-  } else {
-    const newProject = buildProjectObject();
-    currentProjectId = newProject.id;
+  if (index !== -1) {
+    projects[index] = {
+      ...projects[index],
+      projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
+      productType,
+      inspectionType,
+      inspectorName,
+      occupancy,
+      answers,
+      followUpRequired,
+      followUpDate,
+      followUpNotes,
+      photos: currentPhotos,
+      lastSaved: new Date().toISOString()
+    };
+  }
+} else {
+    const newProject = {
+      id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      projectName,
+      projectAddress,
+      gps,
+      inMall,
+      mallName,
+      unitNumber,
+      contactPerson,
+      contactTel,
+      contactEmail,
+      productType,
+      inspectionType,
+      inspectorName,
+      occupancy,
+      answers,
+      photos: currentPhotos,
+      followUpRequired: getEl('followUpRequired').value,
+      followUpDate: getEl('followUpDate').value,
+      followUpNotes: getEl('followUpNotes').value.trim(),
+      lastSaved: new Date().toISOString()
+    };
+      currentProjectId = newProject.id;
     projects.push(newProject);
   }
 
