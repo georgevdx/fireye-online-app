@@ -732,7 +732,11 @@ function createNewProject() {
   getEl('contactPerson').value = '';
   getEl('contactTel').value = '';
   getEl('contactEmail').value = '';  
+  getEl('followUpRequired').value = 'No';
+  getEl('followUpDate').value = '';
+  getEl('followUpNotes').value = '';
   toggleMallFields();
+
 
   currentPhotos = [];
   renderPhotos();
