@@ -1220,24 +1220,42 @@ async function deleteProject() {
   setProjects(projects);
   
   try {
-    const { data: userData } =
-      await supabaseClient.auth.getUser();
+  const idToDelete = currentProjectId;
 
-    if (userData && userData.user) {
-      const { error } = await supabaseClient
-        .from('inspections')
-        .delete()
-        .eq('id', currentProjectId);
+  console.log('Deleting cloud inspection id:', idToDelete);
 
-      if (error) {
-        console.error('Cloud delete failed:', error);
-        alert(`Cloud delete failed: ${error.message}`);
-        return;
-      }
-    }
-    } catch (err) {
-      console.error('Cloud delete failed:', err);
-    }
+  const { data: userData, error: userError } =
+    await supabaseClient.auth.getUser();
+
+  if (userError || !userData || !userData.user) {
+    alert('Cloud delete skipped: user not logged in.');
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from('inspections')
+    .delete()
+    .eq('id', idToDelete)
+    .select();
+
+  if (error) {
+    console.error('Cloud delete failed:', error);
+    alert(`Cloud delete failed: ${error.message}`);
+    return;
+  }
+
+  console.log('Cloud deleted rows:', data);
+
+  if (!data || data.length === 0) {
+    alert('Cloud delete ran, but no matching cloud row was found.');
+    return;
+  }
+
+} catch (err) {
+  console.error('Cloud delete failed:', err);
+  alert('Cloud delete failed. Check console.');
+  return;
+}
 
   currentProjectId = null;
   showProjectList();
