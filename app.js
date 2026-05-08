@@ -1218,7 +1218,7 @@ async function deleteProject() {
   projects = projects.filter(p => p.id !== currentProjectId);
   
   setProjects(projects);
-
+  
   try {
     const { data: userData } =
       await supabaseClient.auth.getUser();
