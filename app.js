@@ -667,6 +667,7 @@ function initApp() {
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
   getEl('exportBtn').addEventListener('click', exportReport);
   getEl('shareBtn').addEventListener('click', shareReport);
+  getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', scheduleAutoSave);
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
@@ -1114,6 +1115,61 @@ function saveProject() {
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
   autoMergeAfterSave();
+}
+
+function createFollowUpInspection() {
+  if (!currentProjectId) {
+    getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
+    return;
+  }
+
+  const projects = getProjects();
+  const original = projects.find(p => p.id === currentProjectId);
+
+  if (!original) {
+    getEl('saveMessage').textContent = 'Original inspection not found.';
+    return;
+  }
+
+  const confirmed = confirm(
+    'Create a new follow-up inspection from this inspection?'
+  );
+
+  if (!confirmed) return;
+
+  const followUpProject = {
+    ...original,
+
+    id: crypto.randomUUID
+      ? crypto.randomUUID()
+      : String(Date.now()),
+
+    projectName: `${original.projectName || 'Inspection'} - Follow-up`,
+
+    answers: [],
+    photos: [],
+
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+
+    linkedToInspectionId: original.id,
+    linkedToInspectionName: original.projectName || '',
+    linkedToInspectionDate: original.lastSaved || '',
+
+    lastSaved: new Date().toISOString()
+  };
+
+  projects.push(followUpProject);
+  setProjects(projects);
+
+  currentProjectId = followUpProject.id;
+  currentPhotos = [];
+
+  openProject(followUpProject.id);
+
+  getEl('saveMessage').textContent =
+    'Follow-up inspection created.';
 }
 
 function deleteProject() {
