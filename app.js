@@ -1144,7 +1144,7 @@ function saveProject() {
   setProjects(projects);
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
-  autoMergeAfterSave();
+
 }
 
 function createFollowUpInspection() {
