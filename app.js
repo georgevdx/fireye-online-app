@@ -180,6 +180,7 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
 
   setProjects(projects);
   renderProjectsList();
+  
 
  const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
@@ -541,6 +542,31 @@ async function autoSyncIfLoggedIn() {
   await mergeSync();
 
   getEl('syncStatus').textContent = 'Auto sync complete.';
+}
+
+async function autoMergeAfterSave() {
+  if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
+
+  try {
+    const { data: userData } = await supabaseClient.auth.getUser();
+
+    if (!userData || !userData.user) {
+      return;
+    }
+
+    const syncStatus = document.getElementById('syncStatus');
+    if (syncStatus) syncStatus.textContent = 'Saving to cloud...';
+
+    await mergeSync();
+
+    if (syncStatus) syncStatus.textContent = 'Saved and synced to cloud.';
+  } catch (error) {
+    console.error('Auto merge after save failed:', error);
+
+    const syncStatus = document.getElementById('syncStatus');
+    if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud sync failed.';
+  }
 }
 
 async function loadData() {
@@ -1016,6 +1042,7 @@ function saveProject() {
   setProjects(projects);
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
+  autoMergeAfterSave();
 }
 
 function deleteProject() {
