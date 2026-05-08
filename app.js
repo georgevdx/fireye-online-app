@@ -527,6 +527,22 @@ async function mergeSync() {
   getEl('syncStatus').textContent = `Merge complete. ${mergedProjects.length} inspection(s) synced.`;
 }
 
+async function autoSyncIfLoggedIn() {
+  if (!navigator.onLine) return;
+
+  const { data: userData } = await supabaseClient.auth.getUser();
+
+  if (!userData || !userData.user) {
+    return;
+  }
+
+  getEl('syncStatus').textContent = 'Auto syncing...';
+
+  await mergeSync();
+
+  getEl('syncStatus').textContent = 'Auto sync complete.';
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -536,6 +552,7 @@ async function loadData() {
     
     initApp();
     renderProjectsList();
+    autoSyncIfLoggedIn();
   } catch (error) {
     console.error('Data loading error:', error);
     document.body.innerHTML = `
