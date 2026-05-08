@@ -95,7 +95,9 @@ function autoSaveProject() {
   const contactPerson = getEl('contactPerson').value.trim();
   const contactTel = getEl('contactTel').value.trim();
   const contactEmail = getEl('contactEmail').value.trim();
- 
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
+
 if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
   const projectName = projectNameField.value.trim();
@@ -532,23 +534,34 @@ async function mergeSync() {
 
 async function autoSyncIfLoggedIn() {
   if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
 
-  const { data: userData } = await supabaseClient.auth.getUser();
+  const syncStatus = document.getElementById('syncStatus');
 
-  if (!userData || !userData.user) {
-    return;
+  try {
+    const { data: userData, error } = await supabaseClient.auth.getUser();
+
+    if (error || !userData || !userData.user) {
+      return;
+    }
+
+    if (syncStatus) syncStatus.textContent = 'Auto syncing...';
+
+    await mergeSync();
+
+    if (syncStatus) syncStatus.textContent = 'Auto sync complete.';
+  } catch (err) {
+    console.error('Auto sync failed:', err);
+    if (syncStatus) syncStatus.textContent = 'Auto sync failed.';
   }
-
-  getEl('syncStatus').textContent = 'Auto syncing...';
-
-  await mergeSync();
-
-  getEl('syncStatus').textContent = 'Auto sync complete.';
 }
 
 async function autoMergeAfterSave() {
+  if (window.mergeInProgress) return;
   if (!navigator.onLine) return;
   if (typeof supabaseClient === 'undefined') return;
+
+  window.mergeInProgress = true;
 
   try {
     const { data: userData } = await supabaseClient.auth.getUser();
@@ -568,6 +581,8 @@ async function autoMergeAfterSave() {
 
     const syncStatus = document.getElementById('syncStatus');
     if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud sync failed.';
+  } finally {
+    window.mergeInProgress = false;
   }
 }
 
@@ -698,6 +713,8 @@ function createNewProject() {
   getEl('projectName').value = '';
   getEl('productType').value = 'Fire Safety Officer';
   updateInspectionTypeOptions();
+  getEl('organisationName').value = '';
+  getEl('siteName').value = '';
   getEl('inspectionType').value = 'General Fire Inspection';
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
@@ -945,6 +962,8 @@ function openProject(projectId) {
   getEl('projectName').value = project.projectName || '';
   getEl('productType').value = project.productType || 'Fire Safety Officer';
   updateInspectionTypeOptions();
+  getEl('organisationName').value = '';
+  getEl('siteName').value = '';
   getEl('inspectionType').value = project.inspectionType || getEl('inspectionType').value;
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
@@ -1006,6 +1025,8 @@ function saveProject() {
   const followUpDate = getEl('followUpDate').value;
   const followUpNotes = getEl('followUpNotes').value.trim();
 
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
 
   const answers = [];
 
@@ -1694,6 +1715,10 @@ async function shareReport() {
   const projectAddress = getEl('projectAddress').value.trim() || '-';
   const gps = getEl('gps').value.trim() || '-';
 
+  const contactPerson = getEl('contactPerson').value.trim() || '-';
+  const contactTel = getEl('contactTel').value.trim() || '-';
+  const contactEmail = getEl('contactEmail').value.trim() || '-';
+
   const inMall = getEl('inMall').value || 'No';
   const mallName = getEl('mallName').value.trim() || '-';
   const unitNumber = getEl('unitNumber').value.trim() || '-';
@@ -1802,6 +1827,9 @@ async function shareReport() {
 
 INSPECTION DETAILS
 Place Name: ${projectName}
+Contact Person: ${contactPerson}
+Telephone: ${contactTel}
+Email: ${contactEmail}
 Product Type: ${productType}
 Inspection Type: ${inspectionType}
 Address: ${projectAddress}
