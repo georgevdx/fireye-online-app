@@ -1173,7 +1173,7 @@ function createFollowUpInspection() {
     id: crypto.randomUUID
       ? crypto.randomUUID()
       : String(Date.now()),
-      
+
     inspectionNumber: generateInspectionNumber(),
 
     projectName: `${original.projectName || 'Inspection'} - Follow-up`,
@@ -1205,7 +1205,7 @@ function createFollowUpInspection() {
     'Follow-up inspection created.';
 }
 
-function deleteProject() {
+async function deleteProject() {
   if (!currentProjectId) {
     getEl('saveMessage').textContent = 'Save the project first before deleting.';
     return;
@@ -1216,8 +1216,23 @@ function deleteProject() {
 
   let projects = getProjects();
   projects = projects.filter(p => p.id !== currentProjectId);
+  
   setProjects(projects);
 
+  try {
+    const { data: userData } =
+      await supabaseClient.auth.getUser();
+
+    if (userData && userData.user) {
+      await supabaseClient
+        .from('inspections')
+        .delete()
+        .eq('id', currentProjectId);
+    }
+    } catch (err) {
+      console.error('Cloud delete failed:', err);
+    }
+    
   currentProjectId = null;
   showProjectList();
 }
