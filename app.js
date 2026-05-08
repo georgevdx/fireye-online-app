@@ -1214,6 +1214,8 @@ async function deleteProject() {
   const confirmed = confirm('Delete this project?');
   if (!confirmed) return;
 
+  const idToDelete = currentProjectId;
+  
   let projects = getProjects();
   projects = projects.filter(p => p.id !== currentProjectId);
   
