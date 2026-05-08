@@ -1173,6 +1173,8 @@ function createFollowUpInspection() {
     id: crypto.randomUUID
       ? crypto.randomUUID()
       : String(Date.now()),
+      
+    inspectionNumber: generateInspectionNumber(),
 
     projectName: `${original.projectName || 'Inspection'} - Follow-up`,
 
