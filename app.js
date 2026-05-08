@@ -16,42 +16,45 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 function buildStreetAddress(address = {}) {
-  const houseNumber =
-    address.house_number ||
-    address.house ||
-    address.building ||
-    address.building_number ||
-    "";
 
-  const road =
+  const streetNumber =
+    address.house_number ||
+    address.building_number ||
+    '';
+
+  const streetName =
     address.road ||
     address.street ||
-    address.residential ||
     address.pedestrian ||
     address.footway ||
-    "";
+    '';
 
   const suburb =
     address.suburb ||
     address.neighbourhood ||
-    address.city_district ||
+    address.residential ||
     address.quarter ||
-    "";
+    '';
 
   const city =
     address.city ||
     address.town ||
     address.village ||
     address.municipality ||
-    "";
+    '';
+
+  const province =
+    address.state ||
+    '';
 
   return [
-    [houseNumber, road].filter(Boolean).join(" "),
+    [streetNumber, streetName].filter(Boolean).join(' '),
     suburb,
-    city
+    city,
+    province
   ]
     .filter(Boolean)
-    .join(", ");
+    .join(', ');
 }
 
 async function loadJson(url) {
