@@ -945,6 +945,10 @@ function renderProjectsList() {
     card.innerHTML = `
       <h3>${escapeHtml(project.projectName || 'Untitled Project')}</h3>
 
+      <div class="project-number">
+        ${escapeHtml(project.inspectionNumber || '-')}
+      </div>
+      
       <div class="project-follow ${followStatus.class}">
         ${followStatus.label}
         ${project.followUpDate ? `(${project.followUpDate})` : ''}
@@ -1012,6 +1016,28 @@ function openProject(projectId) {
   showProjectForm();
 }
 
+function generateInspectionNumber() {
+  const projects = getProjects();
+
+  const year = new Date().getFullYear();
+
+  const numbers = projects
+    .map(p => p.inspectionNumber)
+    .filter(Boolean)
+    .map(num => {
+      const parts = num.split('-');
+      return parseInt(parts[2], 10);
+    })
+    .filter(n => !isNaN(n));
+
+  const nextNumber =
+    numbers.length > 0
+      ? Math.max(...numbers) + 1
+      : 1;
+
+  return `FIR-${year}-${String(nextNumber).padStart(4, '0')}`;
+}
+
 function saveProject() {
   const projectName = getEl('projectName').value.trim();
  
@@ -1059,6 +1085,9 @@ function saveProject() {
   if (index !== -1) {
     projects[index] = {
       ...projects[index],
+      inspectionNumber:
+        projects[index].inspectionNumber ||
+        generateInspectionNumber(),
       projectName,
       organisationName,
       siteName,
@@ -1085,6 +1114,7 @@ function saveProject() {
 } else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      inspectionNumber: generateInspectionNumber(),
       projectName,
       organisationName,
       siteName,
@@ -1122,7 +1152,7 @@ function createFollowUpInspection() {
     getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
     return;
   }
-
+  
   const projects = getProjects();
   const original = projects.find(p => p.id === currentProjectId);
 
@@ -1155,6 +1185,7 @@ function createFollowUpInspection() {
 
     linkedToInspectionId: original.id,
     linkedToInspectionName: original.projectName || '',
+    linkedToInspectionNumber: original.inspectionNumber || '',
     linkedToInspectionDate: original.lastSaved || '',
 
     lastSaved: new Date().toISOString()
@@ -1395,7 +1426,8 @@ function generateReport() {
   const currentProject = projects.find(
     p => p.id === currentProjectId
   );
-
+  const inspectionNumber =
+  currentProject?.inspectionNumber || '-';
   const reportContent = getEl('reportContent');
 
   const followUpRequired = getEl('followUpRequired').value;
@@ -1612,6 +1644,10 @@ function generateReport() {
     <div class="report-block">
       <h3>Project Information</h3>
       <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
+      <div class="report-line">
+        <strong>Inspection Number:</strong>
+        ${escapeHtml(inspectionNumber)}
+      </div>
       <div class="report-line"><strong>Contact Person:</strong> ${escapeHtml(contactPerson || '-')}</div>
       <div class="report-line"><strong>Telephone:</strong> ${escapeHtml(contactTel || '-')}</div>
       <div class="report-line"><strong>Email:</strong> ${escapeHtml(contactEmail || '-')}</div>
@@ -1620,8 +1656,9 @@ function generateReport() {
       ${currentProject && currentProject.linkedToInspectionId ? `
       <div class="report-line">
         <strong>Follow-up To:</strong>
-        ${escapeHtml(currentProject.linkedToInspectionName || '-')}
-      </div>
+${escapeHtml(currentProject.linkedToInspectionNumber || '-')}
+
+(${escapeHtml(currentProject.linkedToInspectionName || '-')})
 
       <div class="report-line">
         <strong>Previous Inspection Date:</strong>
