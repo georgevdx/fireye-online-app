@@ -1390,6 +1390,11 @@ function generateReport() {
   const inspectionType = getEl('inspectionType').value;
 
   const selectedChecklist = getActiveTemplateChecklist() || [];
+  const projects = getProjects();
+
+  const currentProject = projects.find(
+    p => p.id === currentProjectId
+  );
 
   const reportContent = getEl('reportContent');
 
@@ -1612,6 +1617,25 @@ function generateReport() {
       <div class="report-line"><strong>Email:</strong> ${escapeHtml(contactEmail || '-')}</div>
       <div class="report-line"><strong>Product Type:</strong> ${escapeHtml(productType)}</div>
       <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
+      ${currentProject && currentProject.linkedToInspectionId ? `
+      <div class="report-line">
+        <strong>Follow-up To:</strong>
+        ${escapeHtml(currentProject.linkedToInspectionName || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Previous Inspection Date:</strong>
+        ${
+          currentProject.linkedToInspectionDate
+            ? escapeHtml(
+                new Date(
+                  currentProject.linkedToInspectionDate
+                ).toLocaleDateString()
+              )
+            : '-'
+        }
+      </div>
+    ` : ''}
       <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
       <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
       <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
