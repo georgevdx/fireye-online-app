@@ -131,6 +131,8 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
     projects[index] = {
       ...projects[index],
       projectName,
+      organisationName,
+      siteName,
       projectAddress,
       gps,
       inMall,
@@ -153,6 +155,8 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
+      organisationName,
+      siteName,
       projectAddress: [
         getEl('streetNumber').value.trim(),
         getEl('projectAddress').value.trim()
@@ -625,6 +629,7 @@ async function loadData() {
     
     initApp();
     renderProjectsList();
+    updateSyncUI();
     autoSyncIfLoggedIn();
   } catch (error) {
     console.error('Data loading error:', error);
@@ -962,8 +967,8 @@ function openProject(projectId) {
   getEl('projectName').value = project.projectName || '';
   getEl('productType').value = project.productType || 'Fire Safety Officer';
   updateInspectionTypeOptions();
-  getEl('organisationName').value = '';
-  getEl('siteName').value = '';
+  getEl('organisationName').value = project.organisationName || '';
+  getEl('siteName').value = project.siteName || '';
   getEl('inspectionType').value = project.inspectionType || getEl('inspectionType').value;
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
@@ -1004,6 +1009,10 @@ function openProject(projectId) {
 
 function saveProject() {
   const projectName = getEl('projectName').value.trim();
+ 
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
+  
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
   
@@ -1024,9 +1033,6 @@ function saveProject() {
   const followUpRequired = getEl('followUpRequired').value;
   const followUpDate = getEl('followUpDate').value;
   const followUpNotes = getEl('followUpNotes').value.trim();
-
-  const organisationName = getEl('organisationName').value.trim();
-  const siteName = getEl('siteName').value.trim();
 
   const answers = [];
 
@@ -1049,6 +1055,8 @@ function saveProject() {
     projects[index] = {
       ...projects[index],
       projectName,
+      organisationName,
+      siteName,
       projectAddress,
       gps,
       inMall,
@@ -1073,6 +1081,8 @@ function saveProject() {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       projectName,
+      organisationName,
+      siteName,
       projectAddress,
       gps,
       inMall,
