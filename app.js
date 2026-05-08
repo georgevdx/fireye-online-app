@@ -630,7 +630,7 @@ async function loadData() {
     initApp();
     renderProjectsList();
     updateSyncUI();
-    autoSyncIfLoggedIn();
+    //autoSyncIfLoggedIn();
   } catch (error) {
     console.error('Data loading error:', error);
     document.body.innerHTML = `
