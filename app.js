@@ -1215,32 +1215,21 @@ async function deleteProject() {
   if (!confirmed) return;
 
   let projects = getProjects();
+  
   projects = projects.filter(p => p.id !== currentProjectId);
   
   setProjects(projects);
   
+  if (navigator.onLine && typeof supabaseClient !== 'undefined') {
   try {
-    const { data: userData } =
-      await supabaseClient.auth.getUser();
-
-    if (userData && userData.user) {
-      const { error } = await supabaseClient
-        .from('inspections')
-        .delete()
-        .eq('id', currentProjectId);
-
-      if (error) {
-        console.error('Cloud delete failed:', error);
-        alert(`Cloud delete failed: ${error.message}`);
-        return;
-      }
-    }
-    } catch (err) {
-      console.error('Cloud delete failed:', err);
-    }
-
-  currentProjectId = null;
-  showProjectList();
+    await supabaseClient
+      .from('inspections')
+      .delete()
+      .eq('id', projectId);
+  } catch (err) {
+    console.error('Cloud delete failed:', err);
+  }
+}
 }
 
 function updateDisplay() {
