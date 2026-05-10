@@ -1248,10 +1248,7 @@ async function deleteProject() {
 
   console.log('Cloud deleted rows:', data);
 
-  if (!data || data.length === 0) {
-    alert('Cloud delete ran, but no matching cloud row was found.');
-    return;
-  }
+  
 
 } catch (err) {
   console.error('Cloud delete failed:', err);
