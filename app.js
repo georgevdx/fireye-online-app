@@ -1950,9 +1950,9 @@ function generateReport() {
       ${currentProject && currentProject.linkedToInspectionId ? `
       <div class="report-line">
         <strong>Follow-up To:</strong>
-${escapeHtml(currentProject.linkedToInspectionNumber || '-')}
-
-(${escapeHtml(currentProject.linkedToInspectionName || '-')})
+        ${escapeHtml(currentProject.linkedToInspectionNumber || '-')}
+        (${escapeHtml(currentProject.linkedToInspectionName || '-')})
+      </div>
 
       <div class="report-line">
         <strong>Previous Inspection Date:</strong>
