@@ -1879,8 +1879,20 @@ function generateReport() {
 
   reportContent.innerHTML = `
     <div class="report-header">
-      <div class="report-title">Fireye Fire Safety Report</div>
-      <div class="report-subtitle">Inspection and checklist summary</div>
+
+    <div class="report-brand">
+      <h1>FIREYE</h1>
+      <div class="report-subtitle">
+        Fire Safety Inspection Report
+      </div>
+    </div>
+
+    <div class="report-meta">
+      <div><strong>Inspection No:</strong> ${escapeHtml(inspectionNumber)}</div>
+      <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
+      <div><strong>Inspector:</strong> ${escapeHtml(inspectorName || '-')}</div>
+    </div>
+
     </div>
 
     <div class="report-block">
