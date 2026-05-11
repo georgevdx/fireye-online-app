@@ -200,6 +200,8 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   if (saveMessage) {
     saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
   }
+  const savedProject = projects.find(p => p.id === currentProjectId);
+  uploadSingleInspection(savedProject);
 }
 
   function formatLastSaved(date = new Date()) {
