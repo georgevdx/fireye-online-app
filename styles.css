@@ -940,15 +940,14 @@ button:hover {
   background: white;
 }
 
-.photo-item img {
+.report-photo-img {
   width: 100%;
-  max-height: 220px;
+
+  max-height: 320px;
 
   object-fit: contain;
 
-  background: #eee;
-
-  border-radius: 10px;
-
   display: block;
+
+  background: #f4f4f4;
 }
