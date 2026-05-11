@@ -933,6 +933,40 @@ function renderDashboard(projects) {
 `;
 }
 
+function getSyncStatus(project) {
+  if (project.syncError) {
+    return { label: 'Cloud Error', class: 'sync-error' };
+  }
+
+  if (project.syncPending) {
+    return { label: 'Pending Upload', class: 'sync-pending' };
+  }
+
+  return { label: 'Synced', class: 'sync-synced' };
+}
+
+function getSyncStatus(project) {
+
+  if (project.syncError) {
+    return {
+      label: 'Cloud Error',
+      class: 'sync-error'
+    };
+  }
+
+  if (project.syncPending) {
+    return {
+      label: 'Pending Upload',
+      class: 'sync-pending'
+    };
+  }
+
+  return {
+    label: 'Synced',
+    class: 'sync-synced'
+  };
+}
+
 function renderProjectsList() {
   const projects = getProjects();
   renderReminderBanner(projects);
@@ -1007,6 +1041,8 @@ function renderProjectsList() {
 
   filteredProjects.forEach(project => {
 
+    const syncStatus = getSyncStatus(project);
+
     const followStatus = getFollowUpStatus(project);
     const card = document.createElement('div');
     card.className = 'project-card';
@@ -1017,6 +1053,10 @@ function renderProjectsList() {
         ${escapeHtml(project.inspectionNumber || '-')}
       </div>
       
+      <div class="project-sync ${syncStatus.class}">
+        ${syncStatus.label}
+      </div>
+
       <div class="project-follow ${followStatus.class}">
         ${followStatus.label}
         ${project.followUpDate ? `(${project.followUpDate})` : ''}
@@ -1139,11 +1179,36 @@ async function uploadSingleInspection(project) {
       return;
     }
 
+    markInspectionSynced(project.id);
+
     if (syncStatus) syncStatus.textContent = 'Saved locally and uploaded to cloud.';
   } catch (err) {
     console.error('Single upload failed:', err);
     if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
   }
+}
+
+function markInspectionSynced(projectId) {
+  const projects = getProjects();
+
+  const index = projects.findIndex(
+    p => p.id === projectId
+  );
+
+  if (index === -1) return;
+
+  projects[index] = {
+    ...projects[index],
+
+    syncPending: false,
+    syncError: false,
+
+    syncedAt: new Date().toISOString()
+  };
+
+  setProjects(projects);
+
+  renderProjectsList();
 }
 
 function saveProject() {
@@ -1193,6 +1258,10 @@ function saveProject() {
   if (index !== -1) {
     projects[index] = {
       ...projects[index],
+
+      syncPending: true,
+      syncError: false,
+
       inspectionNumber:
         projects[index].inspectionNumber ||
         generateInspectionNumber(),
@@ -1222,6 +1291,10 @@ function saveProject() {
 } else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      
+      syncPending: true,
+      syncError: false,
+      
       inspectionNumber: generateInspectionNumber(),
       projectName,
       organisationName,

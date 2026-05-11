@@ -829,3 +829,27 @@ button:hover {
   font-weight: bold;
   cursor: pointer;
 }
+
+.project-sync {
+  display: inline-block;
+  margin: 4px 0 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.sync-synced {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.sync-pending {
+  background: #fff8e1;
+  color: #e65100;
+}
+
+.sync-error {
+  background: #ffebee;
+  color: #b71c1c;
+}
