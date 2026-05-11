@@ -738,16 +738,7 @@ function initApp() {
   populateOccupancies();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
-  const loginBtn = document.getElementById('loginBtn');
-
-  if (loginBtn) {
-    loginBtn.addEventListener('click', () => {
-      alert('Login button clicked');
-      console.log('Login button clicked');
-      
-      loginUser();
-    });
-  }
+  getEl('loginBtn').addEventListener('click', loginUser);
   getEl('signupBtn').addEventListener('click', signupUser);
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
