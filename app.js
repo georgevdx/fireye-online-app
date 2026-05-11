@@ -392,16 +392,30 @@ async function loginUser() {
   const email = getEl('loginEmail').value.trim();
   const password = getEl('loginPassword').value;
 
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (syncStatus) {
+    syncStatus.textContent = 'Logging in...';
+  }
+
   const { error } = await supabaseClient.auth.signInWithPassword({
     email,
     password
   });
 
-  getEl('syncStatus').textContent = error
-    ? `Login failed: ${error.message}`
-    : 'Logged in successfully.';
-  updateSyncUI();
+  if (error) {
+    alert(`Login failed: ${error.message}`);
+    if (syncStatus) syncStatus.textContent = `Login failed: ${error.message}`;
+    return;
+  }
 
+  if (syncStatus) {
+    syncStatus.textContent = 'Logged in successfully.';
+  }
+
+  updateSyncUI();
+  safeDownloadNewerCloudInspections();
+  uploadPendingInspections();
 }
 
   async function uploadSync() {
@@ -724,7 +738,14 @@ function initApp() {
   populateOccupancies();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
-  getEl('loginBtn').addEventListener('click', loginUser);
+  const loginBtn = document.getElementById('loginBtn');
+
+  if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+      console.log('Login button clicked');
+      loginUser();
+    });
+  }
   getEl('signupBtn').addEventListener('click', signupUser);
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
