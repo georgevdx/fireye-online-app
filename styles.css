@@ -209,6 +209,10 @@ button:hover {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 24px;
+
+  width: 100%;
+  box-sizing: border-box;
 
   padding-bottom: 18px;
   margin-bottom: 24px;
@@ -237,7 +241,7 @@ button:hover {
 
   font-size: 13px;
   line-height: 1.8;
-
+  flex-shrink: 0;
   min-width: 240px;
 }
 
@@ -875,4 +879,15 @@ button:hover {
 .sync-error {
   background: #ffebee;
   color: #b71c1c;
+}
+
+.report-container {
+  box-sizing: border-box;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.report-brand {
+  flex: 1;
+  min-width: 0;
 }
