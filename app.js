@@ -1038,6 +1038,46 @@ function generateInspectionNumber() {
   return `FIR-${year}-${String(nextNumber).padStart(4, '0')}`;
 }
 
+async function uploadSingleInspection(project) {
+  if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
+  if (!project || !project.id) return;
+
+  const syncStatus = document.getElementById('syncStatus');
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData || !userData.user) {
+      if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud not connected.';
+      return;
+    }
+
+    if (syncStatus) syncStatus.textContent = 'Uploading saved inspection...';
+
+    const { error } = await supabaseClient
+      .from('inspections')
+      .upsert({
+        id: project.id,
+        user_id: userData.user.id,
+        inspection_data: project,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+
+    if (error) {
+      console.error('Single upload failed:', error);
+      if (syncStatus) syncStatus.textContent = `Cloud upload failed: ${error.message}`;
+      return;
+    }
+
+    if (syncStatus) syncStatus.textContent = 'Saved locally and uploaded to cloud.';
+  } catch (err) {
+    console.error('Single upload failed:', err);
+    if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
+  }
+}
+
 function saveProject() {
   const projectName = getEl('projectName').value.trim();
  
@@ -1144,6 +1184,9 @@ function saveProject() {
   setProjects(projects);
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
+
+  const savedProject = projects.find(p => p.id === currentProjectId);
+  uploadSingleInspection(savedProject);
 
 }
 
