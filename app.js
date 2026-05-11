@@ -1878,23 +1878,35 @@ function generateReport() {
     photosHtml = `<div class="note">No photo evidence added.</div>`;
   }
 
-  reportContent.innerHTML = `
-    <div class="report-header">
+ reportContent.innerHTML = `
+  <div class="report-header">
 
     <div class="report-brand">
       <h1>FIREYE</h1>
+
       <div class="report-subtitle">
         Fire Safety Inspection Report
       </div>
     </div>
 
-    <div class="report-meta">
-      <div><strong>Inspection No:</strong> ${escapeHtml(inspectionNumber)}</div>
-      <div><strong>Date:</strong> ${new Date().toLocaleDateString()}</div>
-      <div><strong>Inspector:</strong> ${escapeHtml(inspectorName || '-')}</div>
+    <div class="report-meta-card">
+      <div>
+        <strong>Inspection No:</strong>
+        ${escapeHtml(inspectionNumber)}
+      </div>
+
+      <div>
+        <strong>Date:</strong>
+        ${new Date().toLocaleDateString()}
+      </div>
+
+      <div>
+        <strong>Inspector:</strong>
+        ${escapeHtml(inspectorName || '-')}
+      </div>
     </div>
 
-    </div>
+  </div>
 
     <div class="report-block">
       <h3>Project Information</h3>
