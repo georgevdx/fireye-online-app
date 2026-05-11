@@ -130,6 +130,10 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   if (index !== -1) {
     projects[index] = {
       ...projects[index],
+
+      syncPending: true,
+      syncError: false,
+
       projectName,
       organisationName,
       siteName,
@@ -154,6 +158,10 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
 } else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      
+      syncPending: true,
+      syncError: false,
+
       projectName,
       organisationName,
       siteName,
