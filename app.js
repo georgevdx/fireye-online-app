@@ -620,6 +620,73 @@ function showSyncTools() {
   if (backupTools) backupTools.style.display = 'grid';
 }
 
+async function safeDownloadNewerCloudInspections() {
+  if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
+
+  const syncStatus = document.getElementById('syncStatus');
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData || !userData.user) {
+      return;
+    }
+
+    const { data, error } = await supabaseClient
+      .from('inspections')
+      .select('inspection_data, updated_at');
+
+    if (error) {
+      console.error('Safe download failed:', error);
+      if (syncStatus) syncStatus.textContent = `Cloud download failed: ${error.message}`;
+      return;
+    }
+
+    const localProjects = getProjects();
+    const mergedMap = new Map();
+
+    localProjects.forEach(project => {
+      mergedMap.set(project.id, project);
+    });
+
+    data.forEach(row => {
+      const cloudProject = row.inspection_data;
+      const localProject = mergedMap.get(cloudProject.id);
+
+      if (!localProject) {
+        mergedMap.set(cloudProject.id, cloudProject);
+        return;
+      }
+
+      const localTime = localProject.lastSaved
+        ? new Date(localProject.lastSaved).getTime()
+        : 0;
+
+      const cloudTime = cloudProject.lastSaved
+        ? new Date(cloudProject.lastSaved).getTime()
+        : 0;
+
+      if (cloudTime > localTime) {
+        mergedMap.set(cloudProject.id, cloudProject);
+      }
+    });
+
+    const mergedProjects = Array.from(mergedMap.values());
+
+    setProjects(mergedProjects);
+    renderProjectsList();
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Cloud download check complete.';
+    }
+  } catch (err) {
+    console.error('Safe download failed:', err);
+    if (syncStatus) syncStatus.textContent = 'Cloud download failed.';
+  }
+}
+
 async function loadData() {
   try {
     occupancies = await loadJson('occupancies.json');
@@ -630,7 +697,8 @@ async function loadData() {
     initApp();
     renderProjectsList();
     updateSyncUI();
-    //autoSyncIfLoggedIn();
+    safeDownloadNewerCloudInspections();
+
   } catch (error) {
     console.error('Data loading error:', error);
     document.body.innerHTML = `
@@ -2169,3 +2237,4 @@ window.toggleChecklistSection = toggleChecklistSection;
 window.toggleSection = toggleSection;
 window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
+window.addEventListener('online', safeDownloadNewerCloudInspections);
