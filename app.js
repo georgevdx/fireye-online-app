@@ -206,8 +206,10 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   const projectName = getEl('projectName').value.trim() || 'Inspection';
 
   const opt = {
-  margin: [8, 8, 8, 8],
+  margin: [15, 12, 15, 12],
+
   filename: `Fireye_Report_${projectName}.pdf`,
+
   image: { type: 'jpeg', quality: 0.98 },
   html2canvas: {
   scale: 1,

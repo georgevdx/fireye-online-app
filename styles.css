@@ -934,3 +934,8 @@ button:hover {
   letter-spacing: 2px;
   color: #c62828;
 }
+
+#reportContent {
+  padding: 20px;
+  background: white;
+}
