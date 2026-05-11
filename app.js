@@ -2097,8 +2097,9 @@ function handlePhotoUpload(event) {
       const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
       currentPhotos.push({
-        src: compressedDataUrl,
-        timestamp: new Date().toISOString()
+      src: compressedDataUrl,
+      timestamp: new Date().toISOString(),
+      note: ''
       });
 
       renderPhotos();
@@ -2125,6 +2126,13 @@ function renderPhotos() {
     div.innerHTML = `
       <img src="${photoSrc}">
       <small class="photo-timestamp">Captured: ${photoTime}</small>
+
+      <textarea
+        class="photo-note"
+        placeholder="Photo note..."
+        oninput="updatePhotoNote(${index}, this.value)"
+      >${escapeHtml(photo.note || '')}</textarea>
+
       <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
     `;
 
@@ -2137,6 +2145,12 @@ function deletePhoto(index) {
   renderPhotos();
 }
 
+function updatePhotoNote(index, value) {
+  if (!currentPhotos[index]) return;
+
+  currentPhotos[index].note = value;
+  scheduleAutoSave();
+}
 
 async function shareReport() {
   const projectName = getEl('projectName').value.trim() || 'Untitled Inspection';
@@ -2388,3 +2402,4 @@ window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
 window.addEventListener('online', safeDownloadNewerCloudInspections);
 window.addEventListener('online', uploadPendingInspections);
+window.updatePhotoNote = updatePhotoNote;
