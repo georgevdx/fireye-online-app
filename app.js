@@ -963,7 +963,87 @@ function renderDashboard(projects) {
   </div>
 `;
 }
+function renderDashboardMetrics() {
 
+  const container =
+    document.getElementById('dashboardMetrics');
+
+  if (!container) return;
+
+  const projects = getProjects();
+
+  const total = projects.length;
+
+  const followUps = projects.filter(
+    p => p.followUpRequired === 'Yes'
+  );
+
+  const overdue = followUps.filter(p => {
+
+    if (!p.followUpDate) return false;
+
+    return new Date(p.followUpDate) < new Date();
+
+  }).length;
+
+  const dueSoon = followUps.filter(p => {
+
+    if (!p.followUpDate) return false;
+
+    const today = new Date();
+
+    const due = new Date(p.followUpDate);
+
+    const diffDays =
+      (due - today) / (1000 * 60 * 60 * 24);
+
+    return diffDays >= 0 && diffDays <= 7;
+
+  }).length;
+
+  const highRisk = projects.filter(p =>
+    p.answers?.some(a => a.answer === 'No')
+  ).length;
+
+  container.innerHTML = `
+
+    <div class="metric-card">
+      <div class="metric-number">${total}</div>
+      <div class="metric-label">
+        Total Inspections
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-number">${followUps.length}</div>
+      <div class="metric-label">
+        Follow-ups
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-number">${dueSoon}</div>
+      <div class="metric-label">
+        Due Soon
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-number">${overdue}</div>
+      <div class="metric-label">
+        Overdue
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-number">${highRisk}</div>
+      <div class="metric-label">
+        High Risk
+      </div>
+    </div>
+
+  `;
+}
 function getSyncStatus(project) {
   if (project.syncError) {
     return { label: 'Cloud Error', class: 'sync-error' };
@@ -978,8 +1058,11 @@ function getSyncStatus(project) {
 
 function renderProjectsList() {
   const projects = getProjects();
+  
   renderReminderBanner(projects);
   renderDashboard(projects);
+  renderDashboardMetrics();
+
   const container = getEl('projectsList');
   const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';

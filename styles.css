@@ -951,3 +951,41 @@ button:hover {
 
   background: #f4f4f4;
 }
+
+.dashboard-metrics {
+  display: grid;
+
+  grid-template-columns:
+    repeat(auto-fit, minmax(140px, 1fr));
+
+  gap: 14px;
+
+  margin-bottom: 20px;
+}
+
+.metric-card {
+  background: white;
+
+  border-radius: 14px;
+
+  padding: 18px;
+
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+
+  text-align: center;
+}
+
+.metric-number {
+  font-size: 28px;
+  font-weight: bold;
+
+  color: #b71c1c;
+
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  font-size: 13px;
+
+  color: #666;
+}
