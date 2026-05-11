@@ -227,14 +227,14 @@ button:hover {
 
 .report-subtitle {
   margin-top: 6px;
-
   font-size: 14px;
   color: #555;
+  white-space: normal;
 }
 
 .report-meta {
   text-align: right;
-
+  flex: 0 0 180px;
   font-size: 13px;
   line-height: 1.8;
 }
