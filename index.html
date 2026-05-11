@@ -43,12 +43,6 @@
   <div id="syncStatus" class="note"></div>
 </div>
 
-  <div class="filter-bar">
-    <button onclick="setFilter('all')">All</button>
-    <button onclick="setFilter('soon')">Due Soon</button>
-    <button onclick="setFilter('overdue')">Overdue</button>
-    <button onclick="setFilter('none')">No Follow-up</button>
-  </div>
   <div id="backupTools" class="backup-actions">
   <button id="exportBackupBtn" type="button">Export Backup</button>
 
@@ -62,7 +56,15 @@
         <h2>Projects</h2>
         <button id="newProjectBtn" type="button">New Project</button>
       </div>
+      
+      <div id="dashboardMetrics" class="dashboard-metrics"></div>
 
+      <div class="filter-bar">
+        <button onclick="setFilter('all')">All</button>
+        <button onclick="setFilter('soon')">Due Soon</button>
+        <button onclick="setFilter('overdue')">Overdue</button>
+        <button onclick="setFilter('none')">No Follow-up</button>
+      </div>
       <input
         id="projectSearch"
         type="text"
