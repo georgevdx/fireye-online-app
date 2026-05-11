@@ -1060,7 +1060,6 @@ function renderProjectsList() {
   const projects = getProjects();
   
   renderReminderBanner(projects);
-  renderDashboard(projects);
   renderDashboardMetrics();
 
   const container = getEl('projectsList');
