@@ -210,7 +210,7 @@ if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mal
   filename: `Fireye_Report_${projectName}.pdf`,
   image: { type: 'jpeg', quality: 0.98 },
   html2canvas: {
-  scale: 1.5,
+  scale: 1,
   useCORS: true,
   scrollY: 0,
   windowWidth: document.getElementById('reportContent').scrollWidth
