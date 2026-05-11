@@ -1684,6 +1684,20 @@ function generateReport() {
   let nonCompliance = {};
   let photosHtml = '';
 
+  if (currentPhotos.length > 0) {
+
+    photosHtml += `
+      <div class="report-page-break"></div>
+
+      <div class="report-block">
+        <h2 class="appendix-title">
+          APPENDIX A — PHOTO EVIDENCE
+        </h2>
+      </div>
+
+      <div class="report-photos">
+    `;
+
   let yesCount = 0;
   let noCount = 0;
   let naCount = 0;
@@ -1870,12 +1884,30 @@ function generateReport() {
   if (currentPhotos.length > 0) {
     currentPhotos.forEach((photo, index) => {
       photosHtml += `
-        <div class="report-photo-item">
-          <div><strong>Photo ${index + 1}</strong></div>
-          <img src="${photo.src}" alt="Inspection photo ${index + 1}">
-        </div>
-      `;
-    });
+  <div class="report-photo-card">
+
+    <div class="report-photo-header">
+      Photo ${index + 1}
+    </div>
+
+    <div class="report-photo-time">
+      Captured:
+      ${photo.timestamp
+        ? new Date(photo.timestamp).toLocaleString()
+        : 'Not recorded'}
+    </div>
+
+    <img
+      src="${photo.src}"
+      class="report-photo-img"
+      alt="Inspection photo ${index + 1}"
+    >
+
+  </div>
+  `; 
+
+  }); 
+    photosHtml += `</div>`;
   } else {
     photosHtml = `<div class="note">No photo evidence added.</div>`;
   }
@@ -2022,12 +2054,7 @@ ${escapeHtml(currentProject.linkedToInspectionNumber || '-')}
   ` : ''}
 </div>
 
-    <div class="report-block">
-      <h3>Photo Evidence</h3>
-      <div class="report-photos">
-        ${photosHtml}
-      </div>
-    </div>
+    ${photosHtml}
   `;
 
   getEl('reportSection').style.display = 'block';
@@ -2044,8 +2071,8 @@ function handlePhotoUpload(event) {
     const img = new Image();
 
     img.onload = function() {
-      const maxWidth = 500;
-      const maxHeight = 500;
+      const maxWidth = 1200;
+      const maxHeight = 1200;
 
       let width = img.width;
       let height = img.height;
@@ -2063,7 +2090,7 @@ function handlePhotoUpload(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
 
       currentPhotos.push({
         src: compressedDataUrl,
