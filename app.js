@@ -698,6 +698,7 @@ async function loadData() {
     renderProjectsList();
     updateSyncUI();
     safeDownloadNewerCloudInspections();
+    uploadPendingInspections();
 
   } catch (error) {
     console.error('Data loading error:', error);
@@ -1185,6 +1186,21 @@ async function uploadSingleInspection(project) {
   } catch (err) {
     console.error('Single upload failed:', err);
     if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
+  }
+}
+
+async function uploadPendingInspections() {
+
+  if (!navigator.onLine) return;
+
+  const projects = getProjects();
+
+  const pendingProjects = projects.filter(
+    p => p.syncPending
+  );
+
+  for (const project of pendingProjects) {
+    await uploadSingleInspection(project);
   }
 }
 
@@ -2313,3 +2329,4 @@ window.toggleSection = toggleSection;
 window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
 window.addEventListener('online', safeDownloadNewerCloudInspections);
+window.addEventListener('online', uploadPendingInspections);
