@@ -1007,35 +1007,35 @@ function renderDashboardMetrics() {
 
   container.innerHTML = `
 
-    <div class="metric-card">
+    <div class="metric-card" onclick="setFilter('all')">
       <div class="metric-number">${total}</div>
       <div class="metric-label">
         Total Inspections
       </div>
     </div>
 
-    <div class="metric-card">
+    <div class="metric-card" onclick="setFilter('followups')">
       <div class="metric-number">${followUps.length}</div>
       <div class="metric-label">
         Follow-ups
       </div>
     </div>
 
-    <div class="metric-card">
+    <div class="metric-card" onclick="setFilter('soon')">
       <div class="metric-number">${dueSoon}</div>
       <div class="metric-label">
         Due Soon
       </div>
     </div>
 
-    <div class="metric-card">
+    <div class="metric-card" onclick="setFilter('overdue')">
       <div class="metric-number">${overdue}</div>
       <div class="metric-label">
         Overdue
       </div>
     </div>
 
-    <div class="metric-card">
+    <div class="metric-card" onclick="setFilter('risk')">
       <div class="metric-number">${highRisk}</div>
       <div class="metric-label">
         High Risk
@@ -1099,6 +1099,16 @@ function renderProjectsList() {
 
   if (currentFilter === 'none') {
     return followStatus.class === 'status-none';
+  }
+
+  if (currentFilter === 'followups') {
+    return project.followUpRequired === 'Yes';
+  }
+
+  if (currentFilter === 'risk') {
+    return project.answers?.some(
+      a => a.answer === 'No'
+    );
   }
 
   return true; // default = all

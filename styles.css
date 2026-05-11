@@ -989,3 +989,12 @@ button:hover {
 
   color: #666;
 }
+
+.metric-card {
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+}
