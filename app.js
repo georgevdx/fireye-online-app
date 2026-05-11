@@ -469,9 +469,10 @@ async function downloadSync() {
   if (!confirmed) return;
 
   const { data, error } = await supabaseClient
-    .from('inspections')
-    .select('inspection_data, updated_at')
-    .order('updated_at', { ascending: false });
+  .from('inspections')
+  .select('inspection_data, updated_at')
+  .eq('user_id', userData.user.id)
+  .order('updated_at', { ascending: false });
 
   if (error) {
     getEl('syncStatus').textContent = `Download failed: ${error.message}`;
@@ -502,7 +503,8 @@ async function mergeSync() {
 
   const { data, error } = await supabaseClient
     .from('inspections')
-    .select('inspection_data, updated_at');
+    .select('inspection_data, updated_at')
+    .eq('user_id', userData.user.id);
 
   if (error) {
     getEl('syncStatus').textContent = `Merge failed: ${error.message}`;
@@ -663,7 +665,8 @@ async function safeDownloadNewerCloudInspections() {
 
     const { data, error } = await supabaseClient
       .from('inspections')
-      .select('inspection_data, updated_at');
+      .select('inspection_data, updated_at')
+      .eq('user_id', userData.user.id);
 
     if (error) {
       console.error('Safe download failed:', error);
