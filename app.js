@@ -1419,8 +1419,6 @@ async function deleteProject() {
   setProjects(projects);
   
   try {
-  const idToDelete = currentProjectId;
-
   console.log('Deleting cloud inspection id:', idToDelete);
 
   const { data: userData, error: userError } =
@@ -1966,7 +1964,7 @@ function generateReport() {
             : '-'
         }
       </div>
-    ` : ''}
+      ` : ''}
       <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
       <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
       <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
