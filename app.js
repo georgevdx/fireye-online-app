@@ -742,7 +742,9 @@ function initApp() {
 
   if (loginBtn) {
     loginBtn.addEventListener('click', () => {
+      alert('Login button clicked');
       console.log('Login button clicked');
+      
       loginUser();
     });
   }
