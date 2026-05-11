@@ -963,28 +963,6 @@ function getSyncStatus(project) {
   return { label: 'Synced', class: 'sync-synced' };
 }
 
-function getSyncStatus(project) {
-
-  if (project.syncError) {
-    return {
-      label: 'Cloud Error',
-      class: 'sync-error'
-    };
-  }
-
-  if (project.syncPending) {
-    return {
-      label: 'Pending Upload',
-      class: 'sync-pending'
-    };
-  }
-
-  return {
-    label: 'Synced',
-    class: 'sync-synced'
-  };
-}
-
 function renderProjectsList() {
   const projects = getProjects();
   renderReminderBanner(projects);
@@ -1711,6 +1689,7 @@ function generateReport() {
 
       <div class="report-photos">
     `;
+  }
 
   let yesCount = 0;
   let noCount = 0;
