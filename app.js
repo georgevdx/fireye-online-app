@@ -1400,11 +1400,15 @@ function markInspectionSynced(projectId) {
 }
 
 function saveProject() {
-  const projectName = getEl('projectName').value.trim();
- 
+  
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
   
+  const projectName =
+    [organisationName, siteName]
+      .filter(Boolean)
+      .join(' ');
+
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
   

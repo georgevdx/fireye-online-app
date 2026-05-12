@@ -1152,3 +1152,25 @@ button:hover {
   width: 100%;
   margin-bottom: 8px;
 }
+
+@media (max-width: 700px) {
+  .action-menu {
+    position: static;
+  }
+
+  .action-dropdown {
+    position: fixed !important;
+
+    left: 50% !important;
+    right: auto !important;
+    bottom: 62px !important;
+    top: auto !important;
+
+    transform: translateX(-50%) !important;
+
+    width: calc(100% - 32px) !important;
+    max-width: 320px !important;
+
+    z-index: 3000;
+  }
+}
