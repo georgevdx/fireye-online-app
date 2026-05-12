@@ -1046,8 +1046,8 @@ function renderDashboardMetrics() {
     </div>
 
     <div class="metric-card"
-     data-filter="highRisk"
-     onclick="setFilter('highRisk')">
+      data-filter="risk"
+      onclick="setFilter('risk')">
       <div class="metric-number">${highRisk}</div>
       <div class="metric-label">
         High Risk
