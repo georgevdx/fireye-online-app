@@ -1509,7 +1509,7 @@ function saveProject() {
   const savedProject = projects.find(p => p.id === currentProjectId);
   uploadSingleInspection(savedProject);
 
-  showProjectList();
+
 
 }
 
