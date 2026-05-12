@@ -2245,11 +2245,6 @@ function generateReport() {
     </div>
 
     <div class="report-block">
-      <h3>Checklist Results</h3>
-      ${answersHtml}
-    </div>
-
-    <div class="report-block">
   <h3>Inspector Comments / Conclusion</h3>
   <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
 </div>
