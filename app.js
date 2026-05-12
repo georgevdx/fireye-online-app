@@ -2179,12 +2179,6 @@ function generateReport() {
 
     <div class="report-block">
       <h3>Inspection Summary</h3>
-      <div class="report-line"><strong>Total Items:</strong> ${totalItems}</div>
-      <div class="report-line"><strong>Answered:</strong> ${answeredCount}</div>
-      <div class="report-line"><strong>Yes:</strong> ${yesCount}</div>
-      <div class="report-line"><strong>No:</strong> ${noCount}</div>
-      <div class="report-line"><strong>N/A:</strong> ${naCount}</div>
-      <div class="report-line"><strong>Not Answered:</strong> ${notAnsweredCount}</div>
       <div class="report-line"><strong>Overall Status:</strong> <span class="${
         overallStatus === 'Compliant / Acceptable'
           ? 'status-good'
