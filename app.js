@@ -811,7 +811,14 @@ function initApp() {
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
   getEl('inspectorName').addEventListener('input', scheduleAutoSave);
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
-  getEl('exportBtn').addEventListener('click', exportReport);
+  const exportBtn = document.getElementById('exportBtn');
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      alert('PDF button clicked');
+      exportReport();
+    });
+  }
   getEl('shareBtn').addEventListener('click', shareReport);
   getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
