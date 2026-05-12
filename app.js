@@ -765,6 +765,23 @@ function initApp() {
           : 'none';
     });
   }
+  const actionMenuBtn =
+  document.getElementById('actionMenuBtn');
+
+  const actionDropdown =
+    document.getElementById('actionDropdown');
+
+  if (actionMenuBtn && actionDropdown) {
+
+    actionMenuBtn.addEventListener('click', () => {
+
+      actionDropdown.style.display =
+
+        actionDropdown.style.display === 'none'
+          ? 'block'
+          : 'none';
+    });
+  }
   populateOccupancies();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
