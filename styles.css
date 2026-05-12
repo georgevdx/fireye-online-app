@@ -1174,3 +1174,15 @@ button:hover {
     z-index: 3000;
   }
 }
+
+.report-photo-card {
+  break-inside: avoid;
+  page-break-inside: avoid;
+
+  margin-bottom: 18px;
+}
+
+.report-page-break {
+  page-break-before: always;
+  break-before: page;
+}
