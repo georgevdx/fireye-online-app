@@ -1025,3 +1025,56 @@ button:hover {
 .metric-active .metric-label {
   color: white;
 }
+
+.brand-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cloud-menu {
+  position: relative;
+}
+
+.cloud-menu-btn {
+  width: auto;
+  max-width: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: #666;
+}
+
+.cloud-menu-btn.connected {
+  background: #2e7d32;
+}
+
+.cloud-dropdown {
+  position: absolute;
+  right: 0;
+  top: 42px;
+  z-index: 1000;
+
+  width: 260px;
+  padding: 12px;
+
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+
+  box-shadow: 0 6px 20px rgba(0,0,0,0.18);
+}
+
+.cloud-dropdown input,
+.cloud-dropdown button {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 8px;
+}

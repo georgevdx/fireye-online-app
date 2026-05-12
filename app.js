@@ -625,9 +625,14 @@ async function updateSyncUI() {
   const syncTools = document.getElementById('syncTools');
   const backupTools = document.getElementById('backupTools');
   const syncStatus = document.getElementById('syncStatus');
+  const cloudMenuBtn = document.getElementById('cloudMenuBtn');
 
   const { data } = await supabaseClient.auth.getUser();
   const isLoggedIn = !!(data && data.user);
+  if (cloudMenuBtn) {
+  cloudMenuBtn.classList.toggle('connected', isLoggedIn);
+  cloudMenuBtn.textContent = isLoggedIn ? 'Cloud ✓' : 'Cloud';
+}
 
   if (connectedView) connectedView.style.display = isLoggedIn ? 'block' : 'none';
   if (syncTools) syncTools.style.display = isLoggedIn ? 'none' : 'block';
@@ -748,6 +753,17 @@ function initApp() {
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
   if (showSyncToolsBtn) {
     showSyncToolsBtn.addEventListener('click', showSyncTools);
+  }
+  const cloudMenuBtn = document.getElementById('cloudMenuBtn');
+  const cloudDropdown = document.getElementById('cloudDropdown');
+
+  if (cloudMenuBtn && cloudDropdown) {
+    cloudMenuBtn.addEventListener('click', () => {
+      cloudDropdown.style.display =
+        cloudDropdown.style.display === 'none'
+          ? 'block'
+          : 'none';
+    });
   }
   populateOccupancies();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);

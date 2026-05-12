@@ -11,37 +11,42 @@
 </head>
 <body>
   <div class="app">
-    <header class="header brand-header">
-  <div class="brand-mark">🔥</div>
-  <div>
-    <h1>Fireye</h1>
-    <p class="subtitle">Fire Safety App</p>
+<header class="header brand-header">
+  <div class="brand-left">
+    <div class="brand-mark">🔥</div>
+    <div>
+      <h1>Fireye</h1>
+      <p class="subtitle">Fire Safety App</p>
+    </div>
+  </div>
+
+  <div class="cloud-menu">
+    <button id="cloudMenuBtn" type="button" class="cloud-menu-btn">
+      Cloud
+    </button>
+
+    <div id="cloudDropdown" class="cloud-dropdown" style="display:none;">
+      <div id="cloudConnectedView" style="display:none;">
+        <div class="sync-connected">✅ Cloud Sync: Connected</div>
+        <button id="showSyncToolsBtn" type="button">Admin / Sync Tools</button>
+      </div>
+
+      <div id="syncTools">
+        <input id="loginEmail" type="email" placeholder="Email">
+        <input id="loginPassword" type="password" placeholder="Password">
+
+        <button id="loginBtn" type="button">Login</button>
+        <button id="signupBtn" type="button">Sign Up</button>
+
+        <button id="syncUploadBtn" type="button">Upload Sync</button>
+        <button id="syncDownloadBtn" type="button">Download Sync</button>
+        <button id="syncMergeBtn" type="button">Merge Sync</button>
+      </div>
+
+      <div id="syncStatus" class="note"></div>
+    </div>
   </div>
 </header>
-<div class="card cloud-sync-card">
-  <h2>Cloud Sync</h2>
-
-  <div id="cloudConnectedView" style="display:none;">
-    <div class="sync-connected">✅ Cloud Sync: Connected</div>
-    <button id="showSyncToolsBtn" type="button">Admin / Sync Tools</button>
-  </div>
-
-  <div id="syncTools">
-    <input id="loginEmail" type="email" placeholder="Email">
-    <input id="loginPassword" type="password" placeholder="Password">
-
-    <div class="cloud-sync-actions">
-      <button id="loginBtn" type="button">Login</button>
-      <button id="signupBtn" type="button">Sign Up</button>
-    </div>
-
-    <button id="syncUploadBtn" type="button">Upload Sync</button>
-    <button id="syncDownloadBtn" type="button">Download Sync</button>
-    <button id="syncMergeBtn" type="button">Merge Sync</button>
-  </div>
-
-  <div id="syncStatus" class="note"></div>
-</div>
 
   <div id="backupTools" class="backup-actions">
   <button id="exportBackupBtn" type="button">Export Backup</button>
