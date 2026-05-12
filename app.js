@@ -98,8 +98,16 @@ function autoSaveProject() {
   const contactEmail = getEl('contactEmail').value.trim();
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
+  if (!siteName) {
+    alert(
+      'Please enter a Site / Branch / Location to distinguish this premises.'
+    );
 
-if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
+    getEl('siteName').focus();
+
+    return;
+  }
+  if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
   const projectName = projectNameField.value.trim();
   const inspectorName = inspectorNameField.value.trim();
