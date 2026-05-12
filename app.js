@@ -222,6 +222,7 @@ function autoSaveProject() {
 
   function exportReport() {
   generateReport(); // maak seker report is nuut
+  getEl('reportSection').style.display = 'block';
 
   const element = document.getElementById('reportContent');
 
@@ -248,8 +249,9 @@ function autoSaveProject() {
     mode: ['avoid-all', 'css', 'legacy']
   }
 };
-
+  setTimeout(() => {
   html2pdf().set(opt).from(element).save();
+}, 300);
 }
 
   async function useCurrentLocation() {
