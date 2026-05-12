@@ -85,7 +85,7 @@ function scheduleAutoSave() {
 }
 
 function autoSaveProject() {
-  const projectNameField = document.getElementById('projectName');
+  
   const inspectorNameField = document.getElementById('inspectorName');
   const occupancyField = document.getElementById('occupancySelect');
   const projectAddressField = document.getElementById('projectAddress');
@@ -107,9 +107,12 @@ function autoSaveProject() {
 
     return;
   }
-  if (!projectNameField || !projectAddressField|| !gpsField|| !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
+  if (!projectAddressField || !gpsField || !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
 
-  const projectName = projectNameField.value.trim();
+  const projectName =
+  [organisationName, siteName]
+    .filter(Boolean)
+    .join(' ');
   const inspectorName = inspectorNameField.value.trim();
   const occupancy = occupancyField.value;
   const projectAddress = projectAddressField.value.trim();
@@ -1845,11 +1848,7 @@ function generateReport() {
   const inspectionType = getEl('inspectionType').value;
 
   const selectedChecklist = getActiveTemplateChecklist() || [];
-  const projects = getProjects();
-
-  const currentProject = projects.find(
-    p => p.id === currentProjectId
-  );
+  
   const inspectionNumber =
   currentProject?.inspectionNumber || '-';
   const reportContent = getEl('reportContent');
