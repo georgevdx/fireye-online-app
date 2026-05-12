@@ -1963,10 +1963,14 @@ function generateReport() {
       }
 
       nonCompliance[sectionName].push({
-      text: item["Non Compliance Text"] || item["Checklist Item"],
-      note: itemNote,
-      reference: item["Reference"] || ''
-    });
+        itemNumber: item["Item Number"] || '',
+        checklistItem: item["Checklist Item"] || '',
+        text: item["Non Compliance Text"] || item["Checklist Item"],
+        note: itemNote,
+        reference: item["Reference"] || '',
+        correctiveAction: item["Corrective Action"] || '',
+        severity: item["Severity"] || 'Medium'
+      });
     } else if (answer.toUpperCase() === 'N/A') {
       naCount++;
     }
@@ -2060,13 +2064,40 @@ function generateReport() {
       `;
 
       nonCompliance[section].forEach(item => {
-        nonComplianceHtml += `
-          <div class="nc-item">
-           - ${escapeHtml(item.text)}
-            ${item.reference ? `<br><span class="note">Reference: ${escapeHtml(item.reference)}</span>` : ''}
-          </div>
-        `;
-      });
+  nonComplianceHtml += `
+    <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
+
+      <div><strong>Severity:</strong> ${escapeHtml(item.severity)}</div>
+
+      <div>
+        <strong>Finding:</strong>
+        ${escapeHtml(item.text)}
+      </div>
+
+      ${item.note ? `
+        <div>
+          <strong>Inspector Note:</strong>
+          ${escapeHtml(item.note)}
+        </div>
+      ` : ''}
+
+      ${item.reference ? `
+        <div class="note">
+          <strong>Reference:</strong>
+          ${escapeHtml(item.reference)}
+        </div>
+      ` : ''}
+
+      ${item.correctiveAction ? `
+        <div>
+          <strong>Corrective Action:</strong>
+          ${escapeHtml(item.correctiveAction)}
+        </div>
+      ` : ''}
+
+    </div>
+  `;
+});
 
       nonComplianceHtml += `</div>`;
     });
