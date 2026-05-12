@@ -226,7 +226,12 @@ function autoSaveProject() {
 
   const element = document.getElementById('reportContent');
 
-  const projectName = getEl('projectName').value.trim() || 'Inspection';
+  const currentProject = getProjects().find(
+    p => p.id === currentProjectId
+  );
+
+  const projectName =
+    currentProject?.projectName || 'Inspection';
 
   const opt = {
   margin: [15, 12, 15, 12],
