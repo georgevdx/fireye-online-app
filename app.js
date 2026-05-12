@@ -2053,6 +2053,7 @@ function generateReport() {
   }
 
   let nonComplianceHtml = '';
+  let actionPlanHtml = '';
 
   const ncSections = Object.keys(nonCompliance);
 
@@ -2064,8 +2065,9 @@ function generateReport() {
       `;
 
       nonCompliance[section].forEach(item => {
-  nonComplianceHtml += `
-    <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
+      nonComplianceHtml += `
+        
+      <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
 
       <div><strong>Severity:</strong> ${escapeHtml(item.severity)}</div>
 
@@ -2096,7 +2098,29 @@ function generateReport() {
       ` : ''}
 
     </div>
-  `;
+      `;
+      actionPlanHtml += `
+  <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
+
+    <div>
+      <strong>Severity:</strong>
+      ${escapeHtml(item.severity)}
+    </div>
+
+    <div>
+      <strong>Required Action:</strong>
+      ${escapeHtml(item.correctiveAction)}
+    </div>
+
+    ${item.reference ? `
+      <div class="note">
+        <strong>Reference:</strong>
+        ${escapeHtml(item.reference)}
+      </div>
+    ` : ''}
+
+  </div>
+      `;
 });
 
       nonComplianceHtml += `</div>`;
@@ -2244,6 +2268,11 @@ function generateReport() {
       ${nonComplianceHtml}
     </div>
 
+    <div class="report-block">
+      <h3>Corrective Action Plan</h3>
+      ${actionPlanHtml}
+    </div>
+    
     <div class="report-block">
   <h3>Inspector Comments / Conclusion</h3>
   <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
