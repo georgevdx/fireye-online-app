@@ -804,7 +804,6 @@ function initApp() {
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   getEl('backBtn').addEventListener('click', showProjectList);
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
-  getEl('projectName').addEventListener('input', scheduleAutoSave);
   getEl('inspectorName').addEventListener('input', scheduleAutoSave);
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
   getEl('exportBtn').addEventListener('click', exportReport);
@@ -858,7 +857,6 @@ function setProjects(projects) {
 
 function createNewProject() {
   currentProjectId = null;
-  getEl('projectName').value = '';
   getEl('productType').value = 'Fire Safety Officer';
   updateInspectionTypeOptions();
   getEl('organisationName').value = '';
@@ -1254,7 +1252,7 @@ function openProject(projectId) {
   if (!project) return;
 
   currentProjectId = project.id;
-  getEl('projectName').value = project.projectName || '';
+ 
   getEl('productType').value = project.productType || 'Fire Safety Officer';
   updateInspectionTypeOptions();
   getEl('organisationName').value = project.organisationName || '';
@@ -1824,7 +1822,12 @@ function escapeHtml(value) {
 
 
 function generateReport() {
-  const projectName = getEl('projectName').value.trim() || 'Untitled Project';
+ const currentProject = getProjects().find(
+    p => p.id === currentProjectId
+  );
+
+  const projectName =
+    currentProject?.projectName || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const finalComments = getEl('finalComments').value.trim();
   const occupancy = getEl('occupancySelect').value || '-';
@@ -2326,7 +2329,12 @@ function updatePhotoNote(index, value) {
 }
 
 async function shareReport() {
-  const projectName = getEl('projectName').value.trim() || 'Untitled Inspection';
+  const currentProject = getProjects().find(
+    p => p.id === currentProjectId
+  );
+
+  const projectName =
+    currentProject?.projectName || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const occupancy = getEl('occupancySelect').value || '-';
 
