@@ -790,6 +790,7 @@ function initApp() {
   getEl('syncUploadBtn').addEventListener('click', uploadSync);
   getEl('occupancySelect').addEventListener('change', updateDisplay);
   getEl('saveBtn').addEventListener('click', saveProject);
+  getEl('finishBtn').addEventListener('click', finishInspection);
   getEl('reportBtn').addEventListener('click', generateReport);
   getEl('deleteBtn').addEventListener('click', deleteProject);
   getEl('newProjectBtn').addEventListener('click', createNewProject);
@@ -1510,6 +1511,11 @@ function saveProject() {
 
   showProjectList();
 
+}
+
+function finishInspection() {
+  saveProject();
+  showProjectList();
 }
 
 function createFollowUpInspection() {
