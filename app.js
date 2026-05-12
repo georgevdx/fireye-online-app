@@ -2,6 +2,7 @@ let currentFilter = 'all';
 function setFilter(filter) {
   currentFilter = filter;
   renderProjectsList();
+  updateDashboardSelection();
 }
 let occupancies = [];
 let requirements = [];
@@ -963,6 +964,7 @@ function renderDashboard(projects) {
   </div>
 `;
 }
+
 function renderDashboardMetrics() {
 
   const container =
@@ -1007,35 +1009,45 @@ function renderDashboardMetrics() {
 
   container.innerHTML = `
 
-    <div class="metric-card" onclick="setFilter('all')">
+    <div class="metric-card"
+     data-filter="all"
+     onclick="setFilter('all')">
       <div class="metric-number">${total}</div>
       <div class="metric-label">
         Total Inspections
       </div>
     </div>
 
-    <div class="metric-card" onclick="setFilter('followups')">
+    <div class="metric-card"
+     data-filter="followups"
+     onclick="setFilter('followups')">
       <div class="metric-number">${followUps.length}</div>
       <div class="metric-label">
         Follow-ups
       </div>
     </div>
 
-    <div class="metric-card" onclick="setFilter('soon')">
+    <div class="metric-card"
+     data-filter="soon"
+     onclick="setFilter('soon')">
       <div class="metric-number">${dueSoon}</div>
       <div class="metric-label">
         Due Soon
       </div>
     </div>
 
-    <div class="metric-card" onclick="setFilter('overdue')">
+    <div class="metric-card"
+     data-filter="overdue"
+     onclick="setFilter('overdue')">
       <div class="metric-number">${overdue}</div>
       <div class="metric-label">
         Overdue
       </div>
     </div>
 
-    <div class="metric-card" onclick="setFilter('risk')">
+    <div class="metric-card"
+     data-filter="highRisk"
+     onclick="setFilter('highRisk')">
       <div class="metric-number">${highRisk}</div>
       <div class="metric-label">
         High Risk
@@ -1044,6 +1056,24 @@ function renderDashboardMetrics() {
 
   `;
 }
+
+function updateDashboardSelection() {
+
+  document
+    .querySelectorAll('.metric-card')
+    .forEach(card => {
+
+      card.classList.remove('metric-active');
+
+      const filter =
+        card.dataset.filter;
+
+      if (filter === currentFilter) {
+        card.classList.add('metric-active');
+      }
+    });
+}
+
 function getSyncStatus(project) {
   if (project.syncError) {
     return { label: 'Cloud Error', class: 'sync-error' };

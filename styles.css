@@ -1010,3 +1010,18 @@ button:hover {
 .metric-card:hover {
   transform: translateY(-2px);
 }
+
+.metric-active {
+  background: #b71c1c;
+
+  border-color: #b71c1c;
+
+  color: white;
+
+  box-shadow: 0 2px 8px rgba(183,28,28,0.25);
+}
+
+.metric-active .metric-number,
+.metric-active .metric-label {
+  color: white;
+}
