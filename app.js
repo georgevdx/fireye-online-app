@@ -143,7 +143,9 @@ function autoSaveProject() {
       note:
         noteField
           ? noteField.value.trim()
-          : ''
+          : '',
+
+      expiryDate: null
     });
   });
 
@@ -1485,19 +1487,21 @@ function saveProject() {
     const selectedChecklist = getActiveTemplateChecklist() || [];
 
     answers.push({
-    itemIndex: index,
+      itemIndex: index,
 
-    itemNumber:
-      selectedChecklist[index]?.["Item Number"] ||
-      String(index + 1),
+      itemNumber:
+        selectedChecklist[index]?.["Item Number"] ||
+        String(index + 1),
 
-    answer: field.value,
+      answer: field.value,
 
-    note:
-      noteField
-        ? noteField.value.trim()
-        : ''
-  });
+      note:
+        noteField
+          ? noteField.value.trim()
+          : '',
+
+      expiryDate: null
+    });
   });
 
   const projects = getProjects();
@@ -2847,24 +2851,24 @@ function renderSiteHistory(project) {
             ${recurringList
               .map(item => {
 
-                const match = related.find(p =>
-                  (p.answers || []).some(
-                    a =>
-                      String(a.itemNumber) === String(item) &&
-                      a.answer === 'No'
-                  )
-                );
+              const match = related.find(p =>
+                (p.answers || []).some(
+                  a =>
+                    String(a.itemNumber) === String(item) &&
+                    a.answer === 'No'
+                )
+              );
 
-                return `
-                  <div>
-                    •
-                    <a href="#"
-                      onclick="window.openProject('${match?.id}')">
-                      Item ${item}
-                    </a>
-                  </div>
-                `;
-              })
+              return `
+                <div>
+                  •
+                  <a href="#"
+                    onclick="window.openProject('${match?.id}')">
+                    Item ${item}
+                  </a>
+                </div>
+              `;
+            })
               .join('')}
           </div>
         `
