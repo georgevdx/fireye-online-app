@@ -1565,10 +1565,11 @@ function saveProject() {
     };
       currentProjectId = newProject.id;
       projects.push(newProject);
-  }
-    const previousSiteInspections = projects.filter(
-          p => p.siteId === newProject.siteId
-        );
+      const previousSiteInspections = projects.filter(
+      p =>
+        p.siteId === newProject.siteId &&
+        p.id !== newProject.id
+    );
 
         newProject.previousInspectionCount =
           previousSiteInspections.length;
@@ -1590,6 +1591,9 @@ function saveProject() {
               previousNoAnswers.includes(a.itemNumber)
             )
             .map(a => a.itemNumber);
+  }
+    
+    
   setProjects(projects);
   getEl('saveMessage').textContent = `Last saved: ${formatLastSaved()}`;
   renderProjectsList();
