@@ -2804,6 +2804,23 @@ function renderSiteHistory(project) {
   })
   .join('');
 
+  const recurringIssues = {};
+
+  related.forEach(p => {
+    (p.answers || []).forEach(a => {
+
+      if (a.answer === 'No') {
+
+        recurringIssues[a.itemNumber] =
+          (recurringIssues[a.itemNumber] || 0) + 1;
+      }
+    });
+  });
+
+  const recurringCount =
+    Object.values(recurringIssues)
+      .filter(count => count >= 2)
+      .length;
 
   panel.innerHTML = `
     <h3>Site History</h3>
@@ -2811,6 +2828,11 @@ function renderSiteHistory(project) {
     <div>
       Previous inspections:
       <strong>${related.length}</strong>
+    </div>
+
+    <div style="margin-top:8px;">
+      Recurring issues detected:
+      <strong>${recurringCount}</strong>
     </div>
 
     <div style="margin-top:8px;">
