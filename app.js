@@ -1241,6 +1241,12 @@ function renderProjectsList() {
         ${escapeHtml(project.inspectionNumber || '-')}
       </div>
       
+      ${project.hasSiteHistory ? `
+      <div class="project-history">
+        Site history: ${project.previousInspectionCount || 0} previous inspection(s)
+      </div>
+    ` : ''}
+
       <div class="project-sync ${syncStatus.class}">
         ${syncStatus.label}
       </div>
