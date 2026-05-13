@@ -125,11 +125,15 @@ function autoSaveProject() {
   if (!projectName && !inspectorName) return;
 
   const answers = [];
-  document.querySelectorAll('.answer-select').forEach((field, index) => {
+  const selectedChecklist =
+    getActiveTemplateChecklist() || [];
+
+    document.querySelectorAll('.answer-select').forEach((field, index) => {
     const noteField = document.getElementById(`note_${index}`);
 
     answers.push({
       itemIndex: index,
+
       itemNumber:
         selectedChecklist[index]?.["Item Number"] ||
         String(index + 1),
@@ -1466,12 +1470,20 @@ function saveProject() {
 
     const selectedChecklist = getActiveTemplateChecklist() || [];
 
-answers.push({
-  itemIndex: index,
-  itemNumber: selectedChecklist[index]?.["Item Number"] || String(index + 1),
-      answer: field.value,
-      note: noteField ? noteField.value.trim() : ''
-    });
+    answers.push({
+    itemIndex: index,
+
+    itemNumber:
+      selectedChecklist[index]?.["Item Number"] ||
+      String(index + 1),
+
+    answer: field.value,
+
+    note:
+      noteField
+        ? noteField.value.trim()
+        : ''
+  });
   });
 
   const projects = getProjects();
