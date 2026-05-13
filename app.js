@@ -1886,7 +1886,7 @@ function generateReport() {
 
   const repeatFindings =
     currentProject?.repeatFindings || [];
-
+  console.log(currentProject.repeatFindings);
   const projectName =
     currentProject?.projectName || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
@@ -2125,7 +2125,7 @@ function generateReport() {
         Repeat Non-Compliance Identified
       </div>
       ` : ''}
-      
+
       <div>
         <strong>Finding:</strong>
         ${escapeHtml(item.text)}
