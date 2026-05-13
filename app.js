@@ -2822,6 +2822,11 @@ function renderSiteHistory(project) {
       .filter(count => count >= 2)
       .length;
 
+  const recurringList =
+    Object.entries(recurringIssues)
+      .filter(([_, count]) => count >= 2)
+      .map(([item]) => item);
+
   panel.innerHTML = `
     <h3>Site History</h3>
 
@@ -2834,6 +2839,20 @@ function renderSiteHistory(project) {
       Recurring issues detected:
       <strong>${recurringCount}</strong>
     </div>
+
+    ${
+      recurringList.length > 0
+        ? `
+          <div style="margin-top:6px;">
+            ${recurringList
+              .map(item =>
+                `<div>• Item ${item}</div>`
+              )
+              .join('')}
+          </div>
+        `
+        : ''
+    }
 
     <div style="margin-top:8px;">
       Previous company:
