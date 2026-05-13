@@ -922,7 +922,7 @@ function createNewProject() {
   }
 
   updateDisplay();
-  renderSiteHistory(project);
+
   showProjectForm();
 }
 
@@ -1327,7 +1327,7 @@ function openProject(projectId) {
       }
     });
   }
-
+  renderSiteHistory(project);
   showProjectForm();
 }
 
@@ -1495,7 +1495,14 @@ function saveProject() {
   if (index !== -1) {
     projects[index] = {
       ...projects[index],
-
+      siteId:
+      [
+        projectAddress?.toLowerCase().trim(),
+        mallName?.toLowerCase().trim(),
+        unitNumber?.toLowerCase().trim()
+      ]
+      .filter(Boolean)
+      .join('|'),
       syncPending: true,
       syncError: false,
 
