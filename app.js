@@ -2845,9 +2845,26 @@ function renderSiteHistory(project) {
         ? `
           <div style="margin-top:6px;">
             ${recurringList
-              .map(item =>
-                `<div>• Item ${item}</div>`
-              )
+              .map(item => {
+
+                const match = related.find(p =>
+                  (p.answers || []).some(
+                    a =>
+                      String(a.itemNumber) === String(item) &&
+                      a.answer === 'No'
+                  )
+                );
+
+                return `
+                  <div>
+                    •
+                    <a href="#"
+                      onclick="window.openProject('${match?.id}')">
+                      Item ${item}
+                    </a>
+                  </div>
+                `;
+              })
               .join('')}
           </div>
         `
