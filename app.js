@@ -2801,6 +2801,14 @@ function renderSiteHistory(project) {
           : '-'
       }
     </div>
+    <div style="margin-top:12px;">
+      <button
+        class="small-btn"
+        onclick="openProject('${related[0].id}')"
+      >
+        Open Previous Inspection
+      </button>
+    </div>
   `;
 
   const form =
