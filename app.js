@@ -2765,6 +2765,41 @@ function renderSiteHistory(project) {
 
   panel.className = 'site-history-panel';
 
+  const historyHtml = related
+  .slice(0, 3)
+  .map(p => {
+
+    const risk =
+      p.answers?.some(
+        a => a.answer === 'No'
+      )
+        ? 'Attention Required'
+        : 'Compliant';
+
+    return `
+      <div style="
+        margin-top:8px;
+        padding:8px;
+        background:#fff;
+        border-radius:6px;
+      ">
+        <strong>
+          ${
+            p.lastSaved
+              ? new Date(
+                  p.lastSaved
+                ).toLocaleDateString()
+              : '-'
+          }
+        </strong>
+
+        — ${risk}
+      </div>
+    `;
+  })
+  .join('');
+
+
   panel.innerHTML = `
     <h3>Site History</h3>
 
@@ -2804,7 +2839,7 @@ function renderSiteHistory(project) {
     <div style="margin-top:12px;">
       <button
         class="small-btn"
-        onclick="openProject('${related[0].id}')"
+        onclick="window.openProject('${related[0].id}')"
       >
         Open Previous Inspection
         (${new Date(
@@ -2819,39 +2854,6 @@ function renderSiteHistory(project) {
     </div>
   `;
   
-const historyHtml = related
-  .slice(0, 3)
-  .map(p => {
-
-    const risk =
-      p.answers?.some(
-        a => a.answer === 'No'
-      )
-        ? 'Attention Required'
-        : 'Compliant';
-
-    return `
-      <div style="
-        margin-top:8px;
-        padding:8px;
-        background:#fff;
-        border-radius:6px;
-      ">
-        <strong>
-          ${
-            p.lastSaved
-              ? new Date(
-                  p.lastSaved
-                ).toLocaleDateString()
-              : '-'
-          }
-        </strong>
-
-        — ${risk}
-      </div>
-    `;
-  })
-  .join('');
 
   const form =
     document.getElementById(
