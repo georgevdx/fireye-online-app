@@ -1329,6 +1329,10 @@ function openProject(projectId) {
   }
   renderSiteHistory(project);
   showProjectForm();
+    window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
 }
 
 function generateInspectionNumber() {
