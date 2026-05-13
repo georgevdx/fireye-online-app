@@ -1456,8 +1456,11 @@ function saveProject() {
   document.querySelectorAll('.answer-select').forEach((field, index) => {
     const noteField = document.getElementById(`note_${index}`);
 
-    answers.push({
-      itemIndex: index,
+    const selectedChecklist = getActiveTemplateChecklist() || [];
+
+answers.push({
+  itemIndex: index,
+  itemNumber: selectedChecklist[index]?.["Item Number"] || String(index + 1),
       answer: field.value,
       note: noteField ? noteField.value.trim() : ''
     });
