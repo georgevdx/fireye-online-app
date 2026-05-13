@@ -922,6 +922,7 @@ function createNewProject() {
   }
 
   updateDisplay();
+  renderSiteHistory(project);
   showProjectForm();
 }
 
@@ -2714,7 +2715,81 @@ function updateAnswerSummary() {
     summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
   }
 }
+function renderSiteHistory(project) {
 
+  const existing =
+    document.getElementById('siteHistoryPanel');
+
+  if (existing) {
+    existing.remove();
+  }
+
+  if (!project.siteId) return;
+
+  const projects = getProjects();
+
+  const related = projects.filter(
+    p =>
+      p.siteId === project.siteId &&
+      p.id !== project.id
+  );
+    related.sort((a, b) =>
+    new Date(b.lastSaved) -
+    new Date(a.lastSaved)
+  );
+  if (related.length === 0) return;
+
+  const panel = document.createElement('div');
+
+  panel.id = 'siteHistoryPanel';
+
+  panel.className = 'site-history-panel';
+
+  panel.innerHTML = `
+    <h3>Site History</h3>
+
+    <div>
+      Previous inspections:
+      <strong>${related.length}</strong>
+    </div>
+
+    <div style="margin-top:8px;">
+      Previous company:
+      <strong>
+        ${related[0]?.organisationName || '-'}
+      </strong>
+    </div>
+    <div style="margin-top:8px;">
+      Previous risk:
+      <strong>
+        ${
+          related[0]?.answers?.some(
+            a => a.answer === 'No'
+          )
+            ? 'Attention Required'
+            : 'Compliant'
+        }
+      </strong>
+    </div>
+    <div style="margin-top:8px;">
+      Last inspection:
+      ${
+        related[0]?.lastSaved
+          ? new Date(
+              related[0].lastSaved
+            ).toLocaleDateString()
+          : '-'
+      }
+    </div>
+  `;
+
+  const form =
+    document.getElementById(
+      'projectFormSection'
+    );
+
+  form.prepend(panel);
+}
 loadData();
 window.openProject = openProject;
 window.scheduleAutoSave = scheduleAutoSave;
