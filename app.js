@@ -2807,6 +2807,9 @@ function renderSiteHistory(project) {
         onclick="openProject('${related[0].id}')"
       >
         Open Previous Inspection
+        (${new Date(
+          related[0].lastSaved
+        ).toLocaleDateString()})
       </button>
     </div>
   `;
