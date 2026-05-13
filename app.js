@@ -2776,11 +2776,16 @@ function renderSiteHistory(project) {
         ? 'Attention Required'
         : 'Compliant';
 
+    const riskClass =
+      risk === 'Attention Required'
+        ? '#ffe5e5'
+        : '#e8f5e9';
+
     return `
       <div style="
         margin-top:8px;
         padding:8px;
-        background:#fff;
+        background:${riskClass};
         border-radius:6px;
       ">
         <strong>
