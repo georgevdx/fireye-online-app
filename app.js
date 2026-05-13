@@ -1499,6 +1499,15 @@ function saveProject() {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       
+      siteId:
+        [
+          projectAddress?.toLowerCase().trim(),
+          mallName?.toLowerCase().trim(),
+          unitNumber?.toLowerCase().trim()
+        ]
+        .filter(Boolean)
+        .join('|'),
+      
       syncPending: true,
       syncError: false,
       
@@ -1526,7 +1535,18 @@ function saveProject() {
       lastSaved: new Date().toISOString()
     };
       currentProjectId = newProject.id;
-    projects.push(newProject);
+
+      const previousSiteInspections = projects.filter(
+        p => p.siteId === newProject.siteId
+      );
+
+      newProject.previousInspectionCount =
+        previousSiteInspections.length;
+
+      newProject.hasSiteHistory =
+        previousSiteInspections.length > 0;
+
+      projects.push(newProject);
   }
 
   setProjects(projects);
