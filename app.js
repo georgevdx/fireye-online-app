@@ -2811,8 +2811,47 @@ function renderSiteHistory(project) {
           related[0].lastSaved
         ).toLocaleDateString()})
       </button>
+      <div style="margin-top:16px;">
+      <strong>Recent Inspection History</strong>
+
+      ${historyHtml}
+    </div>
     </div>
   `;
+  
+const historyHtml = related
+  .slice(0, 3)
+  .map(p => {
+
+    const risk =
+      p.answers?.some(
+        a => a.answer === 'No'
+      )
+        ? 'Attention Required'
+        : 'Compliant';
+
+    return `
+      <div style="
+        margin-top:8px;
+        padding:8px;
+        background:#fff;
+        border-radius:6px;
+      ">
+        <strong>
+          ${
+            p.lastSaved
+              ? new Date(
+                  p.lastSaved
+                ).toLocaleDateString()
+              : '-'
+          }
+        </strong>
+
+        — ${risk}
+      </div>
+    `;
+  })
+  .join('');
 
   const form =
     document.getElementById(
