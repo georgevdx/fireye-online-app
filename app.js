@@ -130,8 +130,16 @@ function autoSaveProject() {
 
     answers.push({
       itemIndex: index,
+      itemNumber:
+        selectedChecklist[index]?.["Item Number"] ||
+        String(index + 1),
+
       answer: field.value,
-      note: noteField ? noteField.value.trim() : ''
+
+      note:
+        noteField
+          ? noteField.value.trim()
+          : ''
     });
   });
 
