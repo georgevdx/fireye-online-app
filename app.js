@@ -886,6 +886,14 @@ function setProjects(projects) {
 
 function createNewProject() {
   currentProjectId = null;
+
+  const existingHistoryPanel =
+    document.getElementById('siteHistoryPanel');
+
+  if (existingHistoryPanel) {
+    existingHistoryPanel.remove();
+  }
+
   getEl('productType').value = 'Fire Safety Officer';
   updateInspectionTypeOptions();
   getEl('organisationName').value = '';
@@ -907,6 +915,7 @@ function createNewProject() {
   getEl('followUpNotes').value = '';
   toggleMallFields();
 
+  
 
   currentPhotos = [];
   renderPhotos();
