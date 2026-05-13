@@ -2139,7 +2139,7 @@ function generateReport() {
       <div><strong>Severity:</strong> 
         ${escapeHtml(item.severity)}
       </div>
-        ${repeatFindings.includes(item.itemNumber) ? `
+        ${repeatFindings.map(String).includes(String(item.itemNumber)) ? `
       <div style="
         color:#b71c1c;
         font-weight:700;
