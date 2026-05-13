@@ -1552,6 +1552,21 @@ function saveProject() {
       newProject.hasSiteHistory =
         previousSiteInspections.length > 0;
 
+      const previousNoAnswers =
+        previousSiteInspections.flatMap(
+          p => (p.answers || [])
+            .filter(a => a.answer === 'No')
+            .map(a => a.itemNumber)
+        );
+
+      newProject.repeatFindings =
+        (answers || [])
+          .filter(a =>
+            a.answer === 'No' &&
+            previousNoAnswers.includes(a.itemNumber)
+          )
+          .map(a => a.itemNumber);
+
       projects.push(newProject);
   }
 
@@ -1869,6 +1884,9 @@ function generateReport() {
     p => p.id === currentProjectId
   );
 
+  const repeatFindings =
+    currentProject?.repeatFindings || [];
+
   const projectName =
     currentProject?.projectName || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
@@ -2095,8 +2113,19 @@ function generateReport() {
         
       <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
 
-      <div><strong>Severity:</strong> ${escapeHtml(item.severity)}</div>
-
+      <div><strong>Severity:</strong> 
+        ${escapeHtml(item.severity)}
+      </div>
+        ${repeatFindings.includes(item.itemNumber) ? `
+      <div style="
+        color:#b71c1c;
+        font-weight:700;
+        margin-bottom:6px;
+      ">
+        Repeat Non-Compliance Identified
+      </div>
+      ` : ''}
+      
       <div>
         <strong>Finding:</strong>
         ${escapeHtml(item.text)}
