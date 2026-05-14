@@ -1892,7 +1892,7 @@ function renderChecklist(selected) {
 
     const itemId = `check_${index}`;
     const trackExpiry =
-      item["Track Expiry"] === true;
+  c["Track Expiry"] === true;
 
     html += `
       <div class="checklist-row">
@@ -1909,7 +1909,11 @@ function renderChecklist(selected) {
         <textarea
           class="note-input"
           id="note_${index}"
-          ${trackExpiry ? `
+          placeholder="Add note for this item..."
+          oninput="scheduleAutoSave()"
+        ></textarea>
+
+        ${trackExpiry ? `
           <div class="expiry-wrapper">
             <label>Expiry Date</label>
 
@@ -1920,9 +1924,6 @@ function renderChecklist(selected) {
             >
           </div>
         ` : ''}
-          placeholder="Add note for this item..."
-          oninput="scheduleAutoSave()"
-        ></textarea>
       </div>
     `;
   });
