@@ -1221,3 +1221,25 @@ button:hover {
   color: #555;
   font-weight: 600;
 }
+
+.site-history-panel {
+  background: #fff8e1;
+  border-left: 5px solid #f57c00;
+  padding: 14px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.expiry-wrapper {
+  margin-top: 10px;
+  padding: 10px;
+  background: #fff3cd;
+  border: 2px solid orange;
+  border-radius: 6px;
+}
+
+.expiry-wrapper input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+}
