@@ -1895,37 +1895,48 @@ function renderChecklist(selected) {
   c["Track Expiry"] === true;
 
     html += `
-      <div class="checklist-row">
-        <div><strong>${c["Item Number"]}.</strong> ${c["Checklist Item"]}</div>
-        <div class="note">Answer type: ${c["Answer Type"]}</div>
+  <div class="checklist-row">
+    <div>
+      <strong>${c["Item Number"]}.</strong>
+      ${c["Checklist Item"]}
+    </div>
 
-        <select class="answer-select" id="${itemId}" onchange="handleAnswerChange(this)">
-          <option value="">Select answer</option>
-          <option value="Yes">Yes</option>
-          <option value="No">No</option>
-          <option value="N/A">N/A</option>
-        </select>
+    <div class="note">
+      Answer type: ${c["Answer Type"]}
+    </div>
 
-        <textarea
-          class="note-input"
-          id="note_${index}"
-          placeholder="Add note for this item..."
-          oninput="scheduleAutoSave()"
-        ></textarea>
+    <select
+      class="answer-select"
+      id="${itemId}"
+      onchange="handleAnswerChange(this)"
+    >
+      <option value="">Select answer</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+      <option value="N/A">N/A</option>
+    </select>
 
-        ${trackExpiry ? `
-          <div class="expiry-wrapper">
-            <label>Expiry Date</label>
+    <textarea
+      class="note-input"
+      id="note_${index}"
+      placeholder="Add note for this item..."
+      oninput="scheduleAutoSave()"
+    ></textarea>
 
-            <input
-              type="date"
-              class="expiry-date"
-              data-index="${index}"
-            >
-          </div>
-        ` : ''}
+    ${trackExpiry ? `
+      <div class="expiry-wrapper">
+        <label>Expiry Date</label>
+
+        <input
+          type="date"
+          class="expiry-date"
+          data-index="${index}"
+        >
       </div>
-    `;
+    ` : ''}
+
+  </div>
+`;
   });
 
   html += `</div>`;
