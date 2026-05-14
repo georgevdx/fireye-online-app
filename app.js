@@ -1892,7 +1892,9 @@ function renderChecklist(selected) {
 
     const itemId = `check_${index}`;
     const trackExpiry =
-  c["Track Expiry"] === true;
+      c["Track Expiry"] === true ||
+      c.TrackExpiry === true ||
+      c.trackExpiry === true;
 
     html += `
   <div class="checklist-row">
