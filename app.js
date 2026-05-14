@@ -130,7 +130,8 @@ function autoSaveProject() {
 
     document.querySelectorAll('.answer-select').forEach((field, index) => {
     const noteField = document.getElementById(`note_${index}`);
-
+    const expiryField =
+    document.querySelector(`.expiry-date[data-index="${index}"]`); 
     answers.push({
       itemIndex: index,
 
@@ -145,7 +146,7 @@ function autoSaveProject() {
           ? noteField.value.trim()
           : '',
 
-      expiryDate: null
+      expiryDate: expiryField ? expiryField.value : null
     });
   });
 
@@ -1483,7 +1484,8 @@ function saveProject() {
 
   document.querySelectorAll('.answer-select').forEach((field, index) => {
     const noteField = document.getElementById(`note_${index}`);
-
+    const expiryField =
+    document.querySelector(`.expiry-date[data-index="${index}"]`);
     const selectedChecklist = getActiveTemplateChecklist() || [];
 
     answers.push({
@@ -1500,7 +1502,7 @@ function saveProject() {
           ? noteField.value.trim()
           : '',
 
-      expiryDate: null
+      expiryDate: expiryField ? expiryField.value : null
     });
   });
 
@@ -1889,6 +1891,8 @@ function renderChecklist(selected) {
     }
 
     const itemId = `check_${index}`;
+    const trackExpiry =
+      item["Track Expiry"] === true;
 
     html += `
       <div class="checklist-row">
@@ -1905,6 +1909,17 @@ function renderChecklist(selected) {
         <textarea
           class="note-input"
           id="note_${index}"
+          ${trackExpiry ? `
+          <div class="expiry-wrapper">
+            <label>Expiry Date</label>
+
+            <input
+              type="date"
+              class="expiry-date"
+              data-index="${index}"
+            >
+          </div>
+        ` : ''}
           placeholder="Add note for this item..."
           oninput="scheduleAutoSave()"
         ></textarea>
