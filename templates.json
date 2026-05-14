@@ -20,6 +20,7 @@
             "Non Compliance Text": "Fire equipment was not serviced, maintained and/or within a valid service date where required.",
             "Reference": "SANS 10400-T, SANS 1475, SANS 1910, Applicable Municipal Fire Safety By-laws",
             "Corrective Action": "Ensure fire equipment is inspected, serviced and maintained by a competent service provider within the prescribed service intervals.",
+            "Track Expiry": true,
             "Severity": "High",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
@@ -74,6 +75,7 @@
             "Non Compliance Text": "Fire detection and/or alarm systems were not serviced, maintained and/or within a valid service period where required.",
             "Reference": "SANS 10139, Applicable Municipal Fire Safety By-laws",
             "Corrective Action": "Ensure fire detection and alarm systems are inspected, tested and serviced by a competent service provider within the prescribed service intervals.",
+            "Track Expiry": true,
             "Severity": "High",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
@@ -204,6 +206,7 @@
             "Non Compliance Text": "No valid hazardous substances certificate of registration was available at the time of inspection where required.",
             "Reference": "Applicable SANS code related to specific class hazardous substance, Applicable Municipal Fire Safety By-laws",
             "Corrective Action": "Obtain and maintain a valid hazardous substances certificate of registration for the applicable installation or storage area.",
+            "Track Expiry": true,
             "Severity": "High",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]             
@@ -349,6 +352,7 @@
             "Non Compliance Text": "Kitchen extraction systems were not adequately serviced and/or no valid service certificate was available for inspection.",
             "Reference": "SANS 1850, Occupational Health and Safety Act, Applicable Municipal Fire Safety By-laws",
             "Corrective Action": "Ensure kitchen extraction systems are inspected, cleaned and serviced by a competent service provider and maintain valid service certification on site.",
+            "Track Expiry": true,
             "Severity": "High",
             "Answer Type": "Yes/No",
             "Applicable To": ["All"]
