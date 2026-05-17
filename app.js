@@ -305,6 +305,15 @@ function autoSaveProject() {
     return date.toLocaleString();
 }
 
+function formatProjectDate(value) {
+  if (!value) return '-';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return date.toLocaleString();
+}
+
   function exportReport() {
   generateReport(); // maak seker report is nuut
   getEl('reportSection').style.display = 'block';
@@ -484,6 +493,15 @@ function toggleChecklistSection(sectionId) {
 function exportBackup() {
   const projects = getProjects();
 
+  downloadProjectsBackup(projects, `fireye-backup-${new Date().toISOString().slice(0, 10)}.json`);
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'Backup exported.';
+  }
+}
+
+function downloadProjectsBackup(projects, filename) {
   const backup = {
     app: 'Fireye',
     version: 1,
@@ -500,15 +518,18 @@ function exportBackup() {
 
   const a = document.createElement('a');
   a.href = url;
-  a.download = `fireye-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = filename;
   a.click();
 
   URL.revokeObjectURL(url);
+}
 
-  const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    saveMessage.textContent = 'Backup exported.';
-  }
+function exportEmergencyBackup(reason) {
+  const projects = getProjects();
+  if (projects.length === 0) return;
+
+  const date = new Date().toISOString().slice(0, 10);
+  downloadProjectsBackup(projects, `fireye-before-${reason}-${date}.json`);
 }
 
 function importBackup(event) {
@@ -531,6 +552,8 @@ function importBackup(event) {
       );
 
       if (!confirmed) return;
+
+      exportEmergencyBackup('import');
 
       setProjects(backup.projects);
       currentProjectId = null;
@@ -642,6 +665,8 @@ async function downloadSync() {
   );
 
   if (!confirmed) return;
+
+  exportEmergencyBackup('cloud-download');
 
   const { data, error } = await supabaseClient
   .from('inspections')
@@ -1510,39 +1535,64 @@ function renderProjectsList() {
   filteredProjects.forEach(project => {
 
     const syncStatus = getSyncStatus(project);
-
     const followStatus = getFollowUpStatus(project);
+    const projectAddress =
+      project.projectAddress ||
+      combineStreetAddress(project.streetNumber, project.addressLine);
+    const lastSaved = formatProjectDate(project.lastSaved);
+    const projectTitle =
+      project.projectName ||
+      [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
+      'Untitled Project';
+
     const card = document.createElement('div');
     card.className = 'project-card';
     card.innerHTML = `
-      <h3>${escapeHtml(project.projectName || 'Untitled Project')}</h3>
+      <div class="project-card-top">
+        <div>
+          <h3>${escapeHtml(projectTitle)}</h3>
+          <div class="project-number">
+            ${escapeHtml(project.inspectionNumber || '-')}
+          </div>
+        </div>
 
-      <div class="project-number">
-        ${escapeHtml(project.inspectionNumber || '-')}
+        <button class="small-btn project-open-btn" onclick="openProject('${project.id}')">Open</button>
       </div>
-      
+
+      <div class="project-badges">
+        <span class="project-sync ${syncStatus.class}">
+          ${syncStatus.label}
+        </span>
+
+        <span class="project-follow ${followStatus.class}">
+          ${followStatus.label}
+          ${project.followUpDate ? `(${project.followUpDate})` : ''}
+        </span>
+      </div>
+
       ${project.hasSiteHistory ? `
       <div class="project-history">
         Site history: ${project.previousInspectionCount || 0} previous inspection(s)
       </div>
     ` : ''}
 
-      <div class="project-sync ${syncStatus.class}">
-        ${syncStatus.label}
+      <div class="project-address">
+        ${escapeHtml(projectAddress || 'No address captured')}
       </div>
 
-      <div class="project-follow ${followStatus.class}">
-        ${followStatus.label}
-        ${project.followUpDate ? `(${project.followUpDate})` : ''}
-      </div>
-
-      <div class="project-meta">
-        Inspector: ${escapeHtml(project.inspectorName || '-')}<br>
-        Occupancy: ${escapeHtml(project.occupancy || '-')}
-      </div>
-
-      <div class="project-actions">
-        <button class="small-btn" onclick="openProject('${project.id}')">Open</button>
+      <div class="project-meta-grid">
+        <div>
+          <span>Inspector</span>
+          <strong>${escapeHtml(project.inspectorName || '-')}</strong>
+        </div>
+        <div>
+          <span>Occupancy</span>
+          <strong>${escapeHtml(project.occupancy || '-')}</strong>
+        </div>
+        <div>
+          <span>Last saved</span>
+          <strong>${escapeHtml(lastSaved)}</strong>
+        </div>
       </div>
     `;
     container.appendChild(card);
