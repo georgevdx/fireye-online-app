@@ -134,6 +134,13 @@ function getEl(id) {
   return el;
 }
 
+function clearInputValue(id) {
+  const field = getEl(id);
+  field.value = '';
+  field.defaultValue = '';
+  field.setAttribute('value', '');
+}
+
 let autoSaveTimer = null;
 
 function scheduleAutoSave() {
@@ -1054,6 +1061,7 @@ function setProjects(projects) {
 }
 
 function createNewProject() {
+  clearTimeout(autoSaveTimer);
   currentProjectId = null;
 
   const existingHistoryPanel =
@@ -1065,24 +1073,24 @@ function createNewProject() {
 
   getEl('productType').value = 'Fire Safety Officer';
   updateInspectionTypeOptions();
-  getEl('organisationName').value = '';
-  getEl('siteName').value = '';
+  clearInputValue('organisationName');
+  clearInputValue('siteName');
   getEl('inspectionType').value = 'General Fire Inspection';
-  getEl('inspectorName').value = '';
+  clearInputValue('inspectorName');
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
-  getEl('streetNumber').value = '';
-  getEl('projectAddress').value = '';
-  getEl('gps').value = '';
+  clearInputValue('streetNumber');
+  clearInputValue('projectAddress');
+  clearInputValue('gps');
   getEl('inMall').value = 'No';
-  getEl('mallName').value = '';
-  getEl('unitNumber').value = '';
-  getEl('contactPerson').value = '';
-  getEl('contactTel').value = '';
-  getEl('contactEmail').value = '';  
+  clearInputValue('mallName');
+  clearInputValue('unitNumber');
+  clearInputValue('contactPerson');
+  clearInputValue('contactTel');
+  clearInputValue('contactEmail');  
   getEl('followUpRequired').value = 'No';
-  getEl('followUpDate').value = '';
-  getEl('followUpNotes').value = '';
+  clearInputValue('followUpDate');
+  clearInputValue('followUpNotes');
   toggleMallFields();
 
   
