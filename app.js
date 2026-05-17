@@ -1174,9 +1174,9 @@ function renderReminderBanner(projects) {
   banner.style.display = 'block';
 
   if (overdue > 0) {
-    banner.innerHTML = `âš ï¸ You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
+    banner.innerHTML = `Attention: You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
   } else {
-    banner.innerHTML = `ðŸ”” You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
+    banner.innerHTML = `Reminder: You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
   }
 }
 
@@ -1230,19 +1230,19 @@ function renderDashboard(projects) {
   <div class="dash-card">Total<br><strong>${total}</strong></div>
 
   <div class="dash-card dash-overdue">
-    ðŸ”´ Overdue<br><strong>${overdue}</strong>
+    Overdue<br><strong>${overdue}</strong>
   </div>
 
   <div class="dash-card dash-soon">
-    ðŸŸ  Due Soon<br><strong>${soon}</strong>
+    Due Soon<br><strong>${soon}</strong>
   </div>
 
   <div class="dash-card dash-scheduled">
-    ðŸŸ¢ Scheduled<br><strong>${scheduled}</strong>
+    Scheduled<br><strong>${scheduled}</strong>
   </div>
 
   <div class="dash-card dash-none">
-    âšª No Follow-up<br><strong>${none}</strong>
+    No Follow-up<br><strong>${none}</strong>
   </div>
 `;
 }
@@ -1439,7 +1439,7 @@ function renderProjectsList() {
 
   const followStatus = getFollowUpStatus(project);
 
-  // ðŸ” SEARCH FILTER
+  // Search filter
   if (searchText) {
     const placeName = (project.projectName || '').toLowerCase();
     const address = (project.projectAddress || '').toLowerCase();
@@ -1455,7 +1455,7 @@ function renderProjectsList() {
     if (!matchesSearch) return false;
   }
 
-  // ðŸ”¥ FOLLOW-UP FILTER
+  // Follow-up filter
   if (currentFilter === 'overdue') {
     return followStatus.class === 'status-overdue';
   }
@@ -2142,7 +2142,7 @@ function renderChecklist(selected) {
 
       html += `
         <div class="section-header" onclick="toggleSection(${sectionIndex})">
-          <span id="arrow_${sectionIndex}">â–¶</span>
+          <span id="arrow_${sectionIndex}">&gt;</span>
           ${sectionName.toUpperCase()}
         </div>
 
@@ -2268,7 +2268,7 @@ function generateReport() {
 
       <div class="report-block">
         <h2 class="appendix-title">
-          APPENDIX A â€” PHOTO EVIDENCE
+          APPENDIX A - PHOTO EVIDENCE
         </h2>
       </div>
 
@@ -2587,8 +2587,8 @@ function generateReport() {
   </div>
 
     <div class="report-block">
-      <h3>Project Information</h3>
-      <div class="report-line"><strong>Place Name:</strong> ${escapeHtml(projectName)}</div>
+      <h3>Premises Information</h3>
+      <div class="report-line"><strong>Premises / Site:</strong> ${escapeHtml(projectName)}</div>
       <div class="report-line">
         <strong>Inspection Number:</strong>
         ${escapeHtml(inspectionNumber)}
@@ -2620,16 +2620,16 @@ function generateReport() {
       ` : ''}
       <div class="report-line"><strong>Address:</strong> ${escapeHtml(projectAddress)}</div>
       <div class="report-line"><strong>GPS:</strong> ${escapeHtml(gps)}</div>
-      <div class="report-line"><strong>In Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
+      <div class="report-line"><strong>Located in Mall/Centre:</strong> ${escapeHtml(inMall)}</div>
       ${inMall === 'Yes' ? `<div class="report-line"><strong>Mall/Centre Name:</strong> ${escapeHtml(mallName)}</div>` : ''}
       ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
       <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
-      <div class="report-line"><strong>Occupancy:</strong> ${escapeHtml(occupancy)}</div>
+      <div class="report-line"><strong>Occupancy Classification:</strong> ${escapeHtml(occupancy)}</div>
       <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
     </div>
 
     <div class="report-block">
-      <h3>Inspection Summary</h3>
+      <h3>Executive Inspection Summary</h3>
       <div class="report-line"><strong>Overall Status:</strong> <span class="${
         overallStatus === 'Compliant / Acceptable'
           ? 'status-good'
@@ -2655,7 +2655,7 @@ function generateReport() {
     </div>
 
     <div class="report-block">
-      <h3>Action Required</h3>
+      <h3>Priority Actions Required</h3>
       ${actionHtml}
     </div>
 
@@ -2665,17 +2665,17 @@ function generateReport() {
     </div>
 
     <div class="report-block">
-      <h3>Corrective Action Plan</h3>
+      <h3>Recommended Corrective Action Plan</h3>
       ${actionPlanHtml}
     </div>
     
     <div class="report-block">
-  <h3>Inspector Comments / Conclusion</h3>
+  <h3>Inspector Comments and Conclusion</h3>
   <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
 </div>
 
 <div class="report-block">
-  <h3>Follow-up / Re-Inspection</h3>
+  <h3>Follow-up / Re-inspection</h3>
 
   <div class="report-line">
     <strong>Follow-up Required:</strong> ${escapeHtml(followUpRequired)}
@@ -2708,7 +2708,7 @@ function generateReport() {
   </div>
 
   <div class="report-disclaimer">
-    This report records observations made at the time of inspection and should be read together with applicable fire safety legislation, standards, by-laws, and competent professional judgement where required.
+    This report records observations made at the time of inspection. It should be read together with applicable fire safety legislation, standards, municipal by-laws, and competent professional judgement where required.
   </div>
 
   <div class="report-generated">
@@ -2924,7 +2924,7 @@ async function shareReport() {
     sections.forEach(section => {
       const count = actionSections[section];
       const label = count === 1 ? 'item' : 'items';
-      actionText += `â€¢ ${section.toUpperCase()} â€” ${count} No ${label}\n`;
+      actionText += `- ${section.toUpperCase()} - ${count} No ${label}\n`;
     });
   } else {
     actionText = 'No action required.\n';
@@ -2998,7 +2998,7 @@ function toggleSection(index) {
   section.classList.toggle('hidden');
 
   if (arrow) {
-    arrow.textContent = section.classList.contains('hidden') ? 'â–¶' : 'â–¼';
+    arrow.textContent = section.classList.contains('hidden') ? '>' : 'v';
   }
 }
 
@@ -3008,7 +3008,7 @@ function expandAllSections() {
   });
 
   document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
-    arrow.textContent = "â–¼";
+    arrow.textContent = "v";
   });
 }
 
@@ -3018,7 +3018,7 @@ function collapseAllSections() {
   });
 
   document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
-    arrow.textContent = "â–¶";
+    arrow.textContent = ">";
   });
 }
 
@@ -3118,7 +3118,7 @@ function renderSiteHistory(project) {
           }
         </strong>
 
-        â€” ${risk}
+        - ${risk}
       </div>
     `;
   })
@@ -3177,7 +3177,7 @@ function renderSiteHistory(project) {
 
               return `
                 <div>
-                  â€¢
+                  -
                   <a href="#"
                     onclick="window.openProject('${match?.id}')">
                     Item ${item}
