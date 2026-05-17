@@ -2777,6 +2777,11 @@ function handlePhotoUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'Preparing photo...';
+  }
+
   const reader = new FileReader();
 
   reader.onload = function(e) {
@@ -2811,6 +2816,11 @@ function handlePhotoUpload(event) {
       });
 
       renderPhotos();
+      scheduleAutoSave();
+
+      if (saveMessage) {
+        saveMessage.textContent = 'Photo added.';
+      }
     };
 
     img.src = e.target.result;
@@ -2823,6 +2833,11 @@ function handlePhotoUpload(event) {
 function renderPhotos() {
   const container = getEl('photoPreview');
   container.innerHTML = '';
+
+  if (currentPhotos.length === 0) {
+    container.innerHTML = `<div class="note">No photo evidence added yet.</div>`;
+    return;
+  }
 
   currentPhotos.forEach((photo, index) => {
     const div = document.createElement('div');
@@ -2841,7 +2856,7 @@ function renderPhotos() {
         oninput="updatePhotoNote(${index}, this.value)"
       >${escapeHtml(photo.note || '')}</textarea>
 
-      <button class="photo-delete" onclick="deletePhoto(${index})">Ã—</button>
+      <button class="photo-delete" type="button" onclick="deletePhoto(${index})">Delete</button>
     `;
 
     container.appendChild(div);
@@ -2849,8 +2864,12 @@ function renderPhotos() {
 }
 
 function deletePhoto(index) {
+  const confirmed = confirm('Delete this photo?');
+  if (!confirmed) return;
+
   currentPhotos.splice(index, 1);
   renderPhotos();
+  scheduleAutoSave();
 }
 
 function updatePhotoNote(index, value) {
