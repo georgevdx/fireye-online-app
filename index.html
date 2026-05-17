@@ -100,17 +100,16 @@
 
   <div class="form-row">
     <label for="projectAddress">Address</label>
-    <input id="streetNumber" placeholder="Street number">
+    <input id="streetNumber" placeholder="Street number" autocomplete="off">
 
-<input id="projectAddress" placeholder="Street, Suburb, City">
+<input id="projectAddress" placeholder="Street, Suburb, City" autocomplete="off">
   </div>
 
   <div class="form-row">
     <label for="gps">GPS Reference</label>
     <div class="field-stack">
-      <input id="gps" type="text" placeholder="-25.7479, 28.2293">
+      <input id="gps" type="text" placeholder="-25.7479, 28.2293" autocomplete="off">
       <button id="useLocationBtn" type="button">Use Current Location</button>
-      <button id="lookupAddressBtn" type="button">Find Address from GPS</button>
     </div>
   </div>
 
@@ -276,7 +275,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=5"></script>
+  <script src="app.js?v=7"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

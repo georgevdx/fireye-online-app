@@ -1016,7 +1016,6 @@ function initApp() {
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', scheduleAutoSave);
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
-  getEl('lookupAddressBtn').addEventListener('click', lookupAddressFromGpsInput);
   getEl('inMall').addEventListener('change', toggleMallFields);
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
