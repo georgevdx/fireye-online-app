@@ -1,4 +1,4 @@
-let currentFilter = 'all';
+﻿let currentFilter = 'all';
 function setFilter(filter) {
   currentFilter = filter;
   renderProjectsList();
@@ -1006,7 +1006,6 @@ function initApp() {
 
   if (exportBtn) {
     exportBtn.addEventListener('click', () => {
-      alert('PDF button clicked');
       exportReport();
     });
   }
@@ -1175,9 +1174,9 @@ function renderReminderBanner(projects) {
   banner.style.display = 'block';
 
   if (overdue > 0) {
-    banner.innerHTML = `⚠️ You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
+    banner.innerHTML = `âš ï¸ You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
   } else {
-    banner.innerHTML = `🔔 You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
+    banner.innerHTML = `ðŸ”” You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
   }
 }
 
@@ -1231,19 +1230,19 @@ function renderDashboard(projects) {
   <div class="dash-card">Total<br><strong>${total}</strong></div>
 
   <div class="dash-card dash-overdue">
-    🔴 Overdue<br><strong>${overdue}</strong>
+    ðŸ”´ Overdue<br><strong>${overdue}</strong>
   </div>
 
   <div class="dash-card dash-soon">
-    🟠 Due Soon<br><strong>${soon}</strong>
+    ðŸŸ  Due Soon<br><strong>${soon}</strong>
   </div>
 
   <div class="dash-card dash-scheduled">
-    🟢 Scheduled<br><strong>${scheduled}</strong>
+    ðŸŸ¢ Scheduled<br><strong>${scheduled}</strong>
   </div>
 
   <div class="dash-card dash-none">
-    ⚪ No Follow-up<br><strong>${none}</strong>
+    âšª No Follow-up<br><strong>${none}</strong>
   </div>
 `;
 }
@@ -1440,7 +1439,7 @@ function renderProjectsList() {
 
   const followStatus = getFollowUpStatus(project);
 
-  // 🔍 SEARCH FILTER
+  // ðŸ” SEARCH FILTER
   if (searchText) {
     const placeName = (project.projectName || '').toLowerCase();
     const address = (project.projectAddress || '').toLowerCase();
@@ -1456,7 +1455,7 @@ function renderProjectsList() {
     if (!matchesSearch) return false;
   }
 
-  // 🔥 FOLLOW-UP FILTER
+  // ðŸ”¥ FOLLOW-UP FILTER
   if (currentFilter === 'overdue') {
     return followStatus.class === 'status-overdue';
   }
@@ -2143,7 +2142,7 @@ function renderChecklist(selected) {
 
       html += `
         <div class="section-header" onclick="toggleSection(${sectionIndex})">
-          <span id="arrow_${sectionIndex}">▶</span>
+          <span id="arrow_${sectionIndex}">â–¶</span>
           ${sectionName.toUpperCase()}
         </div>
 
@@ -2227,14 +2226,15 @@ function generateReport() {
 
   const repeatFindings =
     currentProject?.repeatFindings || [];
-  console.log(currentProject.repeatFindings);
   const projectName =
     currentProject?.projectName || 'Untitled Project';
   const inspectorName = getEl('inspectorName').value.trim() || '-';
   const finalComments = getEl('finalComments').value.trim();
   const occupancy = getEl('occupancySelect').value || '-';
 
-  const projectAddress = getEl('projectAddress').value.trim();
+  const streetNumber = getEl('streetNumber').value.trim();
+  const addressLine = getEl('projectAddress').value.trim();
+  const projectAddress = combineStreetAddress(streetNumber, addressLine);
   const gps = getEl('gps').value.trim();
 
   const inMall = getEl('inMall').value || 'No';
@@ -2268,7 +2268,7 @@ function generateReport() {
 
       <div class="report-block">
         <h2 class="appendix-title">
-          APPENDIX A — PHOTO EVIDENCE
+          APPENDIX A â€” PHOTO EVIDENCE
         </h2>
       </div>
 
@@ -2429,7 +2429,7 @@ function generateReport() {
 
       actionHtml += `
         <a class="action-item action-link" href="#${actionSectionId}">
-          • ${escapeHtml(section.toUpperCase())} — ${count} No ${label}
+          - ${escapeHtml(section.toUpperCase())} - ${count} No ${label}
         </a>
       `;
     });
@@ -2767,7 +2767,7 @@ function renderPhotos() {
         oninput="updatePhotoNote(${index}, this.value)"
       >${escapeHtml(photo.note || '')}</textarea>
 
-      <button class="photo-delete" onclick="deletePhoto(${index})">×</button>
+      <button class="photo-delete" onclick="deletePhoto(${index})">Ã—</button>
     `;
 
     container.appendChild(div);
@@ -2900,7 +2900,7 @@ async function shareReport() {
     sections.forEach(section => {
       const count = actionSections[section];
       const label = count === 1 ? 'item' : 'items';
-      actionText += `• ${section.toUpperCase()} — ${count} No ${label}\n`;
+      actionText += `â€¢ ${section.toUpperCase()} â€” ${count} No ${label}\n`;
     });
   } else {
     actionText = 'No action required.\n';
@@ -2974,7 +2974,7 @@ function toggleSection(index) {
   section.classList.toggle('hidden');
 
   if (arrow) {
-    arrow.textContent = section.classList.contains('hidden') ? '▶' : '▼';
+    arrow.textContent = section.classList.contains('hidden') ? 'â–¶' : 'â–¼';
   }
 }
 
@@ -2984,7 +2984,7 @@ function expandAllSections() {
   });
 
   document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
-    arrow.textContent = "▼";
+    arrow.textContent = "â–¼";
   });
 }
 
@@ -2994,7 +2994,7 @@ function collapseAllSections() {
   });
 
   document.querySelectorAll("[id^='arrow_']").forEach(arrow => {
-    arrow.textContent = "▶";
+    arrow.textContent = "â–¶";
   });
 }
 
@@ -3094,7 +3094,7 @@ function renderSiteHistory(project) {
           }
         </strong>
 
-        — ${risk}
+        â€” ${risk}
       </div>
     `;
   })
@@ -3153,7 +3153,7 @@ function renderSiteHistory(project) {
 
               return `
                 <div>
-                  •
+                  â€¢
                   <a href="#"
                     onclick="window.openProject('${match?.id}')">
                     Item ${item}
