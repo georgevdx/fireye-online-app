@@ -14,7 +14,15 @@ let currentPhotos = [];
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
 
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true
+  }
+});
+
+window.supabaseClient = supabaseClient;
 
 function buildStreetAddress(address = {}) {
 
@@ -56,6 +64,58 @@ function buildStreetAddress(address = {}) {
   ]
     .filter(Boolean)
     .join(', ');
+}
+
+function getStreetNumberFromAddress(address = {}) {
+  return (
+    address.house_number ||
+    address.building_number ||
+    address.unit ||
+    ''
+  );
+}
+
+function buildAddressLineWithoutStreetNumber(address = {}) {
+  const streetName =
+    address.road ||
+    address.street ||
+    address.pedestrian ||
+    address.footway ||
+    '';
+
+  const suburb =
+    address.suburb ||
+    address.neighbourhood ||
+    address.residential ||
+    address.quarter ||
+    '';
+
+  const city =
+    address.city ||
+    address.town ||
+    address.village ||
+    address.municipality ||
+    '';
+
+  const province =
+    address.state ||
+    '';
+
+  return [
+    streetName,
+    suburb,
+    city,
+    province
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
+function combineStreetAddress(streetNumber, addressLine) {
+  return [streetNumber, addressLine]
+    .map(value => (value || '').trim())
+    .filter(Boolean)
+    .join(' ');
 }
 
 async function loadJson(url) {
@@ -115,7 +175,9 @@ function autoSaveProject() {
     .join(' ');
   const inspectorName = inspectorNameField.value.trim();
   const occupancy = occupancyField.value;
-  const projectAddress = projectAddressField.value.trim();
+  const streetNumber = getEl('streetNumber').value.trim();
+  const addressLine = projectAddressField.value.trim();
+  const projectAddress = combineStreetAddress(streetNumber, addressLine);
   const gps = gpsField.value.trim();
 
   const inMall = inMallField.value;
@@ -164,6 +226,8 @@ function autoSaveProject() {
       projectName,
       organisationName,
       siteName,
+      streetNumber,
+      addressLine,
       projectAddress,
       gps,
       inMall,
@@ -192,10 +256,9 @@ function autoSaveProject() {
       projectName,
       organisationName,
       siteName,
-      projectAddress: [
-        getEl('streetNumber').value.trim(),
-        getEl('projectAddress').value.trim()
-      ].filter(Boolean).join(' '),
+      streetNumber,
+      addressLine,
+      projectAddress,
       gps,
       inMall,
       mallName,
@@ -274,53 +337,116 @@ function autoSaveProject() {
 }, 300);
 }
 
-  async function useCurrentLocation() {
-  if (!navigator.geolocation) {
-    getEl('saveMessage').textContent = 'Geolocation not supported.';
+async function reverseLookupAddress(lat, lon) {
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`
+  );
+
+  if (!response.ok) {
+    throw new Error(`Address lookup failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+function parseGpsInput(value) {
+  const match = (value || '').match(/(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)/);
+  if (!match) return null;
+
+  const lat = Number(match[1]);
+  const lon = Number(match[2]);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+
+  return { lat, lon };
+}
+
+function applyAddressLookupResult(data, fallbackText) {
+  const streetNumber = getStreetNumberFromAddress(data.address || {});
+  const addressLine = buildAddressLineWithoutStreetNumber(data.address || {});
+
+  getEl('streetNumber').value = streetNumber;
+  getEl('projectAddress').value =
+    addressLine || data.display_name || fallbackText;
+
+  getEl('saveMessage').textContent = streetNumber
+    ? 'Street number and address found from GPS.'
+    : 'Address found from GPS. Street number was not found, please add it manually.';
+
+  scheduleAutoSave();
+}
+
+async function lookupAddressFromGpsInput() {
+  const parsed = parseGpsInput(getEl('gps').value);
+
+  if (!parsed) {
+    getEl('saveMessage').textContent =
+      'Enter GPS first, for example: -25.7479, 28.2293';
+    return;
+  }
+
+  getEl('saveMessage').textContent = 'Finding address from GPS...';
+
+  try {
+    const data = await reverseLookupAddress(parsed.lat, parsed.lon);
+    applyAddressLookupResult(data, `${parsed.lat}, ${parsed.lon}`);
+  } catch (error) {
+    console.error('GPS address lookup failed:', error);
+    getEl('saveMessage').textContent =
+      'Could not find address from GPS. Enter the address manually.';
+  }
+}
+
+async function useCurrentLocation() {
+  const geolocation = window.navigator && window.navigator.geolocation;
+
+  if (!geolocation) {
+    getEl('saveMessage').textContent =
+      'GPS is not available in this browser. Use your phone, Chrome, or enter the GPS/address manually.';
     return;
   }
 
   getEl('saveMessage').textContent = 'Getting location...';
 
-  navigator.geolocation.getCurrentPosition(
-  position => {
+  geolocation.getCurrentPosition(
+  async position => {
     const lat = position.coords.latitude;
     const lon = position.coords.longitude;
 
     const gpsText = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
     getEl('gps').value = gpsText;
-    
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`)
-      .then(res => res.json())
-      .then(data => {
 
-     
-        console.log("FULL DATA:", data);
-        console.log("ADDRESS:", data.address);
-        console.log("DISPLAY NAME:", data.display_name);
+    try {
+      const data = await reverseLookupAddress(lat, lon);
+      applyAddressLookupResult(data, `${lat}, ${lon}`);
+    } catch (err) {
+      console.error("Address fetch failed:", err);
 
-        const streetAddress = buildStreetAddress(data.address || {});
+      document.getElementById("projectAddress").value = `${lat}, ${lon}`;
 
-        document.getElementById("projectAddress").value =
-          streetAddress || data.display_name || `${lat}, ${lon}`;
+      getEl('saveMessage').textContent =
+        'GPS captured, but address lookup failed. Address can be entered manually.';
+    }
 
-        // 👇 BELANGRIK: reset jou status
-        getEl('saveMessage').textContent = 'Location captured';
-
-      })
-      .catch(err => {
-        console.error("Address fetch failed:", err);
-
-        document.getElementById("projectAddress").value = `${lat}, ${lon}`;
-
-        // 👇 reset status selfs as dit fail
-        getEl('saveMessage').textContent = 'Location captured (no address)';
-      });
+    scheduleAutoSave();
   },
   error => {
     console.error("GPS failed:", error);
 
-    getEl('saveMessage').textContent = 'Location failed';
+    const messages = {
+      1: 'GPS permission was denied. Allow location access, or enter the GPS/address manually.',
+      2: 'GPS position is unavailable. Try again outside or enter the GPS/address manually.',
+      3: 'GPS request timed out. Try again, or enter the GPS/address manually.'
+    };
+
+    getEl('saveMessage').textContent =
+      messages[error.code] || 'GPS failed. Enter the GPS/address manually.';
+  },
+  {
+    enableHighAccuracy: true,
+    timeout: 15000,
+    maximumAge: 60000
   }
 );
 }
@@ -460,6 +586,14 @@ async function loginUser() {
   updateSyncUI();
   safeDownloadNewerCloudInspections();
   uploadPendingInspections();
+}
+
+function initAuthStateListener() {
+  if (!supabaseClient?.auth?.onAuthStateChange) return;
+
+  supabaseClient.auth.onAuthStateChange(() => {
+    updateSyncUI();
+  });
 }
 
   async function uploadSync() {
@@ -660,12 +794,19 @@ async function updateSyncUI() {
   const syncStatus = document.getElementById('syncStatus');
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
 
-  const { data } = await supabaseClient.auth.getUser();
-  const isLoggedIn = !!(data && data.user);
+  let isLoggedIn = false;
+
+  try {
+    const { data, error } = await supabaseClient.auth.getUser();
+    isLoggedIn = !error && !!(data && data.user);
+  } catch (error) {
+    console.error('Cloud status check failed:', error);
+  }
+
   if (cloudMenuBtn) {
-  cloudMenuBtn.classList.toggle('connected', isLoggedIn);
-  cloudMenuBtn.textContent = isLoggedIn ? 'Cloud ✓' : 'Cloud';
-}
+    cloudMenuBtn.classList.toggle('connected', isLoggedIn);
+    cloudMenuBtn.textContent = isLoggedIn ? 'Cloud connected' : 'Cloud';
+  }
 
   if (connectedView) connectedView.style.display = isLoggedIn ? 'block' : 'none';
   if (syncTools) syncTools.style.display = isLoggedIn ? 'none' : 'block';
@@ -677,6 +818,30 @@ async function updateSyncUI() {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
       : 'Not connected. Admin login required for cloud sync.';
+  }
+}
+
+async function restoreCloudSession() {
+  const syncStatus = document.getElementById('syncStatus');
+
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+
+    if (error) {
+      if (syncStatus) syncStatus.textContent = `Cloud session check failed: ${error.message}`;
+      await updateSyncUI();
+      return;
+    }
+
+    await updateSyncUI();
+
+    if (data && data.session) {
+      safeDownloadNewerCloudInspections();
+      uploadPendingInspections();
+    }
+  } catch (error) {
+    console.error('Cloud session restore failed:', error);
+    if (syncStatus) syncStatus.textContent = 'Cloud session could not be restored.';
   }
 }
 
@@ -764,10 +929,9 @@ async function loadData() {
     inspectionTemplates = await loadJson('templates.json');
     
     initApp();
+    initAuthStateListener();
     renderProjectsList();
-    updateSyncUI();
-    safeDownloadNewerCloudInspections();
-    uploadPendingInspections();
+    await restoreCloudSession();
 
   } catch (error) {
     console.error('Data loading error:', error);
@@ -841,9 +1005,11 @@ function initApp() {
   }
   getEl('shareBtn').addEventListener('click', shareReport);
   getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
+  getEl('streetNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', scheduleAutoSave);
   getEl('useLocationBtn').addEventListener('click', useCurrentLocation);
+  getEl('lookupAddressBtn').addEventListener('click', lookupAddressFromGpsInput);
   getEl('inMall').addEventListener('change', toggleMallFields);
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
@@ -905,6 +1071,7 @@ function createNewProject() {
   getEl('inspectorName').value = '';
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
+  getEl('streetNumber').value = '';
   getEl('projectAddress').value = '';
   getEl('gps').value = '';
   getEl('inMall').value = 'No';
@@ -1007,6 +1174,33 @@ function renderReminderBanner(projects) {
   }
 }
 
+function getExpiryStatus(expiryDate) {
+
+  if (!expiryDate) {
+    return 'none';
+  }
+
+  const today = new Date();
+
+  const expiry = new Date(expiryDate);
+
+  const diffDays =
+    Math.ceil(
+      (expiry - today) /
+      (1000 * 60 * 60 * 24)
+    );
+
+  if (diffDays < 0) {
+    return 'overdue';
+  }
+
+  if (diffDays <= 30) {
+    return 'soon';
+  }
+
+  return 'scheduled';
+}
+
 function renderDashboard(projects) {
   const dashboard = document.getElementById('dashboardSummary');
   if (!dashboard) return;
@@ -1055,6 +1249,30 @@ function renderDashboardMetrics() {
   if (!container) return;
 
   const projects = getProjects();
+
+  let expiredItems = 0;
+  let expiringSoonItems = 0;
+  let scheduledItems = 0;
+  let noExpiry = 0;
+
+  projects.forEach(project => {
+
+    (project.answers || []).forEach(answer => {
+
+      const status =
+        getExpiryStatus(answer.expiryDate);
+
+      if (status === 'overdue') expiredItems++;
+
+      else if (status === 'soon') expiringSoonItems++;
+
+      else if (status === 'scheduled') scheduledItems++;
+
+      else noExpiry++;
+
+    });
+
+  });
 
   const total = projects.length;
 
@@ -1135,6 +1353,37 @@ function renderDashboardMetrics() {
         High Risk
       </div>
     </div>
+
+    <div class="metric-card">
+  <div class="metric-number">
+    ${expiredItems}
+  </div>
+
+  <div class="metric-label">
+    Expired
+  </div>
+  
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-number">
+      ${expiringSoonItems}
+    </div>
+
+    <div class="metric-label">
+      Due Soon
+    </div>
+  </div>
+
+  <div class="metric-card">
+    <div class="metric-number">
+      ${scheduledItems}
+    </div>
+
+    <div class="metric-label">
+      Scheduled
+    </div>
+  </div>
 
   `;
 }
@@ -1309,7 +1558,8 @@ function openProject(projectId) {
   getEl('inspectorName').value = project.inspectorName || '';
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
-  getEl('projectAddress').value = project.projectAddress || '';
+  getEl('streetNumber').value = project.streetNumber || '';
+  getEl('projectAddress').value = project.addressLine || project.projectAddress || '';
   getEl('gps').value = project.gps || '';
   getEl('inMall').value = project.inMall || 'No';
   getEl('mallName').value = project.mallName || '';
@@ -1462,7 +1712,9 @@ function saveProject() {
   const inspectorName = getEl('inspectorName').value.trim();
   const occupancy = getEl('occupancySelect').value;
   
-  const projectAddress = getEl('projectAddress').value.trim();
+  const streetNumber = getEl('streetNumber').value.trim();
+  const addressLine = getEl('projectAddress').value.trim();
+  const projectAddress = combineStreetAddress(streetNumber, addressLine);
   const gps = getEl('gps').value.trim();
   
   const inMall = getEl('inMall').value;
@@ -1531,6 +1783,8 @@ function saveProject() {
       projectName,
       organisationName,
       siteName,
+      streetNumber,
+      addressLine,
       projectAddress,
       gps,
       inMall,
@@ -1571,6 +1825,8 @@ function saveProject() {
       projectName,
       organisationName,
       siteName,
+      streetNumber,
+      addressLine,
       projectAddress,
       gps,
       inMall,

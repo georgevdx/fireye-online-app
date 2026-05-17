@@ -1,7 +1,8 @@
 {
   "name": "Fireye Fire Safety App",
   "short_name": "Fireye",
-  "start_url": "/fireye-online-app/",
+  "start_url": ".",
+  "scope": ".",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#b71c1c",
