@@ -1742,41 +1742,16 @@ function renderDashboardMetrics() {
   let expiredItems = 0;
   let expiringSoonItems = 0;
   let scheduledItems = 0;
-  let noExpiry = 0;
+  let missingExpiryItems = 0;
 
   projects.forEach(project => {
+    const counts = getProjectExpiryCounts(project);
 
-  const checklist =
-    getChecklistForProject(project);
-
-  (project.answers || []).forEach(answer => {
-
-    const checklistItem =
-      checklist[answer.itemIndex];
-
-    const trackExpiry =
-      checklistItem?.["Track Expiry"] === true;
-
-    if (!trackExpiry) return;
-
-    const status =
-      getExpiryStatus(answer.expiryDate);
-
-    if (status === 'overdue') {
-      expiredItems++;
-    }
-
-    else if (status === 'soon') {
-      expiringSoonItems++;
-    }
-
-    else if (status === 'scheduled') {
-      scheduledItems++;
-    }
-
+    expiredItems += counts.overdue;
+    expiringSoonItems += counts.soon;
+    scheduledItems += counts.scheduled;
+    missingExpiryItems += counts.missing;
   });
-
-});
 
   const total = projects.length;
 
