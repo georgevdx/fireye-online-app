@@ -2148,9 +2148,7 @@ if (currentFilter === 'expiry-scheduled') {
     container.appendChild(card);
   });
 }
-<span class="project-expiry-chip expiry-chip-missing">
-  Missing: ${expiryCounts.missing}
-</span>
+
 
 function openProject(projectId, focusMode) {
   const projects = getProjects();
