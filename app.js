@@ -1356,7 +1356,7 @@ function createNewProject() {
     existingHistoryPanel.remove();
   }
 
-  getEl('productType').value = 'Fire Safety Officer';
+  getEl('productType').value = 'Fire Safety Compliance';
   updateInspectionTypeOptions();
   clearInputValue('organisationName');
   clearInputValue('siteName');
@@ -1720,7 +1720,7 @@ function getProjectInspectionStatus(project) {
 }
 
 function getChecklistForProject(project) {
-  const productType = project.productType || 'Fire Safety Officer';
+  const productType = project.productType || 'Fire Safety Compliance';
   const inspectionType = project.inspectionType || '';
   const occupancy = project.occupancy || '';
 
@@ -2091,7 +2091,7 @@ function renderDashboardMetrics() {
           data-filter="expiry-missing"
           onclick="setFilter('expiry-missing')">
           <div class="metric-number">${missingExpiryItems}</div>
-          <div class="metric-label">Missing</div>
+          <div class="metric-label">Date Missing</div>
         </div>
         
       </div>
@@ -2341,7 +2341,7 @@ function renderProjectsList() {
         </span>
 
         <span class="project-expiry-chip expiry-chip-missing">
-          Missing: ${expiryCounts.missing}
+          Date missing: ${expiryCounts.missing}
         </span>
 
         ${expiryCounts.overdue > 0 ? `
@@ -2410,7 +2410,7 @@ function openProject(projectId, focusMode) {
 
   currentProjectId = project.id;
  
-  getEl('productType').value = project.productType || 'Fire Safety Officer';
+  getEl('productType').value = project.productType || 'Fire Safety Compliance';
   updateInspectionTypeOptions();
   getEl('organisationName').value = project.organisationName || '';
   getEl('siteName').value = project.siteName || '';
@@ -3727,7 +3727,7 @@ function generateReport() {
       <div class="report-line"><strong>Contact Person:</strong> ${escapeHtml(contactPerson || '-')}</div>
       <div class="report-line"><strong>Telephone:</strong> ${escapeHtml(contactTel || '-')}</div>
       <div class="report-line"><strong>Email:</strong> ${escapeHtml(contactEmail || '-')}</div>
-      <div class="report-line"><strong>Product Type:</strong> ${escapeHtml(productType)}</div>
+      <div class="report-line"><strong>Inspection Module:</strong> ${escapeHtml(productType)}</div>
       <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspectionType)}</div>
       ${currentProject && currentProject.linkedToInspectionId ? `
       <div class="report-line">
@@ -4130,7 +4130,7 @@ Place Name: ${projectName}
 Contact Person: ${contactPerson}
 Telephone: ${contactTel}
 Email: ${contactEmail}
-Product Type: ${productType}
+Inspection Module: ${productType}
 Inspection Type: ${inspectionType}
 Address: ${projectAddress}
 GPS: ${gps}
