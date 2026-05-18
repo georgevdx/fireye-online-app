@@ -1496,10 +1496,11 @@ function getExpiryStatus(expiryDate) {
 
 function getProjectExpiryCounts(project) {
   const counts = {
-    overdue: 0,
-    soon: 0,
-    scheduled: 0
-  };
+  overdue: 0,
+  soon: 0,
+  scheduled: 0,
+  missing: 0
+};
 
   const checklist =
   getChecklistForProject(project);
@@ -1513,6 +1514,10 @@ function getProjectExpiryCounts(project) {
     checklistItem?.["Track Expiry"] === true;
 
   if (!trackExpiry) return;
+  if (!answer.expiryDate) {
+    counts.missing++;
+    return;
+  }
 
   const status =
     getExpiryStatus(answer.expiryDate);
@@ -1532,9 +1537,10 @@ function getProjectExpiryCounts(project) {
 });
 
   counts.total =
-    counts.overdue +
-    counts.soon +
-    counts.scheduled;
+  counts.overdue +
+  counts.soon +
+  counts.scheduled +
+  counts.missing;
 
   return counts;
 }
@@ -2142,6 +2148,9 @@ if (currentFilter === 'expiry-scheduled') {
     container.appendChild(card);
   });
 }
+<span class="project-expiry-chip expiry-chip-missing">
+  Missing: ${expiryCounts.missing}
+</span>
 
 function openProject(projectId, focusMode) {
   const projects = getProjects();
