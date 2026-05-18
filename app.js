@@ -1445,26 +1445,55 @@ function renderReminderBanner(projects) {
   let overdue = 0;
   let soon = 0;
 
+  let expiredEquipment = 0;
+  let equipmentDueSoon = 0;
+
   projects.forEach(project => {
     const status = getFollowUpStatus(project);
 
     if (status.class === 'status-overdue') overdue++;
     if (status.class === 'status-soon') soon++;
+
+    const expiryCounts =
+      getProjectExpiryCounts(project);
+
+    expiredEquipment += expiryCounts.overdue;
+    equipmentDueSoon += expiryCounts.soon;
   });
 
-  if (overdue === 0 && soon === 0) {
-    banner.style.display = 'none';
-    banner.innerHTML = '';
-    return;
-  }
+  if (
+  overdue === 0 &&
+  soon === 0 &&
+  expiredEquipment === 0 &&
+  equipmentDueSoon === 0
+) {
+  banner.style.display = 'none';
+  banner.innerHTML = '';
+  return;
+}
 
-  banner.style.display = 'block';
+banner.style.display = 'block';
 
-  if (overdue > 0) {
-    banner.innerHTML = `Attention: You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
-  } else {
-    banner.innerHTML = `Reminder: You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
-  }
+if (expiredEquipment > 0) {
+  banner.innerHTML =
+    `Attention: <strong>${expiredEquipment}</strong> equipment expiry item${expiredEquipment === 1 ? '' : 's'} expired.`;
+  return;
+}
+
+if (overdue > 0) {
+  banner.innerHTML =
+    `Attention: You have <strong>${overdue}</strong> overdue inspection${overdue === 1 ? '' : 's'} requiring attention.`;
+  return;
+}
+
+if (equipmentDueSoon > 0) {
+  banner.innerHTML =
+    `Reminder: <strong>${equipmentDueSoon}</strong> equipment expiry item${equipmentDueSoon === 1 ? '' : 's'} due soon.`;
+  return;
+}
+
+banner.innerHTML =
+  `Reminder: You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
 }
 
 function getExpiryStatus(expiryDate) {
