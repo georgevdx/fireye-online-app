@@ -13,7 +13,7 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
-const APP_VERSION = 'v59';
+const APP_VERSION = 'v66';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1494,47 +1494,74 @@ function getExpiryStatus(expiryDate) {
   return 'scheduled';
 }
 
+function isExpiryTrackedChecklistItem(checklistItem) {
+  return (
+    checklistItem?.["Track Expiry"] === true ||
+    checklistItem?.TrackExpiry === true ||
+    checklistItem?.trackExpiry === true
+  );
+}
+
+function isExpiryApplicableAnswer(answerValue) {
+  return String(answerValue || '').trim().toLowerCase() !== 'n/a';
+}
+
+function updateExpiryInputState(selectEl) {
+  const row = selectEl.closest('.checklist-row');
+  const expiryField = row?.querySelector('.expiry-date');
+  const expiryWrapper = row?.querySelector('.expiry-wrapper');
+
+  if (!expiryField || !expiryWrapper) return;
+
+  const expiryApplies = isExpiryApplicableAnswer(selectEl.value);
+
+  if (!expiryApplies) {
+    expiryField.value = '';
+  }
+
+  expiryField.disabled = !expiryApplies;
+  expiryWrapper.classList.toggle('expiry-disabled', !expiryApplies);
+
 function getProjectExpiryCounts(project) {
   const counts = {
-  overdue: 0,
-  soon: 0,
-  scheduled: 0,
-  missing: 0
-};
+    overdue: 0,
+    soon: 0,
+    scheduled: 0,
+    missing: 0
+  };
 
   const checklist =
-  getChecklistForProject(project);
+    getChecklistForProject(project);
 
-(project.answers || []).forEach(answer => {
+  (project.answers || []).forEach(answer => {
 
-  const checklistItem =
-    checklist[answer.itemIndex];
+    const checklistItem =
+      checklist[answer.itemIndex];
 
-  const trackExpiry =
-    checklistItem?.["Track Expiry"] === true;
+    if (!isExpiryTrackedChecklistItem(checklistItem)) return;
+    if (!isExpiryApplicableAnswer(answer.answer)) return;
 
-  if (!trackExpiry) return;
-  if (!answer.expiryDate) {
-    counts.missing++;
-    return;
-  }
+    if (!answer.expiryDate) {
+      counts.missing++;
+      return;
+    }
 
-  const status =
-    getExpiryStatus(answer.expiryDate);
+    const status =
+      getExpiryStatus(answer.expiryDate);
 
-  if (status === 'overdue') {
-    counts.overdue++;
-  }
+    if (status === 'overdue') {
+      counts.overdue++;
+    }
 
-  else if (status === 'soon') {
-    counts.soon++;
-  }
+    else if (status === 'soon') {
+      counts.soon++;
+    }
 
-  else if (status === 'scheduled') {
-    counts.scheduled++;
-  }
+    else if (status === 'scheduled') {
+      counts.scheduled++;
+    }
 
-});
+  });
 
   counts.total =
   counts.overdue +
@@ -1543,6 +1570,123 @@ function getProjectExpiryCounts(project) {
   counts.missing;
 
   return counts;
+}
+
+function getProjectExpiryAnswer(project, expiryStatus) {
+  const checklist = getChecklistForProject(project);
+
+  return (project.answers || []).find(answer => {
+    const checklistItem = checklist[answer.itemIndex];
+
+    if (!isExpiryTrackedChecklistItem(checklistItem)) return false;
+    if (!isExpiryApplicableAnswer(answer.answer)) return false;
+
+    if (expiryStatus === 'missing') {
+      return !answer.expiryDate;
+    }
+
+    return getExpiryStatus(answer.expiryDate) === expiryStatus;
+  });
+}
+
+function getProjectCompletionCounts(project) {
+  const answers = project.answers || [];
+  const total = answers.length;
+  const answered = answers.filter(answer =>
+    ['yes', 'no', 'n/a'].includes(
+      String(answer.answer || '').trim().toLowerCase()
+    )
+  ).length;
+  const noCount = answers.filter(answer =>
+    String(answer.answer || '').trim().toLowerCase() === 'no'
+  ).length;
+
+  return {
+    total,
+    answered,
+    unanswered: Math.max(total - answered, 0),
+    noCount
+  };
+}
+
+function getProjectDataQuality(project) {
+  const missing = [];
+  const projectTitle =
+    project.projectName ||
+    [project.organisationName, project.siteName].filter(Boolean).join(' ');
+  const projectAddress =
+    project.projectAddress ||
+    combineStreetAddress(project.streetNumber, project.addressLine);
+
+  if (!projectTitle) missing.push('Premises / Site');
+  if (!project.inspectorName) missing.push('Inspector');
+  if (!projectAddress) missing.push('Address');
+  if (!project.contactPerson) missing.push('Contact Person');
+  if (!project.contactTel && !project.contactEmail) {
+    missing.push('Contact Tel/Email');
+  }
+  if (project.inMall === 'Yes' && !project.mallName) {
+    missing.push('Mall/Centre Name');
+  }
+  if (project.inMall === 'Yes' && !project.unitNumber) {
+    missing.push('Unit / Shop Number');
+  }
+
+  return {
+    missing,
+    count: missing.length
+  };
+}
+
+function getProjectInspectionStatus(project) {
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  if (completion.noCount > 0 || expiryCounts.overdue > 0) {
+    return {
+      label: 'Needs Attention',
+      class: 'inspection-attention',
+      filter: 'inspection-attention',
+      detail: `${completion.noCount} issue${completion.noCount === 1 ? '' : 's'}`
+    };
+  }
+
+  if (expiryCounts.missing > 0 || dataQuality.count > 0) {
+    const missingCount = expiryCounts.missing + dataQuality.count;
+
+    return {
+      label: 'Missing Data',
+      class: 'inspection-warning',
+      filter: 'inspection-warning',
+      detail: `${missingCount} item${missingCount === 1 ? '' : 's'}`
+    };
+  }
+
+  if (completion.total === 0 || completion.answered === 0) {
+    return {
+      label: 'Draft',
+      class: 'inspection-draft',
+      filter: 'inspection-draft',
+      detail: 'Not started'
+    };
+  }
+
+  if (completion.unanswered > 0) {
+    return {
+      label: 'In Progress',
+      class: 'inspection-progress',
+      filter: 'inspection-progress',
+      detail: `${completion.answered}/${completion.total} answered`
+    };
+  }
+
+  return {
+    label: 'Completed',
+    class: 'inspection-complete',
+    filter: 'inspection-complete',
+    detail: `${completion.answered}/${completion.total} answered`
+  };
 }
 
 function getChecklistForProject(project) {
@@ -1648,9 +1792,7 @@ function focusFirstProjectIssue(project) {
 }
 
 function focusFirstProjectExpiry(project, expiryStatus) {
-  const firstExpiry = (project.answers || []).find(
-    answer => getExpiryStatus(answer.expiryDate) === expiryStatus
-  );
+  const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
 
   if (!firstExpiry) return;
 
@@ -1786,6 +1928,12 @@ function renderDashboardMetrics() {
     p.answers?.some(a => a.answer === 'No')
   ).length;
 
+  const inspectionStatusCounts = projects.reduce((counts, project) => {
+    const status = getProjectInspectionStatus(project);
+    counts[status.filter] = (counts[status.filter] || 0) + 1;
+    return counts;
+  }, {});
+
   container.innerHTML = `
     <div class="metric-group">
       <div class="metric-section-title">Tap to filter projects</div>
@@ -1835,6 +1983,50 @@ function renderDashboardMetrics() {
             High Risk
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="metric-group metric-group-secondary">
+      <div class="metric-section-title">
+        Inspection status
+      </div>
+      <div class="metric-row">
+
+        <div class="metric-card"
+          data-filter="inspection-attention"
+          onclick="setFilter('inspection-attention')">
+          <div class="metric-number">${inspectionStatusCounts['inspection-attention'] || 0}</div>
+          <div class="metric-label">Attention</div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="inspection-warning"
+          onclick="setFilter('inspection-warning')">
+          <div class="metric-number">${inspectionStatusCounts['inspection-warning'] || 0}</div>
+          <div class="metric-label">Missing Data</div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="inspection-progress"
+          onclick="setFilter('inspection-progress')">
+          <div class="metric-number">${inspectionStatusCounts['inspection-progress'] || 0}</div>
+          <div class="metric-label">In Progress</div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="inspection-complete"
+          onclick="setFilter('inspection-complete')">
+          <div class="metric-number">${inspectionStatusCounts['inspection-complete'] || 0}</div>
+          <div class="metric-label">Completed</div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="inspection-draft"
+          onclick="setFilter('inspection-draft')">
+          <div class="metric-number">${inspectionStatusCounts['inspection-draft'] || 0}</div>
+          <div class="metric-label">Draft</div>
+        </div>
+
       </div>
     </div>
 
@@ -1965,17 +2157,25 @@ function renderProjectsList() {
     );
   }
 
+  if (currentFilter.startsWith('inspection-')) {
+    return getProjectInspectionStatus(project).filter === currentFilter;
+  }
+
   if (currentFilter === 'expiry-overdue') {
-  return getProjectExpiryCounts(project).overdue > 0;
-}
+    return getProjectExpiryCounts(project).overdue > 0;
+  }
 
-if (currentFilter === 'expiry-soon') {
-  return getProjectExpiryCounts(project).soon > 0;
-}
+  if (currentFilter === 'expiry-soon') {
+    return getProjectExpiryCounts(project).soon > 0;
+  }
 
-if (currentFilter === 'expiry-scheduled') {
-  return getProjectExpiryCounts(project).scheduled > 0;
-}
+  if (currentFilter === 'expiry-scheduled') {
+    return getProjectExpiryCounts(project).scheduled > 0;
+  }
+
+  if (currentFilter === 'expiry-missing') {
+    return getProjectExpiryCounts(project).missing > 0;
+  }
 
   return true; // default = all
 });
@@ -2026,6 +2226,8 @@ if (currentFilter === 'expiry-scheduled') {
       'Untitled Project';
     const expiryCounts = getProjectExpiryCounts(project);
     const highRiskSummary = getHighRiskSummary(project);
+    const inspectionStatus = getProjectInspectionStatus(project);
+    const dataQuality = getProjectDataQuality(project);
 
     const card = document.createElement('div');
     card.className = 'project-card';
@@ -2050,6 +2252,11 @@ if (currentFilter === 'expiry-scheduled') {
           ${followStatus.label}
           ${project.followUpDate ? `(${project.followUpDate})` : ''}
         </span>
+
+        <span class="project-inspection-status ${inspectionStatus.class}">
+          ${inspectionStatus.label}
+          <small>${inspectionStatus.detail}</small>
+        </span>
       </div>
 
       ${project.hasSiteHistory ? `
@@ -2057,6 +2264,13 @@ if (currentFilter === 'expiry-scheduled') {
         Site history: ${project.previousInspectionCount || 0} previous inspection(s)
       </div>
     ` : ''}
+
+      ${dataQuality.count > 0 ? `
+      <div class="project-data-quality">
+        Missing project info: ${escapeHtml(dataQuality.missing.slice(0, 4).join(', '))}
+        ${dataQuality.count > 4 ? `+ ${dataQuality.count - 4} more` : ''}
+      </div>
+      ` : ''}
 
       <div class="project-address">
         ${escapeHtml(projectAddress || 'No address captured')}
@@ -2116,6 +2330,24 @@ if (currentFilter === 'expiry-scheduled') {
           onclick="openProject('${project.id}', 'expiry-soon')"
         >
           Review Due Soon
+        </button>
+        ` : ''}
+        ${expiryCounts.scheduled > 0 ? `
+        <button
+          type="button"
+          class="small-btn project-expiry-review-btn expiry-review-scheduled"
+          onclick="openProject('${project.id}', 'expiry-scheduled')"
+        >
+          Review Scheduled
+        </button>
+        ` : ''}
+        ${expiryCounts.missing > 0 ? `
+        <button
+          type="button"
+          class="small-btn project-expiry-review-btn expiry-review-missing"
+          onclick="openProject('${project.id}', 'expiry-missing')"
+        >
+          Add Missing Dates
         </button>
         ` : ''}
       </div>
@@ -2191,6 +2423,10 @@ function openProject(projectId, focusMode) {
       if (expiryField) {
         expiryField.value = item.expiryDate || '';
       }
+
+      if (field) {
+        handleAnswerChange(field, { skipAutoSave: true });
+      }
     });
   }
   renderSiteHistory(project);
@@ -2215,6 +2451,22 @@ function openProject(projectId, focusMode) {
   if (focusMode === 'expiry-soon') {
     setTimeout(() => {
       focusFirstProjectExpiry(project, 'soon');
+    }, 80);
+
+    return;
+  }
+
+  if (focusMode === 'expiry-scheduled') {
+    setTimeout(() => {
+      focusFirstProjectExpiry(project, 'scheduled');
+    }, 80);
+
+    return;
+  }
+
+  if (focusMode === 'expiry-missing') {
+    setTimeout(() => {
+      focusFirstProjectExpiry(project, 'missing');
     }, 80);
 
     return;
@@ -2778,10 +3030,7 @@ function renderChecklist(selected) {
     }
 
     const itemId = `check_${index}`;
-    const trackExpiry =
-      c["Track Expiry"] === true ||
-      c.TrackExpiry === true ||
-      c.trackExpiry === true;
+    const trackExpiry = isExpiryTrackedChecklistItem(c);
 
     html += `
   <div class="checklist-row" data-index="${index}">
@@ -2886,6 +3135,8 @@ function generateReport() {
   let actionSections = {};
   let nonCompliance = {};
   let expiryDetails = [];
+  let missingExpiryDetails = [];
+  let reportAnswers = [];
   let photosHtml = '';
 
   if (currentPhotos.length > 0) {
@@ -2936,7 +3187,18 @@ function generateReport() {
       document.querySelector(`.expiry-date[data-index="${index}"]`);
     const expiryDate = expiryField ? expiryField.value : '';
 
-    if (expiryDate) {
+    const trackExpiry = isExpiryTrackedChecklistItem(item);
+    const expiryApplies = isExpiryApplicableAnswer(answer);
+
+    reportAnswers.push({
+      itemIndex: index,
+      itemNumber: item["Item Number"] || String(index + 1),
+      answer,
+      note: itemNote,
+      expiryDate: expiryField ? expiryField.value : null
+    });
+
+    if (trackExpiry && expiryApplies && expiryDate) {
       const expiryStatus = getExpiryStatus(expiryDate);
       const expiryLabel =
         expiryStatus === 'overdue'
@@ -2951,6 +3213,15 @@ function generateReport() {
         expiryDate,
         status: expiryStatus,
         label: expiryLabel
+      });
+    }
+
+    if (trackExpiry && expiryApplies && !expiryDate) {
+      missingExpiryDetails.push({
+        itemNumber: item["Item Number"] || '',
+        checklistItem: item["Checklist Item"] || '',
+        answer: answer || 'Not answered',
+        note: itemNote
       });
     }
 
@@ -3063,9 +3334,28 @@ function generateReport() {
     .flat()
     .filter(item => String(item.severity).toLowerCase() === 'high')
     .length;
-  const expiryCounts = currentProject
-    ? getProjectExpiryCounts(currentProject)
-    : { overdue: 0, soon: 0, scheduled: 0 };
+  const reportProjectSnapshot = {
+    ...(currentProject || {}),
+    projectName,
+    contactPerson,
+    contactTel,
+    contactEmail,
+    streetNumber,
+    addressLine,
+    projectAddress,
+    gps,
+    inMall,
+    mallName,
+    unitNumber,
+    inspectorName,
+    productType,
+    inspectionType,
+    occupancy,
+    answers: reportAnswers
+  };
+  const expiryCounts = getProjectExpiryCounts(reportProjectSnapshot);
+  const reportInspectionStatus = getProjectInspectionStatus(reportProjectSnapshot);
+  const reportDataQuality = getProjectDataQuality(reportProjectSnapshot);
   const repeatCount = repeatFindings.length;
   const summaryCardsHtml = `
     <div class="report-summary-grid">
@@ -3085,10 +3375,15 @@ function generateReport() {
         <span>Due Soon</span>
         <strong>${expiryCounts.soon}</strong>
       </div>
+      <div class="report-summary-card summary-missing">
+        <span>Missing Expiry</span>
+        <strong>${expiryCounts.missing}</strong>
+      </div>
     </div>
   `;
 
   let actionHtml = '';
+  let dataQualityHtml = '';
 
   const sections = Object.keys(actionSections)
     .sort((a, b) => actionSections[b] - actionSections[a]);
@@ -3112,6 +3407,29 @@ function generateReport() {
     });
   } else {
     actionHtml = `<div class="note">No action required.</div>`;
+  }
+
+  if (missingExpiryDetails.length > 0) {
+    actionHtml += `
+      <div class="action-item action-missing-expiry">
+        - EQUIPMENT EXPIRY - ${missingExpiryDetails.length} missing expiry date${missingExpiryDetails.length === 1 ? '' : 's'}
+      </div>
+    `;
+  }
+
+  if (reportDataQuality.count > 0) {
+    actionHtml += `
+      <div class="action-item action-missing-data">
+        - PROJECT INFORMATION - ${reportDataQuality.count} missing field${reportDataQuality.count === 1 ? '' : 's'}
+      </div>
+    `;
+
+    dataQualityHtml = `
+      <div class="report-data-quality">
+        <strong>Missing project information:</strong>
+        ${escapeHtml(reportDataQuality.missing.join(', '))}
+      </div>
+    `;
   }
 
   let nonComplianceHtml = '';
@@ -3200,9 +3518,11 @@ function generateReport() {
     });
   } else {
     nonComplianceHtml = `<div class="note">No non-compliances recorded.</div>`;
+    actionPlanHtml = `<div class="note">No corrective action required.</div>`;
   }
 
   let expiryDetailsHtml = '';
+  let missingExpiryHtml = '';
 
   if (expiryDetails.length > 0) {
     expiryDetails
@@ -3234,6 +3554,44 @@ function generateReport() {
       });
   } else {
     expiryDetailsHtml = `<div class="note">No equipment expiry dates captured.</div>`;
+  }
+
+  if (missingExpiryDetails.length > 0) {
+    missingExpiryHtml = `
+      <div class="report-expiry-subtitle">
+        Missing Expiry Dates
+      </div>
+    `;
+
+    missingExpiryDetails.forEach(item => {
+      missingExpiryHtml += `
+        <div class="report-expiry-item report-expiry-missing">
+          <div>
+            <strong>
+              ${escapeHtml(item.itemNumber)}.
+              ${escapeHtml(item.checklistItem)}
+            </strong>
+          </div>
+
+          <div>
+            <strong>Answer:</strong>
+            ${escapeHtml(item.answer)}
+          </div>
+
+          ${item.note ? `
+            <div>
+              <strong>Note:</strong>
+              ${escapeHtml(item.note)}
+            </div>
+          ` : ''}
+
+          <div>
+            <strong>Required:</strong>
+            Capture the equipment expiry/service date or mark the item N/A if not applicable.
+          </div>
+        </div>
+      `;
+    });
   }
 
   if (currentPhotos.length > 0) {
@@ -3355,10 +3713,19 @@ function generateReport() {
       <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
       <div class="report-line"><strong>Occupancy Classification:</strong> ${escapeHtml(occupancy)}</div>
       <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
+      ${dataQualityHtml}
     </div>
 
     <div class="report-block">
       <h3>Executive Inspection Summary</h3>
+      <div class="report-line">
+        <strong>Inspection Status:</strong>
+        <span class="report-status-pill ${escapeHtml(reportInspectionStatus.class)}">
+          ${escapeHtml(reportInspectionStatus.label)}
+          <small>${escapeHtml(reportInspectionStatus.detail)}</small>
+        </span>
+      </div>
+
       <div class="report-line"><strong>Overall Status:</strong> <span class="${
         overallStatus === 'Compliant / Acceptable'
           ? 'status-good'
@@ -3402,6 +3769,7 @@ function generateReport() {
     <div class="report-block">
       <h3>Equipment Expiry Details</h3>
       ${expiryDetailsHtml}
+      ${missingExpiryHtml}
     </div>
     
     <div class="report-block">
@@ -3778,7 +4146,7 @@ function collapseAllSections() {
   });
 }
 
-function handleAnswerChange(selectEl) {
+function handleAnswerChange(selectEl, options = {}) {
   const row = selectEl.closest(".checklist-row");
 
   if (row) {
@@ -3789,8 +4157,12 @@ function handleAnswerChange(selectEl) {
     if (selectEl.value === "N/A") row.classList.add("has-na");
   }
 
+  updateExpiryInputState(selectEl);
   updateAnswerSummary();
-  scheduleAutoSave();
+
+  if (!options.skipAutoSave) {
+    scheduleAutoSave();
+  }
 }
 
 function updateAnswerSummary() {
