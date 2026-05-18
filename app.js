@@ -1864,6 +1864,14 @@ function renderDashboardMetrics() {
           <div class="metric-number">${scheduledItems}</div>
           <div class="metric-label">Scheduled</div>
         </div>
+
+        <div class="metric-card"
+          data-filter="expiry-missing"
+          onclick="setFilter('expiry-missing')">
+          <div class="metric-number">${missingExpiryItems}</div>
+          <div class="metric-label">Missing</div>
+        </div>
+        
       </div>
     </div>
 
