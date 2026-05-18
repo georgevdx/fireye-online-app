@@ -6,7 +6,7 @@
   <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=42">
+  <link rel="stylesheet" href="styles.css?v=59">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -56,10 +56,28 @@
         <div class="cloud-section-title">App Info</div>
         <div><strong>App:</strong> FireyeSA</div>
         <div><strong>Version:</strong> <span id="cloudAppVersion">Loading...</span></div>
+        <div><strong>Inspections:</strong> <span id="cloudProjectCount">Loading...</span></div>
+        <div><strong>Last Backup:</strong> <span id="cloudLastBackup">Loading...</span></div>
+        <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
         <div><strong>Storage:</strong> Local + Cloud Sync</div>
         <div><strong>Backups:</strong> Export before major changes</div>
         <div class="cloud-section-title">Admin</div>
         <button id="adminExportBackupBtn" type="button">Export Backup</button>
+        <button id="createBackupTextBtn" type="button">Create Backup Text</button>
+        <button id="copyLastBackupBtn" type="button">Copy Last Backup</button>
+        <button id="showLastBackupBtn" type="button">Show Backup Text</button>
+        <label class="admin-import-backup-btn" for="importBackupInput">
+          Import Backup
+        </label>
+        <div id="manualBackupPanel" class="manual-backup-panel" style="display:none;">
+          <div class="note">
+            Manual backup text. Select all and copy it, or paste backup JSON here and import.
+          </div>
+          <textarea id="manualBackupText"></textarea>
+          <button id="importPastedBackupBtn" type="button">
+            Import Pasted Backup
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -292,7 +310,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=42"></script>
+  <script src="app.js?v=59"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

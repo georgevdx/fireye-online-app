@@ -13,7 +13,7 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
-const APP_VERSION = 'v42';
+const APP_VERSION = 'v59';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -510,29 +510,78 @@ function sanitizeFileName(value, fallback = 'Inspection') {
   return cleanName || fallback;
 }
 
+function getFileTimestamp() {
+  return new Date()
+    .toISOString()
+    .slice(0, 16)
+    .replace('T', '-')
+    .replace(':', '');
+}
+
 function exportBackup() {
   const projects = getProjects();
-  const date = new Date().toISOString().slice(0, 10);
-  const filename = sanitizeFileName(`fireyesa-backup-${date}`, 'fireyesa-backup');
+  const timestamp = getFileTimestamp();
+  const filename = sanitizeFileName(`fireyesa-backup-${timestamp}`, 'fireyesa-backup');
+  const backupJson = createBackupJson(projects);
 
-  downloadProjectsBackup(projects, `${filename}.json`);
+  downloadBackupJson(backupJson, `${filename}.json`);
+  saveBackupSnapshot(backupJson, `${filename}.json`, projects.length, 'download');
+
+  const message =
+    `Backup exported as ${filename}.json (${projects.length} inspection${projects.length === 1 ? '' : 's'}). Check your Downloads folder.`;
 
   const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
-    saveMessage.textContent = 'Backup exported.';
+    saveMessage.textContent = message;
+  }
+
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent = message;
   }
 }
 
-function downloadProjectsBackup(projects, filename) {
+function createBackupTextSnapshot() {
+  const projects = getProjects();
+  const timestamp = getFileTimestamp();
+  const filename = sanitizeFileName(`fireyesa-backup-text-${timestamp}`, 'fireyesa-backup-text');
+  const backupJson = createBackupJson(projects);
+  saveBackupSnapshot(backupJson, `${filename}.json`, projects.length, 'manual-text');
+  showManualBackupBox(
+    backupJson,
+    `Backup text created (${projects.length} inspection${projects.length === 1 ? '' : 's'}). Select all and copy it manually if needed.`
+  );
+}
+
+function saveBackupSnapshot(backupJson, filename, count, source) {
+  localStorage.setItem(
+    'fireyesaLastBackup',
+    JSON.stringify({
+      filename,
+      exportedAt: new Date().toISOString(),
+      count,
+      source
+    })
+  );
+  localStorage.setItem('fireyesaLastBackupJson', backupJson);
+  updateAppInfo();
+}
+
+function createBackupJson(projects) {
   const backup = {
     app: 'FireyeSA',
     version: 1,
+    appVersion: APP_VERSION,
     exportedAt: new Date().toISOString(),
     projects
   };
 
+  return JSON.stringify(backup, null, 2);
+}
+
+function downloadBackupJson(backupJson, filename) {
   const blob = new Blob(
-    [JSON.stringify(backup, null, 2)],
+    [backupJson],
     { type: 'application/json' }
   );
 
@@ -541,23 +590,154 @@ function downloadProjectsBackup(projects, filename) {
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
+  document.body.removeChild(a);
 
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 1000);
+}
+
+function downloadProjectsBackup(projects, filename) {
+  downloadBackupJson(createBackupJson(projects), filename);
+}
+
+async function copyLastBackup() {
+  const backupJson = localStorage.getItem('fireyesaLastBackupJson');
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (!backupJson) {
+    if (syncStatus) {
+      syncStatus.textContent = 'No backup has been exported in this browser yet.';
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(backupJson);
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Last backup text copied to clipboard.';
+    }
+  } catch (error) {
+    console.error('Copy backup failed:', error);
+    showManualBackupBox(backupJson);
+  }
+}
+
+function showLastBackupText() {
+  const backupJson = localStorage.getItem('fireyesaLastBackupJson');
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (!backupJson) {
+    if (syncStatus) {
+      syncStatus.textContent = 'No backup has been exported in this browser yet.';
+    }
+    return;
+  }
+
+  showManualBackupBox(
+    backupJson,
+    'Backup text is shown below. Select all and copy it manually if Downloads does not appear.'
+  );
+}
+
+function showManualBackupBox(backupJson, message) {
+  const panel = document.getElementById('manualBackupPanel');
+  const textarea = document.getElementById('manualBackupText');
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (!panel || !textarea) {
+    if (syncStatus) {
+      syncStatus.textContent = 'Could not open manual backup box.';
+    }
+    return;
+  }
+
+  textarea.value = backupJson;
+  panel.style.display = 'block';
+  textarea.focus();
+  textarea.select();
+
+  if (syncStatus) {
+    syncStatus.textContent =
+      message ||
+      'Clipboard blocked. Backup text is shown below. Select all and copy it manually.';
+  }
+}
+
+function formatBytes(bytes) {
+  if (!bytes) return '0 KB';
+  const units = ['B', 'KB', 'MB'];
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
 function exportEmergencyBackup(reason) {
   const projects = getProjects();
   if (projects.length === 0) return;
 
-  const date = new Date().toISOString().slice(0, 10);
+  const timestamp = getFileTimestamp();
   const safeReason = sanitizeFileName(reason, 'backup').toLowerCase();
   const filename = sanitizeFileName(
-    `fireyesa-before-${safeReason}-${date}`,
+    `fireyesa-before-${safeReason}-${timestamp}`,
     'fireyesa-before-backup'
   );
 
   downloadProjectsBackup(projects, `${filename}.json`);
+}
+
+function importBackupJsonText(backupText, sourceLabel = 'backup') {
+  try {
+    const backup = JSON.parse(backupText);
+
+    if (!backup.projects || !Array.isArray(backup.projects)) {
+      alert('Invalid backup file. No inspections list was found.');
+      return false;
+    }
+
+    const confirmed = confirm(
+      'Import Backup will replace all inspections currently saved on this device. Export a backup first if you are unsure. Continue?'
+    );
+
+    if (!confirmed) return false;
+
+    exportEmergencyBackup(`import-${sourceLabel}`);
+
+    setProjects(backup.projects);
+    currentProjectId = null;
+    currentPhotos = [];
+
+    renderProjectsList();
+    showProjectList();
+
+    const message =
+      `Backup imported successfully (${backup.projects.length} inspection${backup.projects.length === 1 ? '' : 's'}).`;
+    const saveMessage = document.getElementById('saveMessage');
+    if (saveMessage) {
+      saveMessage.textContent = message;
+    }
+
+    const syncStatus = document.getElementById('syncStatus');
+    if (syncStatus) {
+      syncStatus.textContent = message;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Backup import failed:', error);
+    alert('Could not import backup text.');
+    return false;
+  }
 }
 
 function importBackup(event) {
@@ -567,42 +747,25 @@ function importBackup(event) {
   const reader = new FileReader();
 
   reader.onload = function(e) {
-    try {
-      const backup = JSON.parse(e.target.result);
-
-      if (!backup.projects || !Array.isArray(backup.projects)) {
-        alert('Invalid backup file.');
-        return;
-      }
-
-      const confirmed = confirm(
-        'Importing this backup will replace the current saved inspections. Continue?'
-      );
-
-      if (!confirmed) return;
-
-      exportEmergencyBackup('import');
-
-      setProjects(backup.projects);
-      currentProjectId = null;
-      currentPhotos = [];
-
-      renderProjectsList();
-      showProjectList();
-
-      const saveMessage = document.getElementById('saveMessage');
-      if (saveMessage) {
-        saveMessage.textContent = 'Backup imported successfully.';
-      }
-    } catch (error) {
-      console.error('Backup import failed:', error);
-      alert('Could not import backup file.');
-    }
-
+    importBackupJsonText(e.target.result, 'file');
     event.target.value = '';
   };
 
   reader.readAsText(file);
+}
+
+function importPastedBackup() {
+  const textarea = document.getElementById('manualBackupText');
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (!textarea || !textarea.value.trim()) {
+    if (syncStatus) {
+      syncStatus.textContent = 'Paste backup JSON into the manual backup box first.';
+    }
+    return;
+  }
+
+  importBackupJsonText(textarea.value.trim(), 'pasted-text');
 }
 
 async function signupUser() {
@@ -689,7 +852,7 @@ async function downloadSync() {
   }
 
   const confirmed = confirm(
-    'Download Sync will replace the inspections currently saved on this device. Continue?'
+    'Download Sync will replace all inspections currently saved on this device with the cloud version. An emergency backup will be exported first. Continue?'
   );
 
   if (!confirmed) return;
@@ -1006,7 +1169,7 @@ async function loadData() {
 
 
 
-function initApp() {
+function updateAppInfo() {
   const appVersion = document.getElementById('appVersion');
   if (appVersion) {
     appVersion.textContent = `Version ${APP_VERSION}`;
@@ -1016,6 +1179,47 @@ function initApp() {
   if (cloudAppVersion) {
     cloudAppVersion.textContent = APP_VERSION;
   }
+
+  const cloudProjectCount = document.getElementById('cloudProjectCount');
+  if (cloudProjectCount) {
+    const count = getProjects().length;
+    cloudProjectCount.textContent =
+      `${count} inspection${count === 1 ? '' : 's'}`;
+  }
+
+  const cloudLastBackup = document.getElementById('cloudLastBackup');
+  if (cloudLastBackup) {
+    const saved = localStorage.getItem('fireyesaLastBackup');
+
+    if (!saved) {
+      cloudLastBackup.textContent = 'Not exported yet';
+      return;
+    }
+
+    try {
+      const lastBackup = JSON.parse(saved);
+      const dateText = lastBackup.exportedAt
+        ? new Date(lastBackup.exportedAt).toLocaleString()
+        : 'Unknown date';
+
+      cloudLastBackup.textContent =
+        `${lastBackup.filename || 'Backup file'} (${dateText})`;
+    } catch (error) {
+      cloudLastBackup.textContent = 'Unknown';
+    }
+  }
+
+  const cloudBackupTextStatus = document.getElementById('cloudBackupTextStatus');
+  if (cloudBackupTextStatus) {
+    const backupJson = localStorage.getItem('fireyesaLastBackupJson');
+    cloudBackupTextStatus.textContent = backupJson
+      ? `Ready (${formatBytes(backupJson.length)})`
+      : 'Not created yet';
+  }
+}
+
+function initApp() {
+  updateAppInfo();
 
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
   if (showSyncToolsBtn) {
@@ -1094,6 +1298,22 @@ function initApp() {
   const adminExportBackupBtn = document.getElementById('adminExportBackupBtn');
   if (adminExportBackupBtn) {
     adminExportBackupBtn.addEventListener('click', exportBackup);
+  }
+  const copyLastBackupBtn = document.getElementById('copyLastBackupBtn');
+  if (copyLastBackupBtn) {
+    copyLastBackupBtn.addEventListener('click', copyLastBackup);
+  }
+  const createBackupTextBtn = document.getElementById('createBackupTextBtn');
+  if (createBackupTextBtn) {
+    createBackupTextBtn.addEventListener('click', createBackupTextSnapshot);
+  }
+  const showLastBackupBtn = document.getElementById('showLastBackupBtn');
+  if (showLastBackupBtn) {
+    showLastBackupBtn.addEventListener('click', showLastBackupText);
+  }
+  const importPastedBackupBtn = document.getElementById('importPastedBackupBtn');
+  if (importPastedBackupBtn) {
+    importPastedBackupBtn.addEventListener('click', importPastedBackup);
   }
   getEl('importBackupInput').addEventListener('change', importBackup);
   getEl('inspectionType').addEventListener('change', () => {
@@ -1281,13 +1501,35 @@ function getProjectExpiryCounts(project) {
     scheduled: 0
   };
 
-  (project.answers || []).forEach(answer => {
-    const status = getExpiryStatus(answer.expiryDate);
+  const checklist =
+  getChecklistForProject(project);
 
-    if (status === 'overdue') counts.overdue++;
-    else if (status === 'soon') counts.soon++;
-    else if (status === 'scheduled') counts.scheduled++;
-  });
+(project.answers || []).forEach(answer => {
+
+  const checklistItem =
+    checklist[answer.itemIndex];
+
+  const trackExpiry =
+    checklistItem?.["Track Expiry"] === true;
+
+  if (!trackExpiry) return;
+
+  const status =
+    getExpiryStatus(answer.expiryDate);
+
+  if (status === 'overdue') {
+    counts.overdue++;
+  }
+
+  else if (status === 'soon') {
+    counts.soon++;
+  }
+
+  else if (status === 'scheduled') {
+    counts.scheduled++;
+  }
+
+});
 
   counts.total =
     counts.overdue +
@@ -1498,22 +1740,37 @@ function renderDashboardMetrics() {
 
   projects.forEach(project => {
 
-    (project.answers || []).forEach(answer => {
+  const checklist =
+    getChecklistForProject(project);
 
-      const status =
-        getExpiryStatus(answer.expiryDate);
+  (project.answers || []).forEach(answer => {
 
-      if (status === 'overdue') expiredItems++;
+    const checklistItem =
+      checklist[answer.itemIndex];
 
-      else if (status === 'soon') expiringSoonItems++;
+    const trackExpiry =
+      checklistItem?.["Track Expiry"] === true;
 
-      else if (status === 'scheduled') scheduledItems++;
+    if (!trackExpiry) return;
 
-      else noExpiry++;
+    const status =
+      getExpiryStatus(answer.expiryDate);
 
-    });
+    if (status === 'overdue') {
+      expiredItems++;
+    }
+
+    else if (status === 'soon') {
+      expiringSoonItems++;
+    }
+
+    else if (status === 'scheduled') {
+      scheduledItems++;
+    }
 
   });
+
+});
 
   const total = projects.length;
 
@@ -1665,6 +1922,7 @@ function getSyncStatus(project) {
 
 function renderProjectsList() {
   const projects = getProjects();
+  updateAppInfo();
   
   renderReminderBanner(projects);
   renderDashboardMetrics();
@@ -2287,7 +2545,7 @@ function createFollowUpInspection() {
   }
 
   const confirmed = confirm(
-    'Create a new follow-up inspection from this inspection?'
+    'Create a new follow-up inspection from this inspection? The original inspection will remain saved, and a new linked follow-up will be created. Continue?'
   );
 
   if (!confirmed) return;
@@ -2336,7 +2594,9 @@ async function deleteProject() {
     return;
   }
 
-  const confirmed = confirm('Delete this project?');
+  const confirmed = confirm(
+    'Delete this project permanently from this device? Export a backup first if you are unsure. Continue?'
+  );
   if (!confirmed) return;
 
   const idToDelete = currentProjectId;
@@ -3054,6 +3314,11 @@ function generateReport() {
         <strong>Inspector:</strong>
         ${escapeHtml(inspectorName || '-')}
       </div>
+
+      <div>
+        <strong>App Version:</strong>
+        ${escapeHtml(APP_VERSION)}
+      </div>
     </div>
 
   </div>
@@ -3292,7 +3557,9 @@ function renderPhotos() {
 }
 
 function deletePhoto(index) {
-  const confirmed = confirm('Delete this photo?');
+  const confirmed = confirm(
+    'Delete this photo from this inspection? This cannot be undone unless you restore a backup. Continue?'
+  );
   if (!confirmed) return;
 
   currentPhotos.splice(index, 1);
