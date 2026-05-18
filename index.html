@@ -3,19 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fireye Online Fire Safety App</title>
+  <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=35">
   <link rel="icon" href="data:,">
 </head>
 <body>
   <div class="app">
 <header class="header brand-header">
   <div class="brand-left">
-    <div class="brand-mark">🔥</div>
+    <img
+      class="brand-mark"
+      src="icon-192.png"
+      alt="FireyeSA logo"
+    >
     <div>
-      <h1>Fireye</h1>
+      <h1>FireyeSA</h1>
       <p class="subtitle">Fire Safety App</p>
     </div>
   </div>
@@ -27,7 +31,7 @@
 
     <div id="cloudDropdown" class="cloud-dropdown" style="display:none;">
       <div id="cloudConnectedView" style="display:none;">
-        <div class="sync-connected">✅ Cloud Sync: Connected</div>
+        <div class="sync-connected">Cloud Sync: Connected</div>
         <button id="showSyncToolsBtn" type="button">Admin / Sync Tools</button>
       </div>
 
@@ -197,7 +201,7 @@
   <div class="action-menu">
 
     <button id="actionMenuBtn" type="button">
-      ⋮
+      More
     </button>
 
     <div id="actionDropdown"
@@ -275,7 +279,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=15"></script>
+  <script src="app.js?v=35"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

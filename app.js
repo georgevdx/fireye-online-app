@@ -1,6 +1,9 @@
 ﻿let currentFilter = 'all';
 function setFilter(filter) {
-  currentFilter = filter;
+  currentFilter =
+    currentFilter === filter && filter !== 'all'
+      ? 'all'
+      : filter;
   renderProjectsList();
   updateDashboardSelection();
 }
@@ -326,11 +329,15 @@ function formatProjectDate(value) {
 
   const projectName =
     currentProject?.projectName || 'Inspection';
+  const reportDate =
+    new Date().toISOString().slice(0, 10);
+  const safeProjectName =
+    sanitizeFileName(projectName);
 
   const opt = {
   margin: [15, 12, 15, 12],
 
-  filename: `Fireye_Report_${projectName}.pdf`,
+  filename: `FireyeSA_Report_${safeProjectName}_${reportDate}.pdf`,
 
   image: { type: 'jpeg', quality: 0.98 },
   html2canvas: {
@@ -490,10 +497,24 @@ function toggleChecklistSection(sectionId) {
   }
 }
 
+function sanitizeFileName(value, fallback = 'Inspection') {
+  const cleanName = String(value || fallback)
+    .trim()
+    .replace(/[<>:"/\\|?*]+/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 70);
+
+  return cleanName || fallback;
+}
+
 function exportBackup() {
   const projects = getProjects();
+  const date = new Date().toISOString().slice(0, 10);
+  const filename = sanitizeFileName(`fireyesa-backup-${date}`, 'fireyesa-backup');
 
-  downloadProjectsBackup(projects, `fireye-backup-${new Date().toISOString().slice(0, 10)}.json`);
+  downloadProjectsBackup(projects, `${filename}.json`);
 
   const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
@@ -503,7 +524,7 @@ function exportBackup() {
 
 function downloadProjectsBackup(projects, filename) {
   const backup = {
-    app: 'Fireye',
+    app: 'FireyeSA',
     version: 1,
     exportedAt: new Date().toISOString(),
     projects
@@ -529,7 +550,13 @@ function exportEmergencyBackup(reason) {
   if (projects.length === 0) return;
 
   const date = new Date().toISOString().slice(0, 10);
-  downloadProjectsBackup(projects, `fireye-before-${reason}-${date}.json`);
+  const safeReason = sanitizeFileName(reason, 'backup').toLowerCase();
+  const filename = sanitizeFileName(
+    `fireyesa-before-${safeReason}-${date}`,
+    'fireyesa-before-backup'
+  );
+
+  downloadProjectsBackup(projects, `${filename}.json`);
 }
 
 function importBackup(event) {
@@ -1232,6 +1259,174 @@ function getExpiryStatus(expiryDate) {
   return 'scheduled';
 }
 
+function getProjectExpiryCounts(project) {
+  const counts = {
+    overdue: 0,
+    soon: 0,
+    scheduled: 0
+  };
+
+  (project.answers || []).forEach(answer => {
+    const status = getExpiryStatus(answer.expiryDate);
+
+    if (status === 'overdue') counts.overdue++;
+    else if (status === 'soon') counts.soon++;
+    else if (status === 'scheduled') counts.scheduled++;
+  });
+
+  counts.total =
+    counts.overdue +
+    counts.soon +
+    counts.scheduled;
+
+  return counts;
+}
+
+function getChecklistForProject(project) {
+  const productType = project.productType || 'Fire Safety Officer';
+  const inspectionType = project.inspectionType || '';
+  const occupancy = project.occupancy || '';
+
+  if (
+    inspectionTemplates[productType] &&
+    inspectionTemplates[productType][inspectionType]
+  ) {
+    const template = inspectionTemplates[productType][inspectionType];
+
+    return template.flatMap(section =>
+      section.items
+        .filter(item => {
+          const applicableToRaw = item["Applicable To"] || ["All"];
+          const applicableTo = Array.isArray(applicableToRaw)
+            ? applicableToRaw
+            : [applicableToRaw];
+
+          return (
+            applicableTo.includes("All") ||
+            applicableTo.includes(occupancy)
+          );
+        })
+        .map(item => ({
+          ...item,
+          Section: section.sectionName
+        }))
+    );
+  }
+
+  return checklists.filter(item =>
+    item["Applicable To"] === "All occupancies" ||
+    item["Applicable To"] === occupancy
+  );
+}
+
+function getHighRiskSummary(project) {
+  const failedAnswers = (project.answers || []).filter(
+    answer => answer.answer === 'No'
+  );
+
+  if (failedAnswers.length === 0) {
+    return {
+      count: 0,
+      text: ''
+    };
+  }
+
+  const checklist = getChecklistForProject(project);
+  const firstFailed = failedAnswers[0];
+  const matchedItem = checklist.find((item, index) =>
+    index === firstFailed.itemIndex ||
+    String(item["Item Number"]) === String(firstFailed.itemNumber)
+  );
+
+  return {
+    count: failedAnswers.length,
+    text:
+      matchedItem?.["Non Compliance Text"] ||
+      matchedItem?.["Checklist Item"] ||
+      `Item ${firstFailed.itemNumber || firstFailed.itemIndex + 1}`
+  };
+}
+
+function focusFirstProjectIssue(project) {
+  const firstIssue = (project.answers || []).find(
+    answer => answer.answer === 'No'
+  );
+
+  if (!firstIssue) return;
+
+  const field = document.getElementById(`check_${firstIssue.itemIndex}`);
+  const row = field?.closest('.checklist-row');
+
+  if (!row) return;
+
+  const section = row.closest('.section-group');
+
+  if (section) {
+    section.classList.remove('hidden');
+
+    const sectionIndex = section.id.replace('section_', '');
+    const arrow = document.getElementById(`arrow_${sectionIndex}`);
+
+    if (arrow) {
+      arrow.textContent = 'v';
+    }
+  }
+
+  row.classList.add('issue-focus');
+
+  row.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+
+  setTimeout(() => {
+    row.classList.remove('issue-focus');
+  }, 3000);
+}
+
+function focusFirstProjectExpiry(project, expiryStatus) {
+  const firstExpiry = (project.answers || []).find(
+    answer => getExpiryStatus(answer.expiryDate) === expiryStatus
+  );
+
+  if (!firstExpiry) return;
+
+  const expiryField = document.querySelector(
+    `.expiry-date[data-index="${firstExpiry.itemIndex}"]`
+  );
+  const row = expiryField?.closest('.checklist-row');
+
+  if (!row) return;
+
+  const section = row.closest('.section-group');
+
+  if (section) {
+    section.classList.remove('hidden');
+
+    const sectionIndex = section.id.replace('section_', '');
+    const arrow = document.getElementById(`arrow_${sectionIndex}`);
+
+    if (arrow) {
+      arrow.textContent = 'v';
+    }
+  }
+
+  row.classList.add('expiry-focus');
+
+  row.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+
+  if (expiryField) {
+    expiryField.focus();
+  }
+
+  setTimeout(() => {
+    row.classList.remove('expiry-focus');
+  }, 3000);
+}
+
 function renderDashboard(projects) {
   const dashboard = document.getElementById('dashboardSummary');
   if (!dashboard) return;
@@ -1339,84 +1534,89 @@ function renderDashboardMetrics() {
   ).length;
 
   container.innerHTML = `
+    <div class="metric-group">
+      <div class="metric-section-title">Tap to filter projects</div>
+      <div class="metric-row">
 
-    <div class="metric-card"
-     data-filter="all"
-     onclick="setFilter('all')">
-      <div class="metric-number">${total}</div>
-      <div class="metric-label">
-        Total Inspections
+        <div class="metric-card"
+         data-filter="all"
+         onclick="setFilter('all')">
+          <div class="metric-number">${total}</div>
+          <div class="metric-label">
+            Total Inspections
+          </div>
+        </div>
+
+        <div class="metric-card"
+         data-filter="followups"
+         onclick="setFilter('followups')">
+          <div class="metric-number">${followUps.length}</div>
+          <div class="metric-label">
+            Follow-ups
+          </div>
+        </div>
+
+        <div class="metric-card"
+         data-filter="soon"
+         onclick="setFilter('soon')">
+          <div class="metric-number">${dueSoon}</div>
+          <div class="metric-label">
+            Due Soon
+          </div>
+        </div>
+
+        <div class="metric-card"
+         data-filter="overdue"
+         onclick="setFilter('overdue')">
+          <div class="metric-number">${overdue}</div>
+          <div class="metric-label">
+            Overdue
+          </div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="risk"
+          onclick="setFilter('risk')">
+          <div class="metric-number">${highRisk}</div>
+          <div class="metric-label">
+            High Risk
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="metric-card"
-     data-filter="followups"
-     onclick="setFilter('followups')">
-      <div class="metric-number">${followUps.length}</div>
-      <div class="metric-label">
-        Follow-ups
+    <div class="metric-group metric-group-secondary">
+      <div class="metric-section-title">
+        Equipment expiry summary
+      </div>
+      <div class="metric-row">
+
+        <div class="metric-card"
+          data-filter="expiry-overdue"
+          onclick="setFilter('expiry-overdue')">
+          <div class="metric-number">${expiredItems}</div>
+          <div class="metric-label">Expired</div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="expiry-soon"
+          onclick="setFilter('expiry-soon')">
+          <div class="metric-number">${expiringSoonItems}</div>
+          <div class="metric-label">Due Soon</div>
+        </div>
+
+        <div class="metric-card"
+          data-filter="expiry-scheduled"
+          onclick="setFilter('expiry-scheduled')">
+          <div class="metric-number">${scheduledItems}</div>
+          <div class="metric-label">Scheduled</div>
+        </div>
       </div>
     </div>
-
-    <div class="metric-card"
-     data-filter="soon"
-     onclick="setFilter('soon')">
-      <div class="metric-number">${dueSoon}</div>
-      <div class="metric-label">
-        Due Soon
-      </div>
-    </div>
-
-    <div class="metric-card"
-     data-filter="overdue"
-     onclick="setFilter('overdue')">
-      <div class="metric-number">${overdue}</div>
-      <div class="metric-label">
-        Overdue
-      </div>
-    </div>
-
-    <div class="metric-card"
-      data-filter="risk"
-      onclick="setFilter('risk')">
-      <div class="metric-number">${highRisk}</div>
-      <div class="metric-label">
-        High Risk
-      </div>
-    </div>
-
-    <div class="metric-card">
-  <div class="metric-number">
-    ${expiredItems}
-  </div>
-
-  <div class="metric-label">
-    Expired
-  </div>
-  
-  </div>
-
-  <div class="metric-card">
-    <div class="metric-number">
-      ${expiringSoonItems}
-    </div>
-
-    <div class="metric-label">
-      Due Soon
-    </div>
-  </div>
-
-  <div class="metric-card">
-    <div class="metric-number">
-      ${scheduledItems}
-    </div>
-
-    <div class="metric-label">
-      Scheduled
-    </div>
-  </div>
 
   `;
+
+  updateDashboardSelection();
 }
 
 function updateDashboardSelection() {
@@ -1503,23 +1703,47 @@ function renderProjectsList() {
     );
   }
 
+  if (currentFilter === 'expiry-overdue') {
+    return project.answers?.some(
+      a => getExpiryStatus(a.expiryDate) === 'overdue'
+    );
+  }
+
+  if (currentFilter === 'expiry-soon') {
+    return project.answers?.some(
+      a => getExpiryStatus(a.expiryDate) === 'soon'
+    );
+  }
+
+  if (currentFilter === 'expiry-scheduled') {
+    return project.answers?.some(
+      a => getExpiryStatus(a.expiryDate) === 'scheduled'
+    );
+  }
+
   return true; // default = all
 });
 
   filteredProjects.sort((a, b) => {
-    const statusOrder = {
-      'status-overdue': 1,
-      'status-soon': 2,
-      'status-scheduled': 3,
-      'status-none': 4
+    const getProjectPriority = project => {
+      const followStatus = getFollowUpStatus(project);
+      const expiryCounts = getProjectExpiryCounts(project);
+      const hasHighRisk = project.answers?.some(
+        answer => answer.answer === 'No'
+      );
+
+      if (hasHighRisk) return 1;
+      if (expiryCounts.overdue > 0) return 2;
+      if (followStatus.class === 'status-overdue') return 3;
+      if (expiryCounts.soon > 0) return 4;
+      if (followStatus.class === 'status-soon') return 5;
+      return 6;
     };
 
-    const aStatus = getFollowUpStatus(a).class;
-    const bStatus = getFollowUpStatus(b).class;
+    const priorityDiff =
+      getProjectPriority(a) - getProjectPriority(b);
 
-    if (statusOrder[aStatus] !== statusOrder[bStatus]) {
-      return statusOrder[aStatus] - statusOrder[bStatus];
-    }
+    if (priorityDiff !== 0) return priorityDiff;
 
     const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
     const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
@@ -1544,6 +1768,8 @@ function renderProjectsList() {
       project.projectName ||
       [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
       'Untitled Project';
+    const expiryCounts = getProjectExpiryCounts(project);
+    const highRiskSummary = getHighRiskSummary(project);
 
     const card = document.createElement('div');
     card.className = 'project-card';
@@ -1580,6 +1806,57 @@ function renderProjectsList() {
         ${escapeHtml(projectAddress || 'No address captured')}
       </div>
 
+      ${highRiskSummary.count > 0 ? `
+      <div class="project-risk-summary">
+        <div class="project-risk-count">
+          High Risk: ${highRiskSummary.count} non-compliance item${highRiskSummary.count === 1 ? '' : 's'}
+        </div>
+        <div class="project-risk-text">
+          ${escapeHtml(highRiskSummary.text)}
+        </div>
+        <button
+          type="button"
+          class="small-btn project-review-btn"
+          onclick="openProject('${project.id}', 'issues')"
+        >
+          Review Issues
+        </button>
+      </div>
+      ` : ''}
+
+      ${expiryCounts.total > 0 ? `
+      <div class="project-expiry-summary">
+        <span class="project-expiry-label">Equipment</span>
+        <span class="project-expiry-chip expiry-chip-overdue">
+          Expired: ${expiryCounts.overdue}
+        </span>
+        <span class="project-expiry-chip expiry-chip-soon">
+          Due soon: ${expiryCounts.soon}
+        </span>
+        <span class="project-expiry-chip expiry-chip-scheduled">
+          Scheduled: ${expiryCounts.scheduled}
+        </span>
+        ${expiryCounts.overdue > 0 ? `
+        <button
+          type="button"
+          class="small-btn project-expiry-review-btn expiry-review-overdue"
+          onclick="openProject('${project.id}', 'expiry-overdue')"
+        >
+          Review Expired
+        </button>
+        ` : ''}
+        ${expiryCounts.soon > 0 ? `
+        <button
+          type="button"
+          class="small-btn project-expiry-review-btn expiry-review-soon"
+          onclick="openProject('${project.id}', 'expiry-soon')"
+        >
+          Review Due Soon
+        </button>
+        ` : ''}
+      </div>
+      ` : ''}
+
       <div class="project-meta-grid">
         <div>
           <span>Inspector</span>
@@ -1599,7 +1876,7 @@ function renderProjectsList() {
   });
 }
 
-function openProject(projectId) {
+function openProject(projectId, focusMode) {
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
   if (!project) return;
@@ -1643,10 +1920,41 @@ function openProject(projectId) {
       if (noteField) {
       noteField.value = item.note || '';
       }
+
+      const expiryField =
+        document.querySelector(`.expiry-date[data-index="${item.itemIndex}"]`);
+      if (expiryField) {
+        expiryField.value = item.expiryDate || '';
+      }
     });
   }
   renderSiteHistory(project);
   showProjectForm();
+
+  if (focusMode === 'issues') {
+    setTimeout(() => {
+      focusFirstProjectIssue(project);
+    }, 80);
+
+    return;
+  }
+
+  if (focusMode === 'expiry-overdue') {
+    setTimeout(() => {
+      focusFirstProjectExpiry(project, 'overdue');
+    }, 80);
+
+    return;
+  }
+
+  if (focusMode === 'expiry-soon') {
+    setTimeout(() => {
+      focusFirstProjectExpiry(project, 'soon');
+    }, 80);
+
+    return;
+  }
+
     window.scrollTo({
     top: 0,
     behavior: 'smooth'
@@ -2209,7 +2517,7 @@ function renderChecklist(selected) {
       c.trackExpiry === true;
 
     html += `
-  <div class="checklist-row">
+  <div class="checklist-row" data-index="${index}">
     <div>
       <strong>${c["Item Number"]}.</strong>
       ${c["Checklist Item"]}
@@ -2245,6 +2553,7 @@ function renderChecklist(selected) {
           type="date"
           class="expiry-date"
           data-index="${index}"
+          onchange="scheduleAutoSave()"
         >
       </div>
     ` : ''}
@@ -2309,6 +2618,7 @@ function generateReport() {
   let answersHtml = '';
   let actionSections = {};
   let nonCompliance = {};
+  let expiryDetails = [];
   let photosHtml = '';
 
   if (currentPhotos.length > 0) {
@@ -2355,6 +2665,27 @@ function generateReport() {
 
     const noteField = document.getElementById(`note_${index}`);
     const itemNote = noteField ? noteField.value.trim() : '';
+    const expiryField =
+      document.querySelector(`.expiry-date[data-index="${index}"]`);
+    const expiryDate = expiryField ? expiryField.value : '';
+
+    if (expiryDate) {
+      const expiryStatus = getExpiryStatus(expiryDate);
+      const expiryLabel =
+        expiryStatus === 'overdue'
+          ? 'Expired'
+          : expiryStatus === 'soon'
+          ? 'Due Soon'
+          : 'Scheduled';
+
+      expiryDetails.push({
+        itemNumber: item["Item Number"] || '',
+        checklistItem: item["Checklist Item"] || '',
+        expiryDate,
+        status: expiryStatus,
+        label: expiryLabel
+      });
+    }
 
     if (rawAnswer === 'Not answered' && !itemNote) {
       return;
@@ -2460,6 +2791,35 @@ function generateReport() {
     riskRating = 'INCOMPLETE';
     riskComment = 'Inspection incomplete. Some items were not assessed.';
   }
+
+  const highRiskCount = Object.values(nonCompliance)
+    .flat()
+    .filter(item => String(item.severity).toLowerCase() === 'high')
+    .length;
+  const expiryCounts = currentProject
+    ? getProjectExpiryCounts(currentProject)
+    : { overdue: 0, soon: 0, scheduled: 0 };
+  const repeatCount = repeatFindings.length;
+  const summaryCardsHtml = `
+    <div class="report-summary-grid">
+      <div class="report-summary-card summary-risk">
+        <span>High Risk</span>
+        <strong>${highRiskCount}</strong>
+      </div>
+      <div class="report-summary-card summary-repeat">
+        <span>Repeat Findings</span>
+        <strong>${repeatCount}</strong>
+      </div>
+      <div class="report-summary-card summary-expired">
+        <span>Expired Equipment</span>
+        <strong>${expiryCounts.overdue}</strong>
+      </div>
+      <div class="report-summary-card summary-soon">
+        <span>Due Soon</span>
+        <strong>${expiryCounts.soon}</strong>
+      </div>
+    </div>
+  `;
 
   let actionHtml = '';
 
@@ -2575,6 +2935,40 @@ function generateReport() {
     nonComplianceHtml = `<div class="note">No non-compliances recorded.</div>`;
   }
 
+  let expiryDetailsHtml = '';
+
+  if (expiryDetails.length > 0) {
+    expiryDetails
+      .sort((a, b) =>
+        new Date(a.expiryDate).getTime() -
+        new Date(b.expiryDate).getTime()
+      )
+      .forEach(item => {
+        expiryDetailsHtml += `
+          <div class="report-expiry-item report-expiry-${escapeHtml(item.status)}">
+            <div>
+              <strong>
+                ${escapeHtml(item.itemNumber)}.
+                ${escapeHtml(item.checklistItem)}
+              </strong>
+            </div>
+
+            <div>
+              <strong>Expiry Date:</strong>
+              ${escapeHtml(item.expiryDate)}
+            </div>
+
+            <div>
+              <strong>Status:</strong>
+              <span>${escapeHtml(item.label)}</span>
+            </div>
+          </div>
+        `;
+      });
+  } else {
+    expiryDetailsHtml = `<div class="note">No equipment expiry dates captured.</div>`;
+  }
+
   if (currentPhotos.length > 0) {
     currentPhotos.forEach((photo, index) => {
       photosHtml += `
@@ -2597,6 +2991,11 @@ function generateReport() {
       alt="Inspection photo ${index + 1}"
     >
 
+    <div class="report-photo-note">
+      <strong>Photo Note:</strong>
+      ${escapeHtml(photo.note || 'No note added.')}
+    </div>
+
   </div>
   `; 
 
@@ -2610,7 +3009,15 @@ function generateReport() {
   <div class="report-header">
 
     <div class="report-brand">
-      <h1>FIREYE</h1>
+      <div class="report-brand-row">
+        <img
+          class="report-logo"
+          src="icon-192.png"
+          alt="FireyeSA logo"
+        >
+
+        <h1>FIREYESA</h1>
+      </div>
 
       <div class="report-subtitle">
         Fire Safety Inspection Report
@@ -2702,6 +3109,7 @@ function generateReport() {
       </div>
 
       <div class="report-line note">${riskComment}</div>
+      ${summaryCardsHtml}
     </div>
 
     <div class="report-block">
@@ -2717,6 +3125,11 @@ function generateReport() {
     <div class="report-block">
       <h3>Recommended Corrective Action Plan</h3>
       ${actionPlanHtml}
+    </div>
+
+    <div class="report-block">
+      <h3>Equipment Expiry Details</h3>
+      ${expiryDetailsHtml}
     </div>
     
     <div class="report-block">
@@ -2762,7 +3175,7 @@ function generateReport() {
   </div>
 
   <div class="report-generated">
-    Generated by Fireye Fire Safety App
+    Generated by FireyeSA Fire Safety App
   </div>
 </div>
 
@@ -3000,7 +3413,7 @@ async function shareReport() {
   }
 
   const shareText =
-`Fireye Fire Safety Report
+`FireyeSA Fire Safety Report
 
 INSPECTION DETAILS
 Place Name: ${projectName}
@@ -3038,7 +3451,7 @@ ${checklistText || 'No checklist answers or notes captured.'}`;
   if (navigator.share) {
     try {
       await navigator.share({
-        title: `Fireye Report - ${projectName}`,
+        title: `FireyeSA Report - ${projectName}`,
         text: shareText
       });
 

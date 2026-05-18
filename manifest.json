@@ -1,6 +1,6 @@
 {
-  "name": "Fireye Fire Safety App",
-  "short_name": "Fireye",
+  "name": "FireyeSA Fire Safety App",
+  "short_name": "FireyeSA",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
