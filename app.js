@@ -1977,22 +1977,16 @@ function renderProjectsList() {
   }
 
   if (currentFilter === 'expiry-overdue') {
-    return project.answers?.some(
-      a => getExpiryStatus(a.expiryDate) === 'overdue'
-    );
-  }
+  return getProjectExpiryCounts(project).overdue > 0;
+}
 
-  if (currentFilter === 'expiry-soon') {
-    return project.answers?.some(
-      a => getExpiryStatus(a.expiryDate) === 'soon'
-    );
-  }
+if (currentFilter === 'expiry-soon') {
+  return getProjectExpiryCounts(project).soon > 0;
+}
 
-  if (currentFilter === 'expiry-scheduled') {
-    return project.answers?.some(
-      a => getExpiryStatus(a.expiryDate) === 'scheduled'
-    );
-  }
+if (currentFilter === 'expiry-scheduled') {
+  return getProjectExpiryCounts(project).scheduled > 0;
+}
 
   return true; // default = all
 });
