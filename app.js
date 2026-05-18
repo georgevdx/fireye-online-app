@@ -1254,6 +1254,25 @@ function initApp() {
     });
   }
   populateOccupancies();
+  function populateProductTypes() {
+  const select = getEl('productType');
+
+  select.innerHTML = '';
+
+  Object.keys(inspectionTemplates).forEach(moduleName => {
+    const option = document.createElement('option');
+
+    option.value = moduleName;
+    option.textContent = moduleName;
+
+    select.appendChild(option);
+  });
+
+  if (!select.value && Object.keys(inspectionTemplates).length > 0) {
+    select.value = Object.keys(inspectionTemplates)[0];
+  }
+}
+  populateProductTypes();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
   getEl('syncDownloadBtn').addEventListener('click', downloadSync);
   getEl('loginBtn').addEventListener('click', loginUser);
