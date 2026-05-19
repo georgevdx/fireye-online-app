@@ -881,8 +881,9 @@ async function loginUser() {
     syncStatus.textContent = 'Logged in successfully.';
   }
 
-  updateSyncUI();
-  loadUserAccessProfile();
+  await updateSyncUI();
+  await loadUserAccessProfile();
+
   safeDownloadNewerCloudInspections();
   uploadPendingInspections();
 }
