@@ -409,7 +409,15 @@ function autoSaveProject() {
   }
 
   const savedProject = projects.find(p => p.id === currentProjectId);
-  uploadSingleInspection(savedProject);
+
+  if (savedProject) {
+    uploadSingleInspection(savedProject)
+      .catch(error => {
+        console.error('Auto upload after autosave failed:', error);
+      });
+  } else {
+    console.warn('Auto upload skipped: autosaved project not found.');
+  }
 }
 
   function formatLastSaved(date = new Date()) {
@@ -3687,7 +3695,15 @@ function saveProject() {
   renderProjectsList();
 
   const savedProject = projects.find(p => p.id === currentProjectId);
-  uploadSingleInspection(savedProject);
+
+  if (savedProject) {
+    uploadSingleInspection(savedProject)
+      .catch(error => {
+        console.error('Auto upload after save failed:', error);
+      });
+  } else {
+    console.warn('Auto upload skipped: saved project not found.');
+  }
 
 
 
