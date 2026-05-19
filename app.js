@@ -1449,6 +1449,8 @@ function canEditInspection() {
 }
 
 function canViewReports() {
+  if (!currentUserProfile) return true; // temporary while access system is being built
+
   if (isSuperAdmin()) return true;
 
   if (!hasActiveCompanyAccess()) return false;
@@ -3319,6 +3321,14 @@ function escapeHtml(value) {
 
 
 function generateReport() {
+
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow viewing reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
  const currentProject = getProjects().find(
     p => p.id === currentProjectId
   );
