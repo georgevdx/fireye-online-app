@@ -1014,11 +1014,17 @@ async function downloadSync() {
 
   exportEmergencyBackup('cloud-download');
 
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
   .from('inspections')
   .select('inspection_data, updated_at')
-  .eq('user_id', userData.user.id)
   .order('updated_at', { ascending: false });
+
+  query = applyInspectionAccessFilter(
+    query,
+    userData.user.id
+  );
+
+  const { data, error } = await query;
 
   if (error) {
     getEl('syncStatus').textContent = `Download failed: ${error.message}`;
@@ -1047,10 +1053,16 @@ async function mergeSync() {
 
   const localProjects = getProjects();
 
-  const { data, error } = await supabaseClient
-    .from('inspections')
-    .select('inspection_data, updated_at')
-    .eq('user_id', userData.user.id);
+  let query = supabaseClient
+  .from('inspections')
+  .select('inspection_data, updated_at');
+
+  query = applyInspectionAccessFilter(
+    query,
+    userData.user.id
+  );
+
+  const { data, error } = await query;
 
   if (error) {
     getEl('syncStatus').textContent = `Merge failed: ${error.message}`;
@@ -1268,10 +1280,16 @@ async function safeDownloadNewerCloudInspections() {
       return;
     }
 
-    const { data, error } = await supabaseClient
+    let query = supabaseClient
       .from('inspections')
-      .select('inspection_data, updated_at')
-      .eq('user_id', userData.user.id);
+      .select('inspection_data, updated_at');
+
+    query = applyInspectionAccessFilter(
+      query,
+      userData.user.id
+    );
+
+    const { data, error } = await query;
 
     if (error) {
       console.error('Safe download failed:', error);
@@ -1843,6 +1861,14 @@ function getProjectCloudMetadata(project, userId) {
       currentUserProfile?.email ||
       ''
   };
+}
+
+function applyInspectionAccessFilter(query, userId) {
+  if (currentUserProfile?.companyId) {
+    return query.eq('company_id', currentUserProfile.companyId);
+  }
+
+  return query.eq('user_id', userId);
 }
 
 function getProjects() {
