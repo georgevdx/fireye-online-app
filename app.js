@@ -172,6 +172,7 @@ function autoSaveProject() {
   const contactEmail = getEl('contactEmail').value.trim();
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
+
   if (!siteName) {
     alert(
       'Please enter a Site / Branch / Location to distinguish this premises.'
@@ -181,12 +182,22 @@ function autoSaveProject() {
 
     return;
   }
-  if (!projectAddressField || !gpsField || !inMallField || !mallNameField || !unitNumberField || !inspectorNameField || !occupancyField) return;
+
+  if (
+    !projectAddressField ||
+    !gpsField ||
+    !inMallField ||
+    !mallNameField ||
+    !unitNumberField ||
+    !inspectorNameField ||
+    !occupancyField
+  ) return;
 
   const projectName =
-  [organisationName, siteName]
-    .filter(Boolean)
-    .join(' ');
+    [organisationName, siteName]
+      .filter(Boolean)
+      .join(' ');
+
   const inspectorName = inspectorNameField.value.trim();
   const occupancy = occupancyField.value;
   const streetNumber = getEl('streetNumber').value.trim();
@@ -199,6 +210,8 @@ function autoSaveProject() {
   const unitNumber = unitNumberField.value.trim();
   const productType = normalizeProductType(getEl('productType').value);
   const inspectionType = getEl('inspectionType').value;
+
+  const accessMetadata = getAccessMetadata();
   
   if (!projectName && !inspectorName) return;
 
@@ -206,10 +219,11 @@ function autoSaveProject() {
   const selectedChecklist =
     getActiveTemplateChecklist() || [];
 
-    document.querySelectorAll('.answer-select').forEach((field, index) => {
+  document.querySelectorAll('.answer-select').forEach((field, index) => {
     const noteField = document.getElementById(`note_${index}`);
     const expiryField =
-    document.querySelector(`.expiry-date[data-index="${index}"]`); 
+      document.querySelector(`.expiry-date[data-index="${index}"]`); 
+
     answers.push({
       itemIndex: index,
 
@@ -231,42 +245,87 @@ function autoSaveProject() {
   const projects = getProjects();
 
   if (currentProjectId) {
-  const index = projects.findIndex(p => p.id === currentProjectId);
-  if (index !== -1) {
-    projects[index] = {
-      ...projects[index],
+    const index = projects.findIndex(p => p.id === currentProjectId);
 
-      syncPending: true,
-      syncError: false,
+    if (index !== -1) {
+      projects[index] = {
+        ...projects[index],
 
-      projectName,
-      organisationName,
-      siteName,
-      streetNumber,
-      addressLine,
-      projectAddress,
-      gps,
-      inMall,
-      mallName,
-      unitNumber,
-      contactPerson,
-      contactTel,
-      contactEmail,
-      productType,
-      inspectionType,
-      inspectorName,
-      occupancy,
-      answers,
-      followUpRequired: getEl('followUpRequired').value,
-      followUpDate: getEl('followUpDate').value,
-      followUpNotes: getEl('followUpNotes').value.trim(),
-      photos: currentPhotos,      
-      lastSaved: new Date().toISOString()
-    };
-  }
-} else {
+        companyId: accessMetadata.companyId,
+        companyName: accessMetadata.companyName,
+
+        createdByUserId:
+          projects[index].createdByUserId ||
+          accessMetadata.createdByUserId,
+
+        createdByEmail:
+          projects[index].createdByEmail ||
+          accessMetadata.createdByEmail,
+
+        lastEditedByUserId:
+          accessMetadata.createdByUserId,
+
+        lastEditedByEmail:
+          accessMetadata.createdByEmail,
+
+        userRoleAtSave:
+          accessMetadata.userRole,
+
+        companyAccessStatus:
+          accessMetadata.companyAccessStatus,
+
+        syncPending: true,
+        syncError: false,
+
+        projectName,
+        organisationName,
+        siteName,
+        streetNumber,
+        addressLine,
+        projectAddress,
+        gps,
+        inMall,
+        mallName,
+        unitNumber,
+        contactPerson,
+        contactTel,
+        contactEmail,
+        productType,
+        inspectionType,
+        inspectorName,
+        occupancy,
+        answers,
+        followUpRequired: getEl('followUpRequired').value,
+        followUpDate: getEl('followUpDate').value,
+        followUpNotes: getEl('followUpNotes').value.trim(),
+        photos: currentPhotos,      
+        lastSaved: new Date().toISOString()
+      };
+    }
+  } else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+
+      companyId: accessMetadata.companyId,
+      companyName: accessMetadata.companyName,
+
+      createdByUserId:
+        accessMetadata.createdByUserId,
+
+      createdByEmail:
+        accessMetadata.createdByEmail,
+
+      lastEditedByUserId:
+        accessMetadata.createdByUserId,
+
+      lastEditedByEmail:
+        accessMetadata.createdByEmail,
+
+      userRoleAtSave:
+        accessMetadata.userRole,
+
+      companyAccessStatus:
+        accessMetadata.companyAccessStatus,
       
       syncPending: true,
       syncError: false,
@@ -305,11 +364,12 @@ function autoSaveProject() {
   setProjects(projects);
   renderProjectsList();
   
+  const saveMessage = document.getElementById('saveMessage');
 
- const saveMessage = document.getElementById('saveMessage');
   if (saveMessage) {
     saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
   }
+
   const savedProject = projects.find(p => p.id === currentProjectId);
   uploadSingleInspection(savedProject);
 }
@@ -328,6 +388,14 @@ function formatProjectDate(value) {
 }
 
   function exportReport() {
+
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow exporting reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
   generateReport(); // maak seker report is nuut
   getEl('reportSection').style.display = 'block';
 
@@ -814,6 +882,7 @@ async function loginUser() {
   }
 
   updateSyncUI();
+  loadUserAccessProfile();
   safeDownloadNewerCloudInspections();
   uploadPendingInspections();
 }
@@ -1062,6 +1131,7 @@ async function restoreCloudSession() {
     if (error) {
       if (syncStatus) syncStatus.textContent = `Cloud session check failed: ${error.message}`;
       await updateSyncUI();
+      await loadUserAccessProfile();
       return;
     }
 
@@ -1461,6 +1531,85 @@ function canViewReports() {
 
 function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
+}
+
+async function loadUserAccessProfile() {
+  currentUserProfile = null;
+  currentCompanyAccess = null;
+
+  try {
+    const { data: userData, error } =
+      await supabaseClient.auth.getUser();
+
+    if (error || !userData || !userData.user) {
+      updateAccessUI();
+      return;
+    }
+
+    const user = userData.user;
+
+    // Temporary profile until Supabase company tables are created.
+    currentUserProfile = {
+      id: user.id,
+      email: user.email,
+      fullName: user.email,
+      role: 'inspector',
+      companyId: null,
+      companyName: 'Local / Personal Workspace'
+    };
+
+    // Temporary access while commercial company access is being built.
+    currentCompanyAccess = {
+      status: 'active',
+      plan: 'development',
+      source: 'temporary'
+    };
+
+    updateAccessUI();
+
+  } catch (error) {
+    console.error('Access profile load failed:', error);
+    currentUserProfile = null;
+    currentCompanyAccess = null;
+    updateAccessUI();
+  }
+}
+
+function updateAccessUI() {
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (!syncStatus) return;
+
+  if (!currentUserProfile) {
+    syncStatus.textContent =
+      'Not connected. Admin login required for cloud sync.';
+    return;
+  }
+
+  syncStatus.textContent =
+    `Access: ${currentUserProfile.role} | ${currentCompanyAccess?.status || 'unknown'}`;
+}
+
+function getAccessMetadata() {
+  return {
+    companyId:
+      currentUserProfile?.companyId || null,
+
+    companyName:
+      currentUserProfile?.companyName || 'Local / Personal Workspace',
+
+    createdByUserId:
+      currentUserProfile?.id || null,
+
+    createdByEmail:
+      currentUserProfile?.email || '',
+
+    userRole:
+      currentUserProfile?.role || 'guest',
+
+    companyAccessStatus:
+      currentCompanyAccess?.status || 'unknown'
+  };
 }
 
 function getProjects() {
@@ -2552,6 +2701,10 @@ function renderProjectsList() {
 
       <div class="project-meta-grid">
         <div>
+          <span>Company</span>
+          <strong>${escapeHtml(project.companyName || 'Local / Personal Workspace')}</strong>
+        </div>
+        <div>
           <span>Inspector</span>
           <strong>${escapeHtml(project.inspectorName || '-')}</strong>
         </div>
@@ -2562,6 +2715,10 @@ function renderProjectsList() {
         <div>
           <span>Last saved</span>
           <strong>${escapeHtml(lastSaved)}</strong>
+        </div>
+        <div>
+          <span>Saved by</span>
+          <strong>${escapeHtml(project.lastEditedByEmail || project.createdByEmail || '-')}</strong>
         </div>
       </div>
     `;
@@ -2824,7 +2981,9 @@ function saveProject() {
   const followUpRequired = getEl('followUpRequired').value;
   const followUpDate = getEl('followUpDate').value;
   const followUpNotes = getEl('followUpNotes').value.trim();
-
+  
+  const accessMetadata = getAccessMetadata();
+  
   const answers = [];
 
   document.querySelectorAll('.answer-select').forEach((field, index) => {
@@ -2859,6 +3018,29 @@ function saveProject() {
   if (index !== -1) {
     projects[index] = {
       ...projects[index],
+
+      companyId: accessMetadata.companyId,
+      companyName: accessMetadata.companyName,
+
+      createdByUserId:
+        projects[index].createdByUserId ||
+        accessMetadata.createdByUserId,
+
+      createdByEmail:
+        projects[index].createdByEmail ||
+        accessMetadata.createdByEmail,
+
+      lastEditedByUserId:
+        accessMetadata.createdByUserId,
+
+      lastEditedByEmail:
+        accessMetadata.createdByEmail,
+
+      userRoleAtSave:
+        accessMetadata.userRole,
+
+      companyAccessStatus:
+        accessMetadata.companyAccessStatus,
       siteId:
       [
         projectAddress?.toLowerCase().trim(),
@@ -2902,6 +3084,27 @@ function saveProject() {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
       
+      companyId: accessMetadata.companyId,
+      companyName: accessMetadata.companyName,
+
+      createdByUserId:
+        accessMetadata.createdByUserId,
+
+      createdByEmail:
+        accessMetadata.createdByEmail,
+
+      lastEditedByUserId:
+        accessMetadata.createdByUserId,
+
+      lastEditedByEmail:
+        accessMetadata.createdByEmail,
+
+      userRoleAtSave:
+        accessMetadata.userRole,
+
+      companyAccessStatus:
+        accessMetadata.companyAccessStatus,
+
       siteId:
         [
           projectAddress?.toLowerCase().trim(),
@@ -2987,6 +3190,12 @@ function finishInspection() {
 }
 
 function createFollowUpInspection() {
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow creating follow-up inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
   if (!currentProjectId) {
     getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
     return;
@@ -3045,6 +3254,12 @@ function createFollowUpInspection() {
 }
 
 async function deleteProject() {
+  if (!canEditInspection()) {
+    alert(
+      'Your company access does not allow deleting inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
   if (!currentProjectId) {
     getEl('saveMessage').textContent = 'Save the project first before deleting.';
     return;
@@ -4183,6 +4398,14 @@ function updatePhotoNote(index, value) {
 }
 
 async function shareReport() {
+
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow sharing reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
   );
