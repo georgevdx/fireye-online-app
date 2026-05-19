@@ -890,8 +890,9 @@ async function loginUser() {
 function initAuthStateListener() {
   if (!supabaseClient?.auth?.onAuthStateChange) return;
 
-  supabaseClient.auth.onAuthStateChange(() => {
-    updateSyncUI();
+  supabaseClient.auth.onAuthStateChange(async () => {
+    await updateSyncUI();
+    await loadUserAccessProfile();
   });
 }
 
@@ -1136,6 +1137,7 @@ async function restoreCloudSession() {
     }
 
     await updateSyncUI();
+    await loadUserAccessProfile();
 
     if (data && data.session) {
       safeDownloadNewerCloudInspections();
@@ -1632,6 +1634,9 @@ async function loadUserAccessProfile() {
 }
 
 function updateAccessUI() {
+  window.currentUserProfile = currentUserProfile;
+  window.currentCompanyAccess = currentCompanyAccess;
+
   const syncStatus = document.getElementById('syncStatus');
 
   if (!syncStatus) return;
