@@ -1897,6 +1897,8 @@ async function loadUserAccessProfile() {
     };
 
     updateAccessUI();
+    renderCompanyAdminPanel();
+    renderProjectsList();
 
   } catch (error) {
     console.error('Access profile load failed:', error);
