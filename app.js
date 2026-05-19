@@ -1659,6 +1659,125 @@ function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
 }
 
+function getCompanyAdminSummary() {
+  const projects = getProjects();
+
+  const companyProjects = currentUserProfile?.companyId
+    ? projects.filter(project =>
+        project.companyId === currentUserProfile.companyId ||
+        !project.companyId
+      )
+    : projects;
+
+  return {
+    companyName:
+      currentUserProfile?.companyName || 'Local / Personal Workspace',
+
+    companyStatus:
+      currentCompanyAccess?.status || 'unknown',
+
+    plan:
+      currentCompanyAccess?.plan || 'development',
+
+    role:
+      currentUserProfile?.role || 'guest',
+
+    email:
+      currentUserProfile?.email || '',
+
+    totalInspections:
+      companyProjects.length,
+
+    syncedInspections:
+      companyProjects.filter(project => !project.syncPending && !project.syncError).length,
+
+    pendingInspections:
+      companyProjects.filter(project => project.syncPending).length,
+
+    syncErrors:
+      companyProjects.filter(project => project.syncError).length
+  };
+}
+
+function renderCompanyAdminPanel() {
+  const panel = document.getElementById('companyAdminPanel');
+
+  if (!panel) return;
+
+  if (!canManageCompany()) {
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+
+  const summary = getCompanyAdminSummary();
+
+  panel.style.display = 'block';
+
+  panel.innerHTML = `
+    <div class="company-admin-card">
+      <div class="company-admin-header">
+        <div>
+          <h3>Company Admin</h3>
+          <p>Manage company access, users and subscription status.</p>
+        </div>
+
+        <span class="company-admin-role">
+          ${escapeHtml(summary.role)}
+        </span>
+      </div>
+
+      <div class="company-admin-grid">
+        <div>
+          <span>Company</span>
+          <strong>${escapeHtml(summary.companyName)}</strong>
+        </div>
+
+        <div>
+          <span>Status</span>
+          <strong>${escapeHtml(summary.companyStatus)}</strong>
+        </div>
+
+        <div>
+          <span>Plan</span>
+          <strong>${escapeHtml(summary.plan)}</strong>
+        </div>
+
+        <div>
+          <span>User</span>
+          <strong>${escapeHtml(summary.email || '-')}</strong>
+        </div>
+
+        <div>
+          <span>Total inspections</span>
+          <strong>${summary.totalInspections}</strong>
+        </div>
+
+        <div>
+          <span>Synced</span>
+          <strong>${summary.syncedInspections}</strong>
+        </div>
+
+        <div>
+          <span>Pending upload</span>
+          <strong>${summary.pendingInspections}</strong>
+        </div>
+
+        <div>
+          <span>Sync errors</span>
+          <strong>${summary.syncErrors}</strong>
+        </div>
+      </div>
+
+      <div class="company-admin-actions">
+        <button type="button" class="small-btn" onclick="renderCompanyAdminPanel()">
+          Refresh Admin Summary
+        </button>
+      </div>
+    </div>
+  `;
+}
+
 function withTimeout(promise, timeoutMs = 5000) {
   return Promise.race([
     promise,
@@ -3006,6 +3125,7 @@ function renderProjectsList() {
   
   // renderReminderBanner(projects);
   renderDashboardMetrics();
+  renderCompanyAdminPanel();
 
   const container = getEl('projectsList');
   const searchField = document.getElementById('projectSearch');

@@ -2068,3 +2068,73 @@ button.readiness-chip:focus {
   outline-offset: 2px;
   background: #fff8e1 !important;
 }
+
+.company-admin-card {
+  background: #ffffff;
+  border: 1px solid #dfe7ef;
+  border-radius: 14px;
+  padding: 16px;
+  margin: 14px 0;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+}
+
+.company-admin-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.company-admin-header h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.company-admin-header p {
+  margin: 4px 0 0;
+  color: #607080;
+  font-size: 13px;
+}
+
+.company-admin-role {
+  background: #eef5ff;
+  border: 1px solid #cfe2ff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #174a7c;
+  white-space: nowrap;
+}
+
+.company-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.company-admin-grid div {
+  background: #f7fafc;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.company-admin-grid span {
+  display: block;
+  font-size: 11px;
+  color: #6b7a88;
+  margin-bottom: 4px;
+}
+
+.company-admin-grid strong {
+  font-size: 14px;
+  color: #1f2933;
+  word-break: break-word;
+}
+
+.company-admin-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
+}
