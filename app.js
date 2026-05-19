@@ -368,7 +368,7 @@ function autoSaveProject() {
     };
 
     currentProjectId = newProject.id;
-    
+
     projects.push(newProject);
 
     const previousSiteInspections = projects.filter(
@@ -2935,7 +2935,7 @@ function renderProjectsList() {
   const projects = getProjects();
   updateAppInfo();
   
-  renderReminderBanner(projects);
+  // renderReminderBanner(projects);
   renderDashboardMetrics();
 
   const container = getEl('projectsList');
@@ -3800,10 +3800,11 @@ async function deleteProject() {
   }
 
   const { data, error } = await supabaseClient
-    .from('inspections')
-    .delete()
-    .eq('id', idToDelete)
-    .select();
+  .from('inspections')
+  .delete()
+  .eq('id', idToDelete)
+  .eq('user_id', userData.user.id)
+  .select();
 
   if (error) {
     console.error('Cloud delete failed:', error);
