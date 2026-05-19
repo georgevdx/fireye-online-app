@@ -13,6 +13,9 @@ let checklists = [];
 let inspectionTemplates = {};
 let currentProjectId = null;
 let currentPhotos = [];
+let currentUserProfile = null;
+let currentCompanyAccess = null;
+
 const APP_VERSION = 'v70';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
@@ -1392,6 +1395,72 @@ function populateProductTypes(preferredProductType) {
   select.value = selectedProductType;
 }
 
+function getCurrentUserRole() {
+  return currentUserProfile?.role || 'guest';
+}
+
+function isSuperAdmin() {
+  return getCurrentUserRole() === 'super_admin';
+}
+
+function isCompanyOwner() {
+  return getCurrentUserRole() === 'company_owner';
+}
+
+function isManager() {
+  return getCurrentUserRole() === 'manager';
+}
+
+function isInspector() {
+  return getCurrentUserRole() === 'inspector';
+}
+
+function isViewer() {
+  return getCurrentUserRole() === 'viewer';
+}
+
+function hasActiveCompanyAccess() {
+  if (isSuperAdmin()) return true;
+
+  return currentCompanyAccess?.status === 'active' ||
+    currentCompanyAccess?.status === 'trial';
+}
+
+function canCreateInspection() {
+  if (!currentUserProfile) return true; // temporary while access system is being built
+
+  if (isSuperAdmin()) return true;
+
+  if (!hasActiveCompanyAccess()) return false;
+
+  return ['company_owner', 'manager', 'inspector']
+    .includes(getCurrentUserRole());
+}
+
+function canEditInspection() {
+  if (!currentUserProfile) return true; // temporary while access system is being built
+
+  if (isSuperAdmin()) return true;
+
+  if (!hasActiveCompanyAccess()) return false;
+
+  return ['company_owner', 'manager', 'inspector']
+    .includes(getCurrentUserRole());
+}
+
+function canViewReports() {
+  if (isSuperAdmin()) return true;
+
+  if (!hasActiveCompanyAccess()) return false;
+
+  return ['company_owner', 'manager', 'inspector', 'viewer']
+    .includes(getCurrentUserRole());
+}
+
+function canManageCompany() {
+  return isSuperAdmin() || isCompanyOwner();
+}
+
 function getProjects() {
   const saved = localStorage.getItem('fireyeProjects');
   return saved ? JSON.parse(saved) : [];
@@ -1426,6 +1495,14 @@ function migrateLegacyProductTypes() {
 }
 
 function createNewProject() {
+
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow new inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
   clearTimeout(autoSaveTimer);
   currentProjectId = null;
 
@@ -2708,6 +2785,13 @@ function markInspectionSynced(projectId) {
 
 function saveProject() {
   
+  if (!canEditInspection()) {
+    alert(
+      'Your company access does not allow editing inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
   
