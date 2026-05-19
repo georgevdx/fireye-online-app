@@ -888,6 +888,14 @@ async function loginUser() {
 
     updateSyncUI();
 
+    loadUserAccessProfile()
+      .then(() => {
+        renderProjectsList();
+      })
+      .catch(error => {
+        console.error('Access profile load failed after login:', error);
+      });
+
     safeDownloadNewerCloudInspections();
     uploadPendingInspections();
 
@@ -1191,6 +1199,14 @@ async function restoreCloudSession() {
     }
 
     updateSyncUI();
+
+    loadUserAccessProfile()
+      .then(() => {
+        renderProjectsList();
+      })
+      .catch(error => {
+        console.error('Access profile load failed after session restore:', error);
+      });
 
     if (data && data.session) {
       safeDownloadNewerCloudInspections();
