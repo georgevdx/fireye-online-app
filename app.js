@@ -245,6 +245,10 @@ function autoSaveProject() {
 
   const projects = getProjects();
 
+  if (!currentProjectId) {
+    return;
+  }
+
   if (currentProjectId) {
     const index = projects.findIndex(p => p.id === currentProjectId);
 
@@ -1691,18 +1695,6 @@ function canViewReports() {
 
 function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
-}
-
-function withTimeout(promise, timeoutMs = 5000) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(
-        () => reject(new Error('Request timed out')),
-        timeoutMs
-      )
-    )
-  ]);
 }
 
 function withTimeout(promise, timeoutMs = 5000) {
