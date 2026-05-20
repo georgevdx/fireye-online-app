@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v82';
+const APP_VERSION = 'v83';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1428,6 +1428,7 @@ function updateAppInfo() {
 }
 
 function initApp() {
+  cleanupStorageSafetyCopy();
   updateAppInfo();
 
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
@@ -2051,11 +2052,6 @@ function getProjects() {
 function setProjects(projects) {
   try {
     localStorage.setItem('fireyeProjects', JSON.stringify(projects));
-    localStorage.setItem('fireyeProjectsLastGood', JSON.stringify({
-      savedAt: new Date().toISOString(),
-      appVersion: APP_VERSION,
-      projects
-    }));
   } catch (error) {
     console.error('Project storage failed:', error);
 
@@ -2070,6 +2066,14 @@ function setProjects(projects) {
 
     alert(message);
     throw error;
+  }
+}
+
+function cleanupStorageSafetyCopy() {
+  try {
+    localStorage.removeItem('fireyeProjectsLastGood');
+  } catch (error) {
+    console.warn('Could not remove old safety storage copy:', error);
   }
 }
 
@@ -5451,8 +5455,8 @@ function handlePhotoUpload(event) {
     const img = new Image();
 
     img.onload = function() {
-      const maxWidth = 900;
-      const maxHeight = 900;
+      const maxWidth = 720;
+      const maxHeight = 720;
 
       let width = img.width;
       let height = img.height;
@@ -5470,7 +5474,7 @@ function handlePhotoUpload(event) {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.68);
+      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.58);
 
       currentPhotos.push({
       src: compressedDataUrl,
