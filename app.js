@@ -16,7 +16,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v77';
+const APP_VERSION = 'v79';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -836,7 +836,9 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
 
     exportEmergencyBackup(`import-${sourceLabel}`);
 
-    setProjects(backup.projects);
+    const importedProjects = filterDeletedProjects(backup.projects);
+
+    setProjects(importedProjects);
     currentProjectId = null;
     currentPhotos = [];
 
@@ -844,7 +846,7 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
     showProjectList();
 
     const message =
-      `Backup imported successfully (${backup.projects.length} inspection${backup.projects.length === 1 ? '' : 's'}).`;
+      `Backup imported successfully (${importedProjects.length} inspection${importedProjects.length === 1 ? '' : 's'}).`;
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent = message;
@@ -1031,7 +1033,9 @@ async function downloadSync() {
     return;
   }
 
-  const projects = data.map(row => row.inspection_data);
+  const projects = filterDeletedProjects(
+    data.map(row => row.inspection_data)
+  );
 
   setProjects(projects);
   currentProjectId = null;
@@ -1069,7 +1073,9 @@ async function mergeSync() {
     return;
   }
 
-  const cloudProjects = data.map(row => row.inspection_data);
+  const cloudProjects = filterDeletedProjects(
+    data.map(row => row.inspection_data)
+  );
 
   const mergedMap = new Map();
 
@@ -1306,6 +1312,7 @@ async function safeDownloadNewerCloudInspections() {
 
     data.forEach(row => {
       const cloudProject = row.inspection_data;
+      if (isProjectDeleted(cloudProject?.id)) return;
       const localProject = mergedMap.get(cloudProject.id);
 
       if (!localProject) {
@@ -1423,6 +1430,32 @@ function initApp() {
   if (showSyncToolsBtn) {
     showSyncToolsBtn.addEventListener('click', showSyncTools);
   }
+  const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
+  if (homeLoginRouteBtn) {
+    homeLoginRouteBtn.addEventListener('click', openLoginRoute);
+  }
+
+  const homeInspectionRouteBtn = document.getElementById('homeInspectionRouteBtn');
+  if (homeInspectionRouteBtn) {
+    homeInspectionRouteBtn.addEventListener('click', showProjectList);
+  }
+
+  const homeServicesRouteBtn = document.getElementById('homeServicesRouteBtn');
+  if (homeServicesRouteBtn) {
+    homeServicesRouteBtn.addEventListener('click', showServices);
+  }
+
+  const servicesBackBtn = document.getElementById('servicesBackBtn');
+  if (servicesBackBtn) {
+    servicesBackBtn.addEventListener('click', showHome);
+  }
+
+  document.querySelectorAll('[data-service]').forEach(button => {
+    button.addEventListener('click', () => {
+      requestAdditionalService(button.dataset.service);
+    });
+  });
+
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
   const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -1529,6 +1562,7 @@ function initApp() {
   });
     updateInspectionTypeOptions();
     toggleMallFields();
+    showHome();
   }
 
 function populateOccupancies() {
@@ -1888,6 +1922,35 @@ function setProjects(projects) {
   localStorage.setItem('fireyeProjects', JSON.stringify(projects));
 }
 
+function getDeletedProjectIds() {
+  try {
+    const raw = localStorage.getItem('fireyeDeletedProjectIds');
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.warn('Could not read deleted inspection register:', error);
+    return {};
+  }
+}
+
+function markProjectDeleted(projectId) {
+  if (!projectId) return;
+
+  const deleted = getDeletedProjectIds();
+  deleted[projectId] = new Date().toISOString();
+  localStorage.setItem('fireyeDeletedProjectIds', JSON.stringify(deleted));
+}
+
+function isProjectDeleted(projectId) {
+  if (!projectId) return false;
+  return !!getDeletedProjectIds()[projectId];
+}
+
+function filterDeletedProjects(projects) {
+  return (projects || []).filter(project =>
+    project && !isProjectDeleted(project.id)
+  );
+}
+
 function migrateLegacyProductTypes() {
   const projects = getProjects();
   let changed = false;
@@ -1979,15 +2042,71 @@ function showProjectList() {
     reportSection.style.display = 'none';
   }
 
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'none';
   getEl('projectListSection').style.display = 'block';
   getEl('projectFormSection').style.display = 'none';
   renderProjectsList();
 }
 
 function showProjectForm() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'none';
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'block';
   updateProjectReadinessPanel();
+}
+
+function showHome() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'block';
+  if (servicesSection) servicesSection.style.display = 'none';
+  getEl('projectListSection').style.display = 'none';
+  getEl('projectFormSection').style.display = 'none';
+}
+
+function showServices() {
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'block';
+  getEl('projectListSection').style.display = 'none';
+  getEl('projectFormSection').style.display = 'none';
+}
+
+function openLoginRoute() {
+  const cloudDropdown = document.getElementById('cloudDropdown');
+  const syncTools = document.getElementById('syncTools');
+  const loginEmail = document.getElementById('loginEmail');
+
+  if (cloudDropdown) cloudDropdown.style.display = 'block';
+  if (syncTools) syncTools.style.display = 'block';
+  if (loginEmail) {
+    loginEmail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    loginEmail.focus();
+  }
+}
+
+function requestAdditionalService(serviceName) {
+  const message =
+    `${serviceName} is currently a placeholder until business partner input is added.`;
+
+  const syncStatus = document.getElementById('syncStatus');
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (syncStatus) syncStatus.textContent = message;
+  if (saveMessage) saveMessage.textContent = message;
+
+  alert(message);
 }
 
 function getFollowUpStatus(project) {
@@ -3845,6 +3964,7 @@ async function deleteProject() {
   if (!confirmed) return;
 
   const idToDelete = currentProjectId;
+  markProjectDeleted(idToDelete);
   
   let projects = getProjects();
   projects = projects.filter(p => p.id !== currentProjectId);

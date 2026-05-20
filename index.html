@@ -6,7 +6,7 @@
   <title>FireyeSA Online Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=77">
+  <link rel="stylesheet" href="styles.css?v=79">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -91,7 +91,84 @@
     <input id="importBackupInput" type="file" accept=".json" style="display:none;">
   </label>
 </div>
-    <section id="projectListSection" class="card">
+<section id="homeSection" class="card home-section">
+  <div class="home-hero">
+    <div>
+      <div class="home-kicker">FireyeSA</div>
+      <h2>Fire Safety Platform</h2>
+      <p>
+        Choose where you want to work: account access, inspections, or additional fire safety services.
+      </p>
+    </div>
+  </div>
+
+  <div class="startup-route-grid">
+    <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
+      <span class="route-title">Login / Register</span>
+      <span class="route-copy">Access cloud sync, account tools and backups.</span>
+    </button>
+
+    <button id="homeInspectionRouteBtn" type="button" class="startup-route-card primary-route">
+      <span class="route-title">Inspection Route</span>
+      <span class="route-copy">Open projects, create inspections and generate reports.</span>
+    </button>
+
+    <button id="homeServicesRouteBtn" type="button" class="startup-route-card">
+      <span class="route-title">Additional Services</span>
+      <span class="route-copy">Consultancy, fire compliance support and specialist services.</span>
+    </button>
+  </div>
+</section>
+<section id="servicesSection" class="card services-section" style="display:none;">
+  <div class="toolbar">
+    <h2>Additional Services</h2>
+    <button id="servicesBackBtn" type="button">Back Home</button>
+  </div>
+
+  <div class="services-grid">
+    <div class="service-card">
+      <h3>Fire Safety Consultancy</h3>
+      <p>
+        Professional support for compliance reviews, site findings and corrective action planning.
+      </p>
+      <button type="button" data-service="Fire Safety Consultancy">
+        Request Service
+      </button>
+    </div>
+
+    <div class="service-card">
+      <h3>Report Review</h3>
+      <p>
+        Review inspection reports before client issue, follow-up or escalation.
+      </p>
+      <button type="button" data-service="Report Review">
+        Request Service
+      </button>
+    </div>
+
+    <div class="service-card">
+      <h3>Rational Fire Design Support</h3>
+      <p>
+        Support for fire design reviews, occupancy questions, escape routes and compliance strategy.
+      </p>
+      <button type="button" data-service="Rational Fire Design Support">
+        Request Service
+      </button>
+    </div>
+
+    <div class="service-card">
+      <h3>Compliance Guidance</h3>
+      <p>
+        Practical fire safety interpretation, inspection preparation and action priorities.
+      </p>
+      <button type="button" data-service="Compliance Guidance">
+        Request Service
+      </button>
+    </div>
+  </div>
+</section>
+
+    <section id="projectListSection" class="card" style="display:none;">
       <div class="toolbar">
         <h2>Projects</h2>
         <button id="newProjectBtn" type="button">New Project</button>
@@ -311,7 +388,7 @@
     </section>
   </div>
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=77"></script>
+  <script src="app.js?v=79"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
