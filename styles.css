@@ -2450,3 +2450,19 @@ button.readiness-chip:focus {
   display: block;
   margin-bottom: 4px;
 }
+
+.service-request-message {
+  display: block;
+  max-width: 100%;
+  margin-top: 2px;
+  line-height: 1.3;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.service-request-message strong {
+  display: inline;
+  margin-bottom: 0;
+  margin-right: 4px;
+}
