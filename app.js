@@ -1792,6 +1792,12 @@ function initApp() {
     homeInspectionRouteBtn.addEventListener('click', showProjectList);
   }
 
+  const projectsHomeBtn = document.getElementById('projectsHomeBtn');
+
+  if (projectsHomeBtn) {
+    projectsHomeBtn.addEventListener('click', showHome);
+  }
+
   const homeServicesRouteBtn = document.getElementById('homeServicesRouteBtn');
   if (homeServicesRouteBtn) {
     homeServicesRouteBtn.addEventListener('click', showServices);
@@ -2478,38 +2484,31 @@ function closeFilterPanel() {
 
 function showProjectList() {
    if (!currentUserProfile) {
-    showHome();
+  showHome();
 
-    const cloudDropdown = document.getElementById('cloudDropdown');
-    const syncTools = document.getElementById('syncTools');
-    const loginEmail = document.getElementById('loginEmail');
+  const syncStatus = document.getElementById('syncStatus');
 
-    if (cloudDropdown) {
-      cloudDropdown.style.display = 'block';
-    }
-
-    if (syncTools) {
-      syncTools.style.display = 'block';
-    }
-
-    if (loginEmail) {
-      loginEmail.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center'
-      });
-
-      loginEmail.focus();
-    }
-
-    const syncStatus = document.getElementById('syncStatus');
-
-    if (syncStatus) {
-      syncStatus.textContent =
-        'Please login or register to view inspections.';
-    }
-
-    return;
+  if (syncStatus) {
+    syncStatus.textContent =
+      'Please login or register from the home page to view inspections.';
   }
+
+  const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
+
+  if (homeLoginRouteBtn) {
+    homeLoginRouteBtn.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+
+    homeLoginRouteBtn.focus();
+  }
+
+  return;
+}
+
+  setCloudMenuVisible(false);
+
   const reportSection = document.getElementById('reportSection');
   if (reportSection) {
     reportSection.style.display = 'none';
@@ -2526,6 +2525,7 @@ function showProjectList() {
 }
 
 function showProjectForm() {
+  setCloudMenuVisible(false);
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
@@ -2536,17 +2536,41 @@ function showProjectForm() {
   updateProjectReadinessPanel();
 }
 
+function closeCloudDropdown() {
+  const cloudDropdown = document.getElementById('cloudDropdown');
+
+  if (cloudDropdown) {
+    cloudDropdown.style.display = 'none';
+  }
+}
+
+function setCloudMenuVisible(isVisible) {
+  const cloudMenuBtn = document.getElementById('cloudMenuBtn');
+
+  if (cloudMenuBtn) {
+    cloudMenuBtn.style.display = isVisible ? 'inline-block' : 'none';
+  }
+
+  if (!isVisible) {
+    closeCloudDropdown();
+  }
+}
+
 function showHome() {
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
+  setCloudMenuVisible(true);
+
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
+
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
 }
 
 function showServices() {
+  setCloudMenuVisible(false);
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
