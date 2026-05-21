@@ -1111,15 +1111,34 @@ async function loginUser() {
     console.log('Login result:', { data, error });
 
     if (error) {
-      alert(`Login failed: ${error.message}`);
-      if (syncStatus) {
-        syncStatus.textContent = `Login failed: ${error.message}`;
-      }
-      return;
+    const loginPasswordField = document.getElementById('loginPassword');
+
+    if (loginPasswordField) {
+      loginPasswordField.value = '';
     }
+
+    alert(`Login failed: ${error.message}`);
+
+    if (syncStatus) {
+      syncStatus.textContent = `Login failed: ${error.message}`;
+    }
+
+    return;
+  }
 
     if (syncStatus) {
       syncStatus.textContent = 'Logged in successfully.';
+    }
+
+    const loginEmailField = document.getElementById('loginEmail');
+    const loginPasswordField = document.getElementById('loginPassword');
+
+    if (loginEmailField) {
+      loginEmailField.value = '';
+    }
+
+    if (loginPasswordField) {
+      loginPasswordField.value = '';
     }
 
     updateSyncUI();
@@ -1170,6 +1189,16 @@ async function logoutUser() {
 
     updateAccessUI();
     updateSyncUI();
+
+    const projectsList = document.getElementById('projectsList');
+    const dashboardMetrics = document.getElementById('dashboardMetrics');
+    const projectPagingControls = document.getElementById('projectPagingControls');
+
+    if (projectsList) projectsList.innerHTML = '';
+    if (dashboardMetrics) dashboardMetrics.innerHTML = '';
+    if (projectPagingControls) projectPagingControls.innerHTML = '';
+
+    showHome();
 
     const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -2017,7 +2046,7 @@ function hasActiveCompanyAccess() {
 }
 
 function canCreateInspection() {
-  if (!currentUserProfile) return true; // temporary while access system is being built
+  if (!currentUserProfile) return false;
 
   if (isSuperAdmin()) return true;
 
@@ -2028,7 +2057,7 @@ function canCreateInspection() {
 }
 
 function canEditInspection() {
-  if (!currentUserProfile) return true; // temporary while access system is being built
+  if (!currentUserProfile) return false;
 
   if (isSuperAdmin()) return true;
 
@@ -2039,7 +2068,7 @@ function canEditInspection() {
 }
 
 function canViewReports() {
-  if (!currentUserProfile) return true; // temporary while access system is being built
+  if (!currentUserProfile) return false;
 
   if (isSuperAdmin()) return true;
 
@@ -2048,7 +2077,6 @@ function canViewReports() {
   return ['company_owner', 'manager', 'inspector', 'viewer']
     .includes(getCurrentUserRole());
 }
-
 function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
 }
@@ -2449,6 +2477,39 @@ function closeFilterPanel() {
 }
 
 function showProjectList() {
+   if (!currentUserProfile) {
+    showHome();
+
+    const cloudDropdown = document.getElementById('cloudDropdown');
+    const syncTools = document.getElementById('syncTools');
+    const loginEmail = document.getElementById('loginEmail');
+
+    if (cloudDropdown) {
+      cloudDropdown.style.display = 'block';
+    }
+
+    if (syncTools) {
+      syncTools.style.display = 'block';
+    }
+
+    if (loginEmail) {
+      loginEmail.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+
+      loginEmail.focus();
+    }
+
+    const syncStatus = document.getElementById('syncStatus');
+
+    if (syncStatus) {
+      syncStatus.textContent =
+        'Please login or register to view inspections.';
+    }
+
+    return;
+  }
   const reportSection = document.getElementById('reportSection');
   if (reportSection) {
     reportSection.style.display = 'none';
