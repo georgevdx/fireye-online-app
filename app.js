@@ -1154,6 +1154,29 @@ function initAuthStateListener() {
   });
 }
 
+async function refreshSyncData() {
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (syncStatus) {
+    syncStatus.textContent = 'Refreshing cloud data...';
+  }
+
+  try {
+    await safeDownloadNewerCloudInspections();
+    await uploadPendingInspections();
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Data refreshed.';
+    }
+  } catch (error) {
+    console.error('Refresh sync failed:', error);
+
+    if (syncStatus) {
+      syncStatus.textContent = 'Refresh failed. Check connection or login.';
+    }
+  }
+}
+
   async function uploadSync() {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser();
 
@@ -1400,12 +1423,26 @@ async function updateSyncUI() {
     cloudMenuBtn.textContent = isLoggedIn ? 'Cloud connected' : 'Cloud';
   }
 
-  if (connectedView) connectedView.style.display = isLoggedIn ? 'block' : 'none';
-  if (syncTools) syncTools.style.display = isLoggedIn ? 'none' : 'block';
+  if (connectedView) {
+  connectedView.style.display = isLoggedIn ? 'block' : 'none';
+  }
 
-  // Keep technical backup tools hidden until Admin / Sync Tools is opened.
-  if (backupTools) backupTools.style.display = 'none';
+  if (syncTools) {
+    syncTools.style.display = isLoggedIn ? 'none' : 'block';
+  }
 
+  if (backupTools) {
+    backupTools.style.display = 'none';
+  }
+
+  const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
+
+  if (showSyncToolsBtn) {
+    showSyncToolsBtn.style.display =
+      isLoggedIn && canUseAdminSyncTools()
+        ? 'block'
+        : 'none';
+  }
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
@@ -1453,6 +1490,11 @@ async function restoreCloudSession() {
 }
 
 function showSyncTools() {
+  if (!canUseAdminSyncTools()) {
+    alert('Admin / Sync Tools are only available to authorised users.');
+    return;
+  }
+
   const syncTools = document.getElementById('syncTools');
   const backupTools = document.getElementById('backupTools');
 
@@ -1614,6 +1656,12 @@ function updateAppInfo() {
 
 function initApp() {
   updateAppInfo();
+
+  const refreshSyncBtn = document.getElementById('refreshSyncBtn');
+
+  if (refreshSyncBtn) {
+    refreshSyncBtn.addEventListener('click', refreshSyncData);
+  }
 
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
   if (showSyncToolsBtn) {
@@ -1910,6 +1958,10 @@ function canViewReports() {
 
 function canManageCompany() {
   return isSuperAdmin() || isCompanyOwner();
+}
+
+function canUseAdminSyncTools() {
+  return isSuperAdmin() || isCompanyOwner() || isManager();
 }
 
 function canViewServiceRequests() {
