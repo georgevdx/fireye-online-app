@@ -1685,6 +1685,13 @@ function initApp() {
   getEl('reportBtn').addEventListener('click', generateReport);
   getEl('deleteBtn').addEventListener('click', deleteProject);
   getEl('newProjectBtn').addEventListener('click', createNewProject);
+  
+  const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+
+  if (toggleFiltersBtn) {
+    toggleFiltersBtn.addEventListener('click', toggleFilterPanel);
+  }
+  
   getEl('backBtn').addEventListener('click', showProjectList);
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
   getEl('organisationName').addEventListener('input', scheduleAutoSave);
@@ -2219,6 +2226,20 @@ function createNewProject() {
   updateDisplay();
 
   showProjectForm();
+}
+
+function toggleFilterPanel() {
+  const filterPanel = document.getElementById('filterPanel');
+  const toggleBtn = document.getElementById('toggleFiltersBtn');
+
+  if (!filterPanel || !toggleBtn) return;
+
+  const isHidden =
+    filterPanel.style.display === 'none' ||
+    filterPanel.style.display === '';
+
+  filterPanel.style.display = isHidden ? 'block' : 'none';
+  toggleBtn.textContent = isHidden ? 'Hide Filters' : 'Show Filters';
 }
 
 function showProjectList() {
