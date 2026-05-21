@@ -2407,3 +2407,19 @@ button.readiness-chip:focus {
   font-weight: 900;
   font-size: 15px;
 }
+
+.service-request-card {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.service-request-card div {
+  max-width: 100%;
+}
+
+.service-request-message {
+  margin-top: 6px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
