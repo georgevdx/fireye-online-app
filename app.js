@@ -1180,6 +1180,14 @@ async function logoutUser() {
     if (syncStatus) {
       syncStatus.textContent = 'Logged out.';
     }
+  } catch (error) {
+    console.error('Logout crashed:', error);
+
+    if (syncStatus) {
+      syncStatus.textContent = `Logout crashed: ${error.message}`;
+    }
+
+    alert(`Logout crashed: ${error.message}`);
   }
 }
 
