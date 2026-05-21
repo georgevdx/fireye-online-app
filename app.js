@@ -3393,26 +3393,54 @@ function getFilterLabel(filter) {
 
 function updateActiveFilterStatus(resultCount) {
   const status = document.getElementById('activeFilterStatus');
+  const searchField = document.getElementById('projectSearch');
+  const searchText = searchField ? searchField.value.trim() : '';
 
   if (!status) return;
 
-  if (currentFilter === 'all') {
+  if (currentFilter === 'all' && !searchText) {
     status.style.display = 'none';
     status.innerHTML = '';
     return;
   }
 
+  const parts = [];
+
+  if (currentFilter !== 'all') {
+    parts.push(`Filter: <strong>${escapeHtml(getFilterLabel(currentFilter))}</strong>`);
+  }
+
+  if (searchText) {
+    parts.push(`Search: <strong>"${escapeHtml(searchText)}"</strong>`);
+  }
+
   status.style.display = 'flex';
   status.innerHTML = `
     <span>
-      Filter: <strong>${escapeHtml(getFilterLabel(currentFilter))}</strong>
+      ${parts.join(' | ')}
       (${resultCount})
     </span>
 
-    <button type="button" onclick="setFilter('all')">
+    <button type="button" onclick="clearProjectSearchAndFilter()">
       Clear
     </button>
   `;
+}
+
+function clearProjectSearchAndFilter() {
+  const searchField = document.getElementById('projectSearch');
+
+  if (searchField) {
+    searchField.value = '';
+  }
+
+  currentFilter = 'all';
+  currentProjectPage = 1;
+
+  renderProjectsList();
+  updateDashboardSelection();
+  closeFilterPanel();
+  scrollToFirstVisibleProject();
 }
 
 function renderProjectsList() {
@@ -5931,3 +5959,4 @@ window.addEventListener('online', resolvePendingGpsAddresses);
 window.updatePhotoNote = updatePhotoNote;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
+window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
