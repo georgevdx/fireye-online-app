@@ -2335,3 +2335,7 @@ button.readiness-chip:focus {
   background: #555;
   white-space: nowrap;
 }
+
+.project-card {
+  scroll-margin-top: 95px;
+}
