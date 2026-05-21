@@ -1484,6 +1484,22 @@ async function updateSyncUI() {
         : 'none';
   }
 
+  const loginToolsPanel = document.getElementById('loginToolsPanel');
+  const syncButtonsSection = document.getElementById('syncButtonsSection');
+  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
+
+  if (loginToolsPanel) {
+    loginToolsPanel.style.display = isLoggedIn ? 'none' : 'block';
+  }
+
+  if (syncButtonsSection) {
+    syncButtonsSection.style.display = 'none';
+  }
+
+  if (syncButtonsPanel) {
+    syncButtonsPanel.style.display = 'none';
+  }
+
   const syncButtonsSection = document.getElementById('syncButtonsSection');
   const syncButtonsPanel = document.getElementById('syncButtonsPanel');
 
@@ -1561,12 +1577,21 @@ function showSyncTools() {
   const syncButtonsSection = document.getElementById('syncButtonsSection');
   const syncButtonsPanel = document.getElementById('syncButtonsPanel');
 
-  if (syncTools) syncTools.style.display = 'block';
+  if (syncTools) {
+    syncTools.style.display = 'block';
+  }
 
-  if (syncButtonsSection) syncButtonsSection.style.display = 'block';
-  if (syncButtonsPanel) syncButtonsPanel.style.display = 'block';
+  if (syncButtonsSection) {
+    syncButtonsSection.style.display = 'block';
+  }
 
-  if (backupTools) backupTools.style.display = 'none';
+  if (syncButtonsPanel) {
+    syncButtonsPanel.style.display = 'block';
+  }
+
+  if (backupTools) {
+    backupTools.style.display = 'none';
+  }
 }
 
 async function safeDownloadNewerCloudInspections() {
