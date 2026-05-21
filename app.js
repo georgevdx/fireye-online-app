@@ -10,6 +10,7 @@ function setFilter(filter) {
   currentProjectPage = 1;
   renderProjectsList();
   updateDashboardSelection();
+  closeFilterPanel();
   scrollToFirstVisibleProject();
 }
 let occupancies = [];
@@ -2240,6 +2241,16 @@ function toggleFilterPanel() {
 
   filterPanel.style.display = isHidden ? 'block' : 'none';
   toggleBtn.textContent = isHidden ? 'Hide Filters' : 'Show Filters';
+}
+
+function closeFilterPanel() {
+  const filterPanel = document.getElementById('filterPanel');
+  const toggleBtn = document.getElementById('toggleFiltersBtn');
+
+  if (!filterPanel || !toggleBtn) return;
+
+  filterPanel.style.display = 'none';
+  toggleBtn.textContent = 'Show Filters';
 }
 
 function showProjectList() {
