@@ -1445,6 +1445,11 @@ async function updateSyncUI() {
   const backupTools = document.getElementById('backupTools');
   const syncStatus = document.getElementById('syncStatus');
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
+  const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
+  const cloudAdminPanel = document.getElementById('cloudAdminPanel');
+  const loginToolsPanel = document.getElementById('loginToolsPanel');
+  const syncButtonsSection = document.getElementById('syncButtonsSection');
+  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
 
   let isLoggedIn = false;
   let authEmail = '';
@@ -1471,11 +1476,9 @@ async function updateSyncUI() {
     syncTools.style.display = isLoggedIn ? 'none' : 'block';
   }
 
-  if (backupTools) {
-    backupTools.style.display = 'none';
+  if (loginToolsPanel) {
+    loginToolsPanel.style.display = isLoggedIn ? 'none' : 'block';
   }
-
-  const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
 
   if (showSyncToolsBtn) {
     showSyncToolsBtn.style.display =
@@ -1484,35 +1487,6 @@ async function updateSyncUI() {
         : 'none';
   }
 
-  const loginToolsPanel = document.getElementById('loginToolsPanel');
-  const syncButtonsSection = document.getElementById('syncButtonsSection');
-  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
-
-  if (loginToolsPanel) {
-    loginToolsPanel.style.display = isLoggedIn ? 'none' : 'block';
-  }
-
-  if (syncButtonsSection) {
-    syncButtonsSection.style.display = 'none';
-  }
-
-  if (syncButtonsPanel) {
-    syncButtonsPanel.style.display = 'none';
-  }
-
-  const syncButtonsSection = document.getElementById('syncButtonsSection');
-  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
-
-  if (syncButtonsSection) {
-    syncButtonsSection.style.display = 'none';
-  }
-
-  if (syncButtonsPanel) {
-    syncButtonsPanel.style.display = 'none';
-  }
-
-  const cloudAdminPanel = document.getElementById('cloudAdminPanel');
-
   if (cloudAdminPanel) {
     cloudAdminPanel.style.display =
       isLoggedIn && canUseAdminSyncTools(authEmail)
@@ -1520,10 +1494,22 @@ async function updateSyncUI() {
         : 'none';
   }
 
+  if (syncButtonsSection) {
+    syncButtonsSection.style.display = 'none';
+  }
+
+  if (syncButtonsPanel) {
+    syncButtonsPanel.style.display = 'none';
+  }
+
+  if (backupTools) {
+    backupTools.style.display = 'none';
+  }
+
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
-      : 'Not connected. Admin login required for cloud sync.';
+      : 'Not connected. Login required for cloud sync.';
   }
 }
 
