@@ -2675,3 +2675,29 @@ button.readiness-chip:focus {
     gap: 2px;
   }
 }
+
+.service-request-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.service-request-back-btn,
+.service-request-close-btn {
+  width: auto;
+  max-width: none;
+  padding: 10px 14px;
+}
+
+.service-request-followed-btn {
+  margin-top: 14px;
+  width: auto;
+  max-width: none;
+  padding: 10px 14px;
+  background: #2e7d32;
+}
+
+.service-request-detail-card {
+  margin-top: 12px;
+}

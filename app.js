@@ -2768,6 +2768,10 @@ function renderServiceRequestsList() {
     localStorage.getItem('fireyeServiceRequests') || '[]'
   );
 
+  const activeRequests = requests.filter(request =>
+    request.status !== 'followed_up'
+  );
+
   if (list.style.display === 'none' || list.style.display === '') {
     list.style.display = 'block';
   } else {
@@ -2775,13 +2779,13 @@ function renderServiceRequestsList() {
     return;
   }
 
-  if (requests.length === 0) {
+  if (activeRequests.length === 0) {
     list.innerHTML =
-      '<div class="empty-state">No service requests saved yet.</div>';
+      '<div class="empty-state">No active service requests.</div>';
     return;
   }
 
-  const sortedRequests = [...requests].sort((a, b) =>
+  const sortedRequests = [...activeRequests].sort((a, b) =>
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -2825,13 +2829,37 @@ function renderServiceRequestsList() {
 function openServiceRequestCard(index) {
   const requests = window.currentServiceRequestsView || [];
   const request = requests[index];
+
+  const listView = document.getElementById('serviceRequestListView');
   const detailCard = document.getElementById('serviceRequestDetailCard');
 
   if (!request || !detailCard) return;
 
+  if (listView) {
+    listView.style.display = 'none';
+  }
+
   detailCard.style.display = 'block';
 
   detailCard.innerHTML = `
+    <div class="service-request-detail-actions">
+      <button
+        type="button"
+        class="secondary-btn service-request-back-btn"
+        onclick="backToServiceRequestList()"
+      >
+        Back to Request List
+      </button>
+
+      <button
+        type="button"
+        class="secondary-btn service-request-close-btn"
+        onclick="backToServiceRequestList()"
+      >
+        Close
+      </button>
+    </div>
+
     <div class="service-request-card">
       <div class="service-request-category">
         ${escapeHtml(request.selectedService || 'Service Request')}
@@ -2870,6 +2898,14 @@ function openServiceRequestCard(index) {
         Saved:
         ${request.createdAt ? escapeHtml(new Date(request.createdAt).toLocaleString()) : '-'}
       </div>
+
+      <button
+        type="button"
+        class="service-request-followed-btn"
+        onclick="markServiceRequestFollowedUp('${escapeHtml(request.id)}')"
+      >
+        Mark as Followed Up
+      </button>
     </div>
   `;
 
@@ -2878,6 +2914,63 @@ function openServiceRequestCard(index) {
     block: 'start'
   });
 }
+
+function backToServiceRequestList() {
+  const listView = document.getElementById('serviceRequestListView');
+  const detailCard = document.getElementById('serviceRequestDetailCard');
+
+  if (detailCard) {
+    detailCard.style.display = 'none';
+    detailCard.innerHTML = '';
+  }
+
+  if (listView) {
+    listView.style.display = 'grid';
+
+    listView.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+}
+
+function markServiceRequestFollowedUp(requestId) {
+  const confirmed = confirm(
+    'Mark this service request as followed up? It will be removed from the active request list.'
+  );
+
+  if (!confirmed) return;
+
+  const requests = JSON.parse(
+    localStorage.getItem('fireyeServiceRequests') || '[]'
+  );
+
+  const updatedRequests = requests.map(request => {
+    if (String(request.id) !== String(requestId)) {
+      return request;
+    }
+
+    return {
+      ...request,
+      status: 'followed_up',
+      followedUpAt: new Date().toISOString()
+    };
+  });
+
+  localStorage.setItem(
+    'fireyeServiceRequests',
+    JSON.stringify(updatedRequests)
+  );
+
+  const list = document.getElementById('serviceRequestsList');
+
+  if (list) {
+    list.style.display = 'none';
+  }
+
+  renderServiceRequestsList();
+}
+
 
 function getFollowUpStatus(project) {
   if (project.followUpRequired !== 'Yes' || !project.followUpDate) {
@@ -6513,4 +6606,6 @@ window.updatePhotoNote = updatePhotoNote;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
 window.openServiceRequestCard = openServiceRequestCard;
+window.backToServiceRequestList = backToServiceRequestList;
+window.markServiceRequestFollowedUp = markServiceRequestFollowedUp;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
