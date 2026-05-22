@@ -2776,7 +2776,8 @@ function renderServiceRequestsList() {
   }
 
   if (requests.length === 0) {
-    list.innerHTML = '<div class="empty-state">No service requests saved yet.</div>';
+    list.innerHTML =
+      '<div class="empty-state">No service requests saved yet.</div>';
     return;
   }
 
@@ -2784,15 +2785,81 @@ function renderServiceRequestsList() {
     new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  list.innerHTML = sortedRequests.map(request => `
+  window.currentServiceRequestsView = sortedRequests;
+
+  list.innerHTML = `
+    <div id="serviceRequestListView" class="service-request-list">
+      ${sortedRequests.map((request, index) => `
+        <button
+          type="button"
+          class="service-request-list-item"
+          onclick="openServiceRequestCard(${index})"
+        >
+          <span class="service-request-list-category">
+            ${escapeHtml(request.selectedService || 'Service Request')}
+          </span>
+
+          <span class="service-request-list-main">
+            ${escapeHtml(request.clientName || 'Unknown client')}
+          </span>
+
+          <span class="service-request-list-date">
+            ${
+              request.createdAt
+                ? escapeHtml(new Date(request.createdAt).toLocaleString())
+                : '-'
+            }
+          </span>
+        </button>
+      `).join('')}
+    </div>
+
+    <div
+      id="serviceRequestDetailCard"
+      class="service-request-detail-card"
+      style="display:none;"
+    ></div>
+  `;
+}
+
+function openServiceRequestCard(index) {
+  const requests = window.currentServiceRequestsView || [];
+  const request = requests[index];
+  const detailCard = document.getElementById('serviceRequestDetailCard');
+
+  if (!request || !detailCard) return;
+
+  detailCard.style.display = 'block';
+
+  detailCard.innerHTML = `
     <div class="service-request-card">
-      <div class="service-request-title">
+      <div class="service-request-category">
         ${escapeHtml(request.selectedService || 'Service Request')}
       </div>
 
-      <div><strong>Name / Company:</strong> ${escapeHtml(request.clientName || '-')}</div>
-      <div><strong>Phone:</strong> ${escapeHtml(request.clientPhone || '-')}</div>
-      <div><strong>Email:</strong> ${escapeHtml(request.clientEmail || '-')}</div>
+      <div class="service-request-title">
+        ${escapeHtml(request.clientName || 'Unknown client')}
+      </div>
+
+      <div class="service-request-detail-row">
+        <strong>Category:</strong>
+        <span>${escapeHtml(request.selectedService || '-')}</span>
+      </div>
+
+      <div class="service-request-detail-row">
+        <strong>Name / Company:</strong>
+        <span>${escapeHtml(request.clientName || '-')}</span>
+      </div>
+
+      <div class="service-request-detail-row">
+        <strong>Phone:</strong>
+        <span>${escapeHtml(request.clientPhone || '-')}</span>
+      </div>
+
+      <div class="service-request-detail-row">
+        <strong>Email:</strong>
+        <span>${escapeHtml(request.clientEmail || '-')}</span>
+      </div>
 
       <div class="service-request-message">
         <strong>Message:</strong>
@@ -2800,10 +2867,16 @@ function renderServiceRequestsList() {
       </div>
 
       <div class="note">
-        Saved: ${request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}
+        Saved:
+        ${request.createdAt ? escapeHtml(new Date(request.createdAt).toLocaleString()) : '-'}
       </div>
     </div>
-  `).join('');
+  `;
+
+  detailCard.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
 }
 
 function getFollowUpStatus(project) {
@@ -6439,4 +6512,5 @@ window.addEventListener('online', resolvePendingGpsAddresses);
 window.updatePhotoNote = updatePhotoNote;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
+window.openServiceRequestCard = openServiceRequestCard;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
