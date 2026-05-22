@@ -1483,14 +1483,14 @@ async function autoMergeAfterSave() {
 async function updateSyncUI() {
   const connectedView = document.getElementById('cloudConnectedView');
   const syncTools = document.getElementById('syncTools');
+  const loginToolsPanel = document.getElementById('loginToolsPanel');
+  const syncButtonsSection = document.getElementById('syncButtonsSection');
+  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
+  const cloudAdminPanel = document.getElementById('cloudAdminPanel');
   const backupTools = document.getElementById('backupTools');
   const syncStatus = document.getElementById('syncStatus');
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
   const showSyncToolsBtn = document.getElementById('showSyncToolsBtn');
-  const cloudAdminPanel = document.getElementById('cloudAdminPanel');
-  const loginToolsPanel = document.getElementById('loginToolsPanel');
-  const syncButtonsSection = document.getElementById('syncButtonsSection');
-  const syncButtonsPanel = document.getElementById('syncButtonsPanel');
 
   let isLoggedIn = false;
   let authEmail = '';
@@ -1498,49 +1498,51 @@ async function updateSyncUI() {
   try {
     const { data, error } = await supabaseClient.auth.getUser();
 
-    isLoggedIn = !error && !!(data && data.user);
+    isLoggedIn = !error && !!data?.user;
     authEmail = data?.user?.email || '';
   } catch (error) {
     console.error('Cloud status check failed:', error);
   }
 
+  const isAdmin =
+    isLoggedIn && canUseAdminSyncTools(authEmail);
+
+  // Cloud top button text only
   if (cloudMenuBtn) {
     cloudMenuBtn.classList.toggle('connected', isLoggedIn);
     cloudMenuBtn.textContent = isLoggedIn ? 'Cloud connected' : 'Cloud';
   }
 
+  // Main cloud dropdown sections
   if (connectedView) {
     connectedView.style.display = isLoggedIn ? 'block' : 'none';
   }
 
   if (syncTools) {
-    syncTools.style.display = isLoggedIn ? 'none' : 'block';
+    syncTools.style.display = 'block';
   }
 
+  // Login fields only when logged out
   if (loginToolsPanel) {
     loginToolsPanel.style.display = isLoggedIn ? 'none' : 'block';
   }
 
+  // Admin button only when logged in as admin
   if (showSyncToolsBtn) {
-    showSyncToolsBtn.style.display =
-      isLoggedIn && canUseAdminSyncTools(authEmail)
-        ? 'block'
-        : 'none';
+    showSyncToolsBtn.style.display = isAdmin ? 'block' : 'none';
   }
 
-  if (cloudAdminPanel) {
-    cloudAdminPanel.style.display =
-      isLoggedIn && canUseAdminSyncTools(authEmail)
-        ? 'block'
-        : 'none';
-  }
-
+  // These must NEVER show automatically
   if (syncButtonsSection) {
     syncButtonsSection.style.display = 'none';
   }
 
   if (syncButtonsPanel) {
     syncButtonsPanel.style.display = 'none';
+  }
+
+  if (cloudAdminPanel) {
+    cloudAdminPanel.style.display = 'none';
   }
 
   if (backupTools) {
@@ -1550,7 +1552,7 @@ async function updateSyncUI() {
   if (syncStatus) {
     syncStatus.textContent = isLoggedIn
       ? 'Connected. Auto sync enabled.'
-      : 'Not connected. Login required for cloud sync.';
+      : 'Not connected. Login required.';
   }
 }
 
@@ -1599,14 +1601,10 @@ function showSyncTools() {
     return;
   }
 
-  const syncTools = document.getElementById('syncTools');
-  const backupTools = document.getElementById('backupTools');
   const syncButtonsSection = document.getElementById('syncButtonsSection');
   const syncButtonsPanel = document.getElementById('syncButtonsPanel');
-
-  if (syncTools) {
-    syncTools.style.display = 'block';
-  }
+  const cloudAdminPanel = document.getElementById('cloudAdminPanel');
+  const backupTools = document.getElementById('backupTools');
 
   if (syncButtonsSection) {
     syncButtonsSection.style.display = 'block';
@@ -1616,6 +1614,11 @@ function showSyncTools() {
     syncButtonsPanel.style.display = 'block';
   }
 
+  if (cloudAdminPanel) {
+    cloudAdminPanel.style.display = 'block';
+  }
+
+  // Old top-page backup tools must stay hidden.
   if (backupTools) {
     backupTools.style.display = 'none';
   }
@@ -2572,34 +2575,24 @@ function setCloudMenuVisible(isVisible) {
 }
 
 function updateHomeAccessCards() {
-  const connectCard = document.getElementById('connectCard');
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
   const homeLogoutBtn = document.getElementById('homeLogoutBtn');
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
 
   const isLoggedIn = !!currentUserProfile;
 
-  // Keep the card visible, because it contains Cloud / Cloud connected / Logout access.
-  if (connectCard) {
-    connectCard.style.display = 'block';
-  }
-
-  // Hide Login/Register after login.
   if (homeLoginRouteBtn) {
     homeLoginRouteBtn.style.display = isLoggedIn ? 'none' : 'inline-block';
   }
 
-  // Show frontpage Logout only after login.
   if (homeLogoutBtn) {
     homeLogoutBtn.style.display = isLoggedIn ? 'inline-block' : 'none';
   }
 
-  // Cloud button must stay visible on the front page.
   if (cloudMenuBtn) {
     cloudMenuBtn.style.display = 'inline-block';
   }
 }
-
 function showHome() {
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
@@ -2656,11 +2649,16 @@ function openLoginRoute() {
   }
 
   const cloudDropdown = document.getElementById('cloudDropdown');
-  const syncTools = document.getElementById('syncTools');
+  const loginToolsPanel = document.getElementById('loginToolsPanel');
   const loginEmail = document.getElementById('loginEmail');
 
-  if (cloudDropdown) cloudDropdown.style.display = 'block';
-  if (syncTools) syncTools.style.display = 'block';
+  if (cloudDropdown) {
+    cloudDropdown.style.display = 'block';
+  }
+
+  if (loginToolsPanel) {
+    loginToolsPanel.style.display = 'block';
+  }
 
   if (loginEmail) {
     loginEmail.scrollIntoView({
