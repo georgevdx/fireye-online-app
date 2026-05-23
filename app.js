@@ -1232,6 +1232,40 @@ function initAuthStateListener() {
   });
 }
 
+let backgroundSyncInProgress = false;
+
+async function runBackgroundSync(reason = 'background') {
+  if (backgroundSyncInProgress) return;
+  if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
+
+  backgroundSyncInProgress = true;
+
+  try {
+    const { data, error } = await supabaseClient.auth.getUser();
+
+    if (error || !data?.user) {
+      return;
+    }
+
+    await uploadPendingInspections();
+    await safeDownloadNewerCloudInspections();
+    await uploadPendingInspections();
+
+    renderProjectsList();
+
+    const syncStatus = document.getElementById('syncStatus');
+
+    if (syncStatus) {
+      syncStatus.textContent = `Auto sync complete (${reason}).`;
+    }
+  } catch (error) {
+    console.warn(`Background sync failed (${reason}):`, error);
+  } finally {
+    backgroundSyncInProgress = false;
+  }
+}
+
 async function refreshSyncData() {
   const syncStatus = document.getElementById('syncStatus');
 
@@ -6771,8 +6805,15 @@ window.toggleChecklistSection = toggleChecklistSection;
 window.toggleSection = toggleSection;
 window.expandAllSections = expandAllSections;
 window.collapseAllSections = collapseAllSections;
-window.addEventListener('online', safeDownloadNewerCloudInspections);
-window.addEventListener('online', uploadPendingInspections);
+window.addEventListener('online', () => {
+  runBackgroundSync('online');
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    runBackgroundSync('app visible');
+  }
+});
 window.addEventListener('online', resolvePendingGpsAddresses);
 window.updatePhotoNote = updatePhotoNote;
 window.nextProjectPage = nextProjectPage;
