@@ -2103,7 +2103,9 @@ function canManageCompany() {
 function isAllowedAdminEmail(email) {
   const allowedEmails = [
     'georgevdx@gmail.com',
-];
+    'johandb1974ik@gmail.com',
+    'johandb@live.com'
+  ];
 
   return allowedEmails.includes(
     String(email || '').toLowerCase()
