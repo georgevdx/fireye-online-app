@@ -4171,28 +4171,17 @@ function clearProjectSearchAndFilter() {
 }
 
 function renderProjectsList() {
-  const allProjects = getProjects();
-  const projects = getVisibleProjectsForCurrentUser(allProjects);
-  updateAppInfo();
-  
-  // renderReminderBanner(projects);
-  renderDashboardMetrics(projects);
-
   const container = getEl('projectsList');
+
   if (!currentUserProfile) {
-  container.innerHTML = '';
+    container.innerHTML = '';
 
-  const dashboardMetrics = document.getElementById('dashboardMetrics');
-  const projectPagingControls = document.getElementById('projectPagingControls');
-  const activeFilterStatus = document.getElementById('activeFilterStatus');
+    const dashboardMetrics = document.getElementById('dashboardMetrics');
+    const projectPagingControls = document.getElementById('projectPagingControls');
+    const activeFilterStatus = document.getElementById('activeFilterStatus');
 
-    if (dashboardMetrics) {
-      dashboardMetrics.innerHTML = '';
-    }
-
-    if (projectPagingControls) {
-      projectPagingControls.innerHTML = '';
-    }
+    if (dashboardMetrics) dashboardMetrics.innerHTML = '';
+    if (projectPagingControls) projectPagingControls.innerHTML = '';
 
     if (activeFilterStatus) {
       activeFilterStatus.style.display = 'none';
@@ -4201,6 +4190,16 @@ function renderProjectsList() {
 
     return;
   }
+
+  const allProjects = getProjects();
+  const projects = getVisibleProjectsForCurrentUser(allProjects);
+
+  updateAppInfo();
+
+  // renderReminderBanner(projects);
+  renderDashboardMetrics(projects);
+
+  const searchField = document.getElementById('projectSearch');
   const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
 
