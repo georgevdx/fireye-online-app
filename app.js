@@ -1933,11 +1933,17 @@ function initApp() {
     updateDisplay();
     scheduleAutoSave();
   });
-  getEl('exportBackupBtn').addEventListener('click', exportBackup);
-  const adminExportBackupBtn = document.getElementById('adminExportBackupBtn');
-  if (adminExportBackupBtn) {
-    adminExportBackupBtn.addEventListener('click', exportBackup);
-  }
+  const exportBackupBtn = document.getElementById('exportBackupBtn');
+
+if (exportBackupBtn) {
+  exportBackupBtn.addEventListener('click', exportBackup);
+}
+
+const adminExportBackupBtn = document.getElementById('adminExportBackupBtn');
+
+if (adminExportBackupBtn) {
+  adminExportBackupBtn.addEventListener('click', exportBackup);
+}
   const copyLastBackupBtn = document.getElementById('copyLastBackupBtn');
   if (copyLastBackupBtn) {
     copyLastBackupBtn.addEventListener('click', copyLastBackup);
