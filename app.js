@@ -2304,6 +2304,30 @@ function getAccessMetadata() {
   };
 }
 
+function getVisibleProjectsForCurrentUser(projects) {
+  if (!currentUserProfile) {
+    return [];
+  }
+
+  if (isSuperAdmin()) {
+    return projects;
+  }
+
+  if (currentUserProfile.companyId) {
+    return projects.filter(project =>
+      project.companyId === currentUserProfile.companyId
+    );
+  }
+
+  const currentEmail =
+    String(currentUserProfile.email || '').toLowerCase();
+
+  return projects.filter(project =>
+    project.createdByUserId === currentUserProfile.id ||
+    String(project.createdByEmail || '').toLowerCase() === currentEmail
+  );
+}
+
 function getProjectCloudMetadata(project, userId) {
   return {
     company_id:
@@ -3809,14 +3833,15 @@ function renderDashboard(projects) {
 `;
 }
 
-function renderDashboardMetrics() {
+function renderDashboardMetrics(projectsOverride) {
 
   const container =
     document.getElementById('dashboardMetrics');
 
   if (!container) return;
 
-  const projects = getProjects();
+  const projects =
+    projectsOverride || getVisibleProjectsForCurrentUser(getProjects());
 
   let expiredItems = 0;
   let expiringSoonItems = 0;
@@ -4146,11 +4171,12 @@ function clearProjectSearchAndFilter() {
 }
 
 function renderProjectsList() {
-  const projects = getProjects();
+  const allProjects = getProjects();
+  const projects = getVisibleProjectsForCurrentUser(allProjects);
   updateAppInfo();
   
   // renderReminderBanner(projects);
-  renderDashboardMetrics();
+  renderDashboardMetrics(projects);
 
   const container = getEl('projectsList');
   const searchField = document.getElementById('projectSearch');
