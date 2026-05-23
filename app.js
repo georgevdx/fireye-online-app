@@ -1248,9 +1248,9 @@ async function runBackgroundSync(reason = 'background') {
       return;
     }
 
-    await uploadPendingInspections();
+    await uploadAllLocalInspections();
     await safeDownloadNewerCloudInspections();
-    await uploadPendingInspections();
+    await uploadAllLocalInspections();
 
     renderProjectsList();
 
@@ -1274,9 +1274,9 @@ async function refreshSyncData() {
   }
 
   try {
-    await uploadPendingInspections();
+    await uploadAllLocalInspections();
     await safeDownloadNewerCloudInspections();
-    await uploadPendingInspections();
+    await uploadAllLocalInspections();
 
     renderProjectsList();
 
@@ -4824,6 +4824,21 @@ async function uploadPendingInspections() {
 
   for (const project of pendingProjects) {
     await uploadSingleInspection(project);
+  }
+}
+
+async function uploadAllLocalInspections() {
+  if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
+
+  const projects = getProjects();
+
+  for (const project of projects) {
+    await uploadSingleInspection({
+      ...project,
+      syncPending: true,
+      syncError: false
+    });
   }
 }
 
