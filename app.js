@@ -4179,6 +4179,28 @@ function renderProjectsList() {
   renderDashboardMetrics(projects);
 
   const container = getEl('projectsList');
+  if (!currentUserProfile) {
+  container.innerHTML = '';
+
+  const dashboardMetrics = document.getElementById('dashboardMetrics');
+  const projectPagingControls = document.getElementById('projectPagingControls');
+  const activeFilterStatus = document.getElementById('activeFilterStatus');
+
+    if (dashboardMetrics) {
+      dashboardMetrics.innerHTML = '';
+    }
+
+    if (projectPagingControls) {
+      projectPagingControls.innerHTML = '';
+    }
+
+    if (activeFilterStatus) {
+      activeFilterStatus.style.display = 'none';
+      activeFilterStatus.innerHTML = '';
+    }
+
+    return;
+  }
   const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
 
