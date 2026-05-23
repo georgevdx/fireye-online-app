@@ -1326,6 +1326,73 @@ async function uploadSync() {
       : `Synced ${rows.length} inspection(s) to cloud.`;
 }
 
+async function debugSyncCounts() {
+  const syncStatus = document.getElementById('syncStatus');
+
+  const localProjects = getProjects();
+  const visibleProjects = getVisibleProjectsForCurrentUser(localProjects);
+
+  let cloudCount = 'not checked';
+  let cloudError = '';
+  let userInfo = {
+    userId: null,
+    email: null,
+    companyId: currentUserProfile?.companyId || null,
+    role: currentUserProfile?.role || null
+  };
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData?.user) {
+      cloudError = userError?.message || 'No logged-in user';
+    } else {
+      userInfo.userId = userData.user.id;
+      userInfo.email = userData.user.email;
+
+      let query = supabaseClient
+        .from('inspections')
+        .select('id, user_id, company_id, created_by_email, updated_at');
+
+      query = applyInspectionAccessFilter(
+        query,
+        userData.user.id
+      );
+
+      const { data, error } = await query;
+
+      if (error) {
+        cloudError = error.message;
+      } else {
+        cloudCount = data?.length || 0;
+      }
+    }
+  } catch (error) {
+    cloudError = error.message;
+  }
+
+  const message =
+    `Debug Sync Counts:
+Local inspections: ${localProjects.length}
+Visible inspections: ${visibleProjects.length}
+Cloud returned: ${cloudCount}
+User ID: ${userInfo.userId || '-'}
+Email: ${userInfo.email || '-'}
+Company ID: ${userInfo.companyId || '-'}
+Role: ${userInfo.role || '-'}
+Cloud error: ${cloudError || 'none'}`;
+
+  console.log(message);
+
+  if (syncStatus) {
+    syncStatus.textContent =
+      `Local ${localProjects.length} | Visible ${visibleProjects.length} | Cloud ${cloudCount}`;
+  }
+
+  alert(message);
+}
+
 async function downloadSync() {
   const { data: userData, error: userError } = await supabaseClient.auth.getUser();
 
@@ -6842,3 +6909,4 @@ window.openProjectSummaryCard = openProjectSummaryCard;
 window.closeProjectSummaryCard = closeProjectSummaryCard;
 window.runBackgroundSync = runBackgroundSync;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
+window.debugSyncCounts = debugSyncCounts;
