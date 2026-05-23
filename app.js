@@ -1779,7 +1779,9 @@ async function safeDownloadNewerCloudInspections() {
       }
     });
 
-    const mergedProjects = Array.from(mergedMap.values());
+    const mergedProjects = stripHeavyPhotoDataFromProjects(
+      Array.from(mergedMap.values())
+    );
 
     setProjects(mergedProjects);
     renderProjectsList();
@@ -2487,7 +2489,35 @@ function getProjects() {
 }
 
 function setProjects(projects) {
-  localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+  try {
+    localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+  } catch (error) {
+    if (error && error.name === 'QuotaExceededError') {
+      const compactProjects =
+        stripHeavyPhotoDataFromProjects(projects);
+
+      localStorage.setItem(
+        'fireyeProjects',
+        JSON.stringify(compactProjects)
+      );
+
+      console.warn(
+        'Storage quota reached. Saved compact inspections without heavy photo data.',
+        error
+      );
+
+      const syncStatus = document.getElementById('syncStatus');
+
+      if (syncStatus) {
+        syncStatus.textContent =
+          'Storage limit reached. Inspections saved without large photo data on this device.';
+      }
+
+      return;
+    }
+
+    throw error;
+  }
 }
 
 function getDeletedProjectIds() {
@@ -2517,6 +2547,23 @@ function filterDeletedProjects(projects) {
   return (projects || []).filter(project =>
     project && !isProjectDeleted(project.id)
   );
+}
+
+function stripHeavyPhotoData(project) {
+  if (!project) return project;
+
+  return {
+    ...project,
+    photos: (project.photos || []).map(photo => ({
+      timestamp: photo.timestamp || null,
+      note: photo.note || '',
+      src: photo.src && photo.src.length < 5000 ? photo.src : ''
+    }))
+  };
+}
+
+function stripHeavyPhotoDataFromProjects(projects) {
+  return (projects || []).map(stripHeavyPhotoData);
 }
 
 function migrateLegacyProductTypes() {
