@@ -1147,15 +1147,13 @@ async function loginUser() {
     updateSyncUI();
 
     loadUserAccessProfile()
-      .then(() => {
-        renderProjectsList();
-      })
-      .catch(error => {
-        console.error('Access profile load failed after login:', error);
-      });
-
-    safeDownloadNewerCloudInspections();
-    uploadPendingInspections();
+    .then(async () => {
+      await refreshSyncData();
+      renderProjectsList();
+    })
+    .catch(error => {
+      console.error('Access profile load failed after login:', error);
+    });
 
   } catch (error) {
     console.error('Login crashed:', error);
@@ -1176,7 +1174,9 @@ async function logoutUser() {
   }
 
   try {
-    const { error } = await supabaseClient.auth.signOut();
+  await refreshSyncData();
+
+  const { error } = await supabaseClient.auth.signOut();
 
     if (error) {
       if (syncStatus) {
@@ -1274,11 +1274,14 @@ async function refreshSyncData() {
   }
 
   try {
+    await uploadPendingInspections();
     await safeDownloadNewerCloudInspections();
     await uploadPendingInspections();
 
+    renderProjectsList();
+
     if (syncStatus) {
-      syncStatus.textContent = 'Data refreshed.';
+      syncStatus.textContent = 'Data refreshed and synced.';
     }
   } catch (error) {
     console.error('Refresh sync failed:', error);
@@ -1288,8 +1291,41 @@ async function refreshSyncData() {
     }
   }
 }
+  let backgroundSyncInProgress = false;
 
-  async function uploadSync() {
+async function runBackgroundSync(reason = 'background') {
+  if (backgroundSyncInProgress) return;
+  if (!navigator.onLine) return;
+  if (typeof supabaseClient === 'undefined') return;
+
+    backgroundSyncInProgress = true;
+
+    try {
+      const { data, error } = await supabaseClient.auth.getUser();
+
+      if (error || !data?.user) {
+        return;
+      }
+
+      await uploadPendingInspections();
+      await safeDownloadNewerCloudInspections();
+      await uploadPendingInspections();
+
+      renderProjectsList();
+
+      const syncStatus = document.getElementById('syncStatus');
+
+      if (syncStatus) {
+        syncStatus.textContent = `Auto sync complete (${reason}).`;
+      }
+    } catch (error) {
+      console.warn(`Background sync failed (${reason}):`, error);
+    } finally {
+      backgroundSyncInProgress = false;
+    }
+}
+
+async function uploadSync() {
     const { data: userData, error: userError } = await supabaseClient.auth.getUser();
 
     if (userError || !userData.user) {
@@ -1611,8 +1647,7 @@ async function restoreCloudSession() {
       });
 
     if (data && data.session) {
-      safeDownloadNewerCloudInspections();
-      uploadPendingInspections();
+      refreshSyncData();
     }
 
   } catch (error) {
@@ -6823,4 +6858,5 @@ window.backToServiceRequestList = backToServiceRequestList;
 window.markServiceRequestFollowedUp = markServiceRequestFollowedUp;
 window.openProjectSummaryCard = openProjectSummaryCard;
 window.closeProjectSummaryCard = closeProjectSummaryCard;
+window.runBackgroundSync = runBackgroundSync;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
