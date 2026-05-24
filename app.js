@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v88';
+const APP_VERSION = 'v89-dev';
 
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4901,6 +4901,54 @@ function generateInspectionNumber() {
   return `FIR-${year}-${String(nextNumber).padStart(4, '0')}`;
 }
 
+async function uploadPhotoToStorage(file, projectId) {
+  if (!file || !projectId) {
+    throw new Error('Photo file and project ID are required.');
+  }
+
+  const { data: userData, error: userError } =
+    await supabaseClient.auth.getUser();
+
+  if (userError || !userData?.user) {
+    throw new Error('Please login before uploading photos.');
+  }
+
+  const fileExtension =
+    file.name && file.name.includes('.')
+      ? file.name.split('.').pop().toLowerCase()
+      : 'jpg';
+
+  const safeProjectId =
+    String(projectId).replace(/[^a-zA-Z0-9_-]/g, '');
+
+  const filePath =
+    `${userData.user.id}/${safeProjectId}/${Date.now()}.${fileExtension}`;
+
+  const { error: uploadError } = await supabaseClient
+    .storage
+    .from('inspection-photos')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false
+    });
+
+  if (uploadError) {
+    throw uploadError;
+  }
+
+  const { data: publicUrlData } = supabaseClient
+    .storage
+    .from('inspection-photos')
+    .getPublicUrl(filePath);
+
+  return {
+    src: publicUrlData.publicUrl,
+    storagePath: filePath,
+    timestamp: new Date().toISOString(),
+    note: ''
+  };
+}
+
 async function uploadSingleInspection(project) {
   if (!navigator.onLine) return;
   if (typeof supabaseClient === 'undefined') return;
@@ -6388,61 +6436,48 @@ function generateReport() {
 }
 
 
-function handlePhotoUpload(event) {
+async function handlePhotoUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
   const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    saveMessage.textContent = 'Preparing photo...';
+
+  if (!currentProjectId) {
+    if (saveMessage) {
+      saveMessage.textContent =
+        'Save the inspection first before adding photos.';
+    }
+
+    event.target.value = '';
+    return;
   }
 
-  const reader = new FileReader();
+  if (saveMessage) {
+    saveMessage.textContent = 'Uploading photo...';
+  }
 
-  reader.onload = function(e) {
-    const img = new Image();
+  try {
+    const uploadedPhoto =
+      await uploadPhotoToStorage(file, currentProjectId);
 
-    img.onload = function() {
-      const maxWidth = 1200;
-      const maxHeight = 1200;
+    currentPhotos.push(uploadedPhoto);
 
-      let width = img.width;
-      let height = img.height;
+    renderPhotos();
+    scheduleAutoSave();
 
-      if (width > maxWidth || height > maxHeight) {
-        const ratio = Math.min(maxWidth / width, maxHeight / height);
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
+    if (saveMessage) {
+      saveMessage.textContent = 'Photo uploaded and added.';
+    }
+  } catch (error) {
+    console.error('Photo upload failed:', error);
 
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-
-      currentPhotos.push({
-      src: compressedDataUrl,
-      timestamp: new Date().toISOString(),
-      note: ''
-      });
-
-      renderPhotos();
-      scheduleAutoSave();
-
-      if (saveMessage) {
-        saveMessage.textContent = 'Photo added.';
-      }
-    };
-
-    img.src = e.target.result;
-  };
-
-  reader.readAsDataURL(file);
-  event.target.value = '';
+    if (saveMessage) {
+      saveMessage.textContent =
+        `Photo upload failed: ${error.message}`;
+    }
+  } finally {
+    event.target.value = '';
+  }
 }
 
 function renderPhotos() {
