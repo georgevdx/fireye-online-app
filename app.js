@@ -6520,7 +6520,21 @@ async function handlePhotoUpload(event) {
         }
       };
 
+      img.onerror = function() {
+        if (saveMessage) {
+          saveMessage.textContent =
+            'Photo could not be processed.';
+        }
+      };
+
       img.src = e.target.result;
+    };
+
+    reader.onerror = function() {
+      if (saveMessage) {
+        saveMessage.textContent =
+          'Photo could not be read from device.';
+      }
     };
 
     reader.readAsDataURL(file);
