@@ -338,6 +338,8 @@ function autoSaveProject() {
   renderProjectsList();
   
   const saveMessage = document.getElementById('saveMessage');
+  const photoUploadStatus =
+  document.getElementById('photoUploadStatus');
 
   if (saveMessage) {
     saveMessage.textContent = `Last saved: ${formatLastSaved()}`;
@@ -6441,20 +6443,26 @@ async function handlePhotoUpload(event) {
   if (!file) return;
 
   const saveMessage = document.getElementById('saveMessage');
+  const photoUploadStatus =
+    document.getElementById('photoUploadStatus');
 
-  if (!currentProjectId) {
+  function setPhotoStatus(message) {
     if (saveMessage) {
-      saveMessage.textContent =
-        'Save the inspection first before adding photos.';
+      saveMessage.textContent = message;
     }
 
+    if (photoUploadStatus) {
+      photoUploadStatus.textContent = message;
+    }
+  }
+
+  if (!currentProjectId) {
+    setPhotoStatus('Save the inspection first before adding photos.');
     event.target.value = '';
     return;
   }
 
-  if (saveMessage) {
-    saveMessage.textContent = 'Uploading photo...';
-  }
+  setPhotoStatus('Uploading photo...');
 
   try {
     const uploadedPhoto =
@@ -6465,16 +6473,13 @@ async function handlePhotoUpload(event) {
     renderPhotos();
     scheduleAutoSave();
 
-    if (saveMessage) {
-      saveMessage.textContent = 'Photo uploaded and added.';
-    }
+    setPhotoStatus('Photo uploaded and added.');
   } catch (error) {
     console.error('Photo upload failed, using local fallback:', error);
 
-    if (saveMessage) {
-      saveMessage.textContent =
-        'Cloud photo upload failed. Saving photo locally for now...';
-    }
+    setPhotoStatus(
+      'Cloud photo upload failed. Saving photo locally for now...'
+    );
 
     const reader = new FileReader();
 
@@ -6514,27 +6519,20 @@ async function handlePhotoUpload(event) {
         renderPhotos();
         scheduleAutoSave();
 
-        if (saveMessage) {
-          saveMessage.textContent =
-            'Photo saved locally. Cloud photo upload needs setup.';
-        }
+        setPhotoStatus(
+          'Photo saved locally. Cloud photo upload needs setup.'
+        );
       };
 
       img.onerror = function() {
-        if (saveMessage) {
-          saveMessage.textContent =
-            'Photo could not be processed.';
-        }
+        setPhotoStatus('Photo could not be processed.');
       };
 
       img.src = e.target.result;
     };
 
     reader.onerror = function() {
-      if (saveMessage) {
-        saveMessage.textContent =
-          'Photo could not be read from device.';
-      }
+      setPhotoStatus('Photo could not be read from device.');
     };
 
     reader.readAsDataURL(file);
