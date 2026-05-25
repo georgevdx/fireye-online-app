@@ -2864,40 +2864,51 @@ button.readiness-chip:focus {
   min-height: 260mm;
 }
 
-/* REPORT PHOTO APPENDIX - FINAL CLEAN VERSION */
+/* REPORT PHOTO APPENDIX - PDF STABLE VERSION */
 
 .report-photo-page {
-  break-before: page;
   page-break-before: always;
+  break-before: page;
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
 
 .appendix-title {
   margin: 0 0 6mm 0;
   color: #b71c1c;
   font-size: 18px;
-  break-after: avoid;
   page-break-after: avoid;
+  break-after: avoid;
 }
 
 .report-photo-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 5mm;
-  align-items: start;
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 5mm;
+  table-layout: fixed;
+}
+
+.report-photo-row {
+  display: table-row;
+}
+
+.report-photo-cell {
+  display: table-cell;
+  width: 50%;
+  vertical-align: top;
 }
 
 .report-photo-card {
   border: 1px solid #ddd;
   padding: 3mm;
   box-sizing: border-box;
-  height: 112mm;
+  height: 105mm;
   overflow: hidden;
-  break-inside: avoid;
-  page-break-inside: avoid;
   background: #fff;
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .report-photo-header {
@@ -2913,7 +2924,7 @@ button.readiness-chip:focus {
 }
 
 .report-photo-image-box {
-  height: 72mm;
+  height: 65mm;
   width: 100%;
   display: flex;
   align-items: center;
@@ -2925,7 +2936,7 @@ button.readiness-chip:focus {
 .report-photo-img {
   display: block;
   max-width: 100%;
-  max-height: 72mm;
+  max-height: 65mm;
   width: auto;
   height: auto;
   object-fit: contain;

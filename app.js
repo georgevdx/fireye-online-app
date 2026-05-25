@@ -412,7 +412,7 @@ function formatProjectDate(value) {
     orientation: 'portrait'
   },
   pagebreak: {
-    mode: ['avoid-all', 'css', 'legacy']
+    mode: ['css', 'legacy']
   }
 };
   setTimeout(() => {
