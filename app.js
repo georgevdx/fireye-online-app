@@ -1267,6 +1267,27 @@ async function runBackgroundSync(reason = 'background') {
   }
 }
 
+function reloadCurrentOpenInspectionAfterSync() {
+  if (!currentProjectId) return;
+
+  const projects = getProjects();
+  const refreshedProject = projects.find(
+    project => project.id === currentProjectId
+  );
+
+  if (!refreshedProject) return;
+
+  currentPhotos = refreshedProject.photos || [];
+  renderPhotos();
+
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      'Current inspection refreshed from cloud sync.';
+  }
+}
+
 async function refreshSyncData() {
   const syncStatus = document.getElementById('syncStatus');
 
@@ -1280,6 +1301,7 @@ async function refreshSyncData() {
     await uploadPendingInspections();
 
     renderProjectsList();
+    reloadCurrentOpenInspectionAfterSync();
 
     if (syncStatus) {
       syncStatus.textContent = 'Data refreshed and synced.';
