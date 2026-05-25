@@ -6517,21 +6517,22 @@ async function handlePhotoUpload(event) {
     scheduleAutoSave();
 
     setPhotoStatus(
-      'Photo saved locally. Cloud photo upload needs setup.'
+      'Photo saved locally only. Storage upload failed.'
     );
 
     updatePhotoUploadStatus(
-      'Photo saved locally. Cloud photo upload needs setup.'
+      'Photo saved locally only. Storage upload failed.'
     );
     
   } catch (error) {
     console.error('Photo upload failed, using local fallback:', error);
+    console.log('Photo storage upload error message:', error.message);
 
     setPhotoStatus(
-  'Photo saved locally. Cloud photo upload needs setup.'
+  'Photo saved locally only. Storage upload failed.'
     );
     updatePhotoUploadStatus(
-      'Photo saved locally. Cloud photo upload needs setup.'
+      'Photo saved locally only. Storage upload failed.'
     );
 
     const reader = new FileReader();
@@ -6573,7 +6574,7 @@ async function handlePhotoUpload(event) {
         scheduleAutoSave();
 
         setPhotoStatus(
-          'Photo saved locally. Cloud photo upload needs setup.'
+          'Photo saved locally only. Storage upload failed.'
         );
       };
 
