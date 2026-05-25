@@ -4880,6 +4880,74 @@ function openProject(projectId, focusMode) {
   });
 }
 
+function compressPhotoFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('No photo file selected.'));
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+      const img = new Image();
+
+      img.onload = function() {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(
+            maxWidth / width,
+            maxHeight / height
+          );
+
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          blob => {
+            if (!blob) {
+              reject(new Error('Photo compression failed.'));
+              return;
+            }
+
+            const compressedFile = new File(
+              [blob],
+              'inspection-photo.jpg',
+              { type: 'image/jpeg' }
+            );
+
+            resolve(compressedFile);
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+
+      img.onerror = function() {
+        reject(new Error('Photo could not be loaded for compression.'));
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.onerror = function() {
+      reject(new Error('Photo could not be read from device.'));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
 function generateInspectionNumber() {
   const projects = getProjects();
 
@@ -4914,43 +4982,44 @@ async function uploadPhotoToStorage(file, projectId) {
     throw new Error('Please login before uploading photos.');
   }
 
-  const fileExtension =
-    file.name && file.name.includes('.')
-      ? file.name.split('.').pop().toLowerCase()
-      : 'jpg';
+  const compressedFile =
+    await compressPhotoFile(file, 1200, 1200, 0.82);
 
   const safeProjectId =
     String(projectId).replace(/[^a-zA-Z0-9_-]/g, '');
 
   const filePath =
-    `${userData.user.id}/${safeProjectId}/${Date.now()}.${fileExtension}`;
+    `${userData.user.id}/${safeProjectId}/${Date.now()}.jpg`;
 
-  console.log('Starting photo storage upload:', {
-  bucket: 'inspection-photos',
-  filePath,
-  fileName: file.name,
-  fileType: file.type,
-  fileSize: file.size,
-  projectId
-});
-
-const { data: uploadData, error: uploadError } = await supabaseClient
-  .storage
-  .from('inspection-photos')
-  .upload(filePath, file, {
-    cacheControl: '3600',
-    upsert: false,
-    contentType: file.type || 'image/jpeg'
+  console.log('Starting compressed photo storage upload:', {
+    bucket: 'inspection-photos',
+    filePath,
+    originalName: file.name,
+    originalType: file.type,
+    originalSize: file.size,
+    compressedType: compressedFile.type,
+    compressedSize: compressedFile.size,
+    projectId
   });
 
-console.log('Photo storage upload result:', {
-  uploadData,
-  uploadError
-});
+  const { data: uploadData, error: uploadError } =
+    await supabaseClient
+      .storage
+      .from('inspection-photos')
+      .upload(filePath, compressedFile, {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: 'image/jpeg'
+      });
 
-if (uploadError) {
-  throw uploadError;
-}
+  console.log('Compressed photo storage upload result:', {
+    uploadData,
+    uploadError
+  });
+
+  if (uploadError) {
+    throw uploadError;
+  }
 
   const { data: publicUrlData } = supabaseClient
     .storage
@@ -4961,7 +5030,9 @@ if (uploadError) {
     src: publicUrlData.publicUrl,
     storagePath: filePath,
     timestamp: new Date().toISOString(),
-    note: ''
+    note: '',
+    originalSize: file.size,
+    compressedSize: compressedFile.size
   };
 }
 
