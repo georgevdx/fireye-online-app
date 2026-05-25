@@ -6637,11 +6637,11 @@ window.photoUploadInProgress = true;
     });
 
     setPhotoStatus(
-      `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+      `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
     );
 
     updatePhotoUploadStatus(
-      `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+      `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
     );
 
     const reader = new FileReader();
@@ -6683,11 +6683,11 @@ window.photoUploadInProgress = true;
         scheduleAutoSave();
 
         setPhotoStatus(
-          `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+          `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
         );
 
         updatePhotoUploadStatus(
-          `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
+          `Photo saved locally as backup. Storage upload failed: ${storageErrorMessage}`
         );
       };
 
