@@ -6555,17 +6555,6 @@ async function handlePhotoUpload(event) {
   const photoUploadStatus =
     document.getElementById('photoUploadStatus');
 
-  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
-  const message =
-    `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
-
-  if (saveMessage) saveMessage.textContent = message;
-  if (photoUploadStatus) photoUploadStatus.textContent = message;
-
-  event.target.value = '';
-  return;
-}
-
   function setPhotoStatus(message) {
     if (saveMessage) {
       saveMessage.textContent = message;
@@ -6576,20 +6565,30 @@ async function handlePhotoUpload(event) {
     }
   }
 
-  if (!currentProjectId) {
-  setPhotoStatus('Saving inspection first...');
+  if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
+    const message =
+      `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`;
 
-  saveProject();
-
-  if (!currentProjectId) {
-    setPhotoStatus(
-      'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
-    );
+    setPhotoStatus(message);
 
     event.target.value = '';
     return;
   }
-}
+
+  if (!currentProjectId) {
+    setPhotoStatus('Saving inspection first...');
+
+    saveProject();
+
+    if (!currentProjectId) {
+      setPhotoStatus(
+        'Inspection could not be saved. Complete the Premises / Site field and make sure you are logged in.'
+      );
+
+      event.target.value = '';
+      return;
+    }
+  }
 
   setPhotoStatus('Uploading photo...');
 
@@ -6602,37 +6601,33 @@ async function handlePhotoUpload(event) {
     renderPhotos();
     scheduleAutoSave();
 
-    const storageErrorMessage =
-  error?.message ||
-  error?.statusCode ||
-  error?.status ||
-  'Unknown Storage upload error';
+    setPhotoStatus('Photo uploaded and added.');
+    updatePhotoUploadStatus('Photo uploaded and added.');
 
-setPhotoStatus(
-  `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
-);
-
-    updatePhotoUploadStatus(
-  `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
-);
-    
   } catch (error) {
     console.error('Photo upload failed, using local fallback:', error);
 
-console.log('Photo storage upload error details:', {
-  message: error?.message,
-  name: error?.name,
-  statusCode: error?.statusCode,
-  status: error?.status,
-  details: error?.details,
-  hint: error?.hint
-});
+    const storageErrorMessage =
+      error?.message ||
+      error?.statusCode ||
+      error?.status ||
+      'Unknown Storage upload error';
+
+    console.log('Photo storage upload error details:', {
+      message: error?.message,
+      name: error?.name,
+      statusCode: error?.statusCode,
+      status: error?.status,
+      details: error?.details,
+      hint: error?.hint
+    });
 
     setPhotoStatus(
-  'Photo saved locally only. Storage upload failed.'
+      `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
     );
+
     updatePhotoUploadStatus(
-      'Photo saved locally only. Storage upload failed.'
+      `Photo saved locally only. Storage upload failed: ${storageErrorMessage}`
     );
 
     const reader = new FileReader();
