@@ -6336,41 +6336,55 @@ function generateReport() {
         <div class="report-photo-grid">
     `;
 
-    pagePhotos.forEach((photo, pageIndex) => {
-      const photoNumber = pageStart + pageIndex + 1;
+    for (let rowStart = 0; rowStart < 4; rowStart += 2) {
+      photosHtml += `<div class="report-photo-row">`;
 
-      photosHtml += `
-        <div class="report-photo-card">
+      for (let cellIndex = 0; cellIndex < 2; cellIndex++) {
+        const photo = pagePhotos[rowStart + cellIndex];
 
-          <div class="report-photo-header">
-            Photo ${photoNumber}
-          </div>
+        photosHtml += `<div class="report-photo-cell">`;
 
-          <div class="report-photo-time">
-            Captured:
-            ${
-              photo.timestamp
-                ? new Date(photo.timestamp).toLocaleString()
-                : 'Not recorded'
-            }
-          </div>
+        if (photo) {
+          const photoNumber = pageStart + rowStart + cellIndex + 1;
 
-          <div class="report-photo-image-box">
-            <img
-              src="${photo.src}"
-              class="report-photo-img"
-              alt="Inspection photo ${photoNumber}"
-            >
-          </div>
+          photosHtml += `
+            <div class="report-photo-card">
 
-          <div class="report-photo-note">
-            <strong>Photo Note:</strong>
-            ${escapeHtml(photo.note || 'No note added.')}
-          </div>
+              <div class="report-photo-header">
+                Photo ${photoNumber}
+              </div>
 
-        </div>
-      `;
-    });
+              <div class="report-photo-time">
+                Captured:
+                ${
+                  photo.timestamp
+                    ? new Date(photo.timestamp).toLocaleString()
+                    : 'Not recorded'
+                }
+              </div>
+
+              <div class="report-photo-image-box">
+                <img
+                  src="${photo.src}"
+                  class="report-photo-img"
+                  alt="Inspection photo ${photoNumber}"
+                >
+              </div>
+
+              <div class="report-photo-note">
+                <strong>Photo Note:</strong>
+                ${escapeHtml(photo.note || 'No note added.')}
+              </div>
+
+            </div>
+          `;
+        }
+
+        photosHtml += `</div>`;
+      }
+
+      photosHtml += `</div>`;
+    }
 
     photosHtml += `
         </div>
