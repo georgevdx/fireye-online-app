@@ -4993,6 +4993,17 @@ function generateInspectionNumber() {
   return `FIR-${year}-${String(nextNumber).padStart(4, '0')}`;
 }
 
+function withPhotoTimeout(promise, timeoutMs = 30000) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Photo upload timed out. Please try again.'));
+      }, timeoutMs);
+    })
+  ]);
+}
+
 async function uploadPhotoToStorage(file, projectId) {
   if (!file || !projectId) {
     throw new Error('Photo file and project ID are required.');
@@ -6705,8 +6716,11 @@ window.photoUploadInProgress = true;
   setPhotoStatus('Uploading photo...');
 
   try {
-    const uploadedPhoto =
-      await uploadPhotoToStorage(file, currentProjectId);
+   const uploadedPhoto =
+    await withPhotoTimeout(
+      uploadPhotoToStorage(file, currentProjectId),
+      30000
+    );
 
     currentPhotos.push(uploadedPhoto);
 
