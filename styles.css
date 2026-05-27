@@ -3137,5 +3137,20 @@ button.readiness-chip:focus {
   transform: translateY(1px);
 }
 
+.project-summary-open-btn.action-primary {
+  background: #123047;
+  color: #ffffff;
+}
 
+.project-summary-open-btn.action-warning {
+  background: #fff3cd;
+  color: #7a4b00;
+  border: 1px solid #f0c36d;
+}
+
+.project-summary-open-btn.action-danger {
+  background: #ffe5e5;
+  color: #8a1111;
+  border: 1px solid #f2a3a3;
+}
 

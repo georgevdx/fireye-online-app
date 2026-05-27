@@ -4657,6 +4657,58 @@ container.innerHTML = `
 `;
 }
 
+function getProjectPrimaryAction(project) {
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const highRiskSummary = getHighRiskSummary(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  if (highRiskSummary.count > 0) {
+    return {
+      label: 'Review Findings',
+      focusMode: 'issues',
+      className: 'action-danger'
+    };
+  }
+
+  if (expiryCounts.overdue > 0) {
+    return {
+      label: 'Review Expired',
+      focusMode: 'expiry-overdue',
+      className: 'action-danger'
+    };
+  }
+
+  if (expiryCounts.soon > 0) {
+    return {
+      label: 'Review Due Soon',
+      focusMode: 'expiry-soon',
+      className: 'action-warning'
+    };
+  }
+
+  if (completion.unanswered > 0) {
+    return {
+      label: 'Continue Inspection',
+      focusMode: 'unanswered',
+      className: 'action-primary'
+    };
+  }
+
+  if (dataQuality.count > 0) {
+    return {
+      label: 'Complete Info',
+      focusMode: 'missing-info',
+      className: 'action-warning'
+    };
+  }
+
+  return {
+    label: 'Open Inspection',
+    focusMode: '',
+    className: 'action-primary'
+  };
+}
 
 function openProjectSummaryCard(index) {
   const projects = window.currentProjectsListView || [];
@@ -4673,6 +4725,7 @@ function openProjectSummaryCard(index) {
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
   const dataQuality = getProjectDataQuality(project);
+  const primaryAction = getProjectPrimaryAction(project);
 
   const projectTitle =
     project.projectName ||
@@ -4706,10 +4759,10 @@ function openProjectSummaryCard(index) {
 
       <button
         type="button"
-        class="project-summary-open-btn"
-        onclick="openProject('${escapeHtml(project.id)}')"
+        class="project-summary-open-btn ${escapeHtml(primaryAction.className)}"
+        onclick="openProject('${escapeHtml(project.id)}', '${escapeHtml(primaryAction.focusMode)}')"
       >
-        Open Inspection
+        ${escapeHtml(primaryAction.label)}
       </button>
     </div>
 
@@ -4912,6 +4965,22 @@ function openProject(projectId, focusMode) {
 
     return;
   }
+
+  if (focusMode === 'unanswered') {
+  setTimeout(() => {
+    focusFirstUnansweredChecklistItem();
+  }, 120);
+
+  return;
+}
+
+if (focusMode === 'missing-info') {
+  setTimeout(() => {
+    focusFirstMissingProjectInfo();
+  }, 120);
+
+  return;
+}
 
   if (focusMode === 'expiry-overdue') {
     setTimeout(() => {
