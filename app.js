@@ -6926,12 +6926,32 @@ function deletePhoto(index) {
   const confirmed = confirm(
     'Delete this photo from this inspection? This cannot be undone unless you restore a backup. Continue?'
   );
+
   if (!confirmed) return;
 
   currentPhotos.splice(index, 1);
+
   renderPhotos();
-  scheduleAutoSave();
   updatePhotoUploadStatus();
+
+  saveCurrentPhotosToOpenProject();
+
+  const updatedProject = getProjects().find(
+    project => project.id === currentProjectId
+  );
+
+  if (updatedProject) {
+    uploadSingleInspection(updatedProject)
+      .catch(error => {
+        console.warn('Photo delete cloud upload failed:', error);
+      });
+  }
+
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (saveMessage) {
+    saveMessage.textContent = 'Photo deleted and sync update queued.';
+  }
 }
 
 function updatePhotoNote(index, value) {
