@@ -2767,14 +2767,60 @@ function showProjectList() {
 
 function showProjectForm() {
   setCloudMenuVisible(false);
+
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');
 
   if (homeSection) homeSection.style.display = 'none';
   if (servicesSection) servicesSection.style.display = 'none';
+
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'block';
+
+  ensureInspectionQuickActions();
   updateProjectReadinessPanel();
+}
+
+function ensureInspectionQuickActions() {
+  const formSection = document.getElementById('projectFormSection');
+
+  if (!formSection) return;
+
+  let panel = document.getElementById('inspectionQuickActions');
+
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'inspectionQuickActions';
+    panel.className = 'inspection-quick-actions';
+
+    formSection.prepend(panel);
+  }
+
+  panel.innerHTML = `
+    <div class="quick-actions-title">Quick Actions</div>
+
+    <div class="quick-actions-grid">
+      <button type="button" onclick="focusFirstMissingProjectInfo()">
+        Missing Info
+      </button>
+
+      <button type="button" onclick="focusFirstUnansweredChecklistItem()">
+        First Unanswered
+      </button>
+
+      <button type="button" onclick="focusFirstCurrentIssue()">
+        First Finding
+      </button>
+
+      <button type="button" onclick="focusFirstCurrentExpiry('overdue')">
+        Expired Equipment
+      </button>
+
+      <button type="button" onclick="focusFirstCurrentExpiry('soon')">
+        Due Soon
+      </button>
+    </div>
+  `;
 }
 
 function closeCloudDropdown() {
