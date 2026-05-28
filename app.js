@@ -7697,3 +7697,16 @@ window.addEventListener('online', async () => {
 
   runBackgroundSync('signal restored');
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('./service-worker.js')
+      .then(() => {
+        console.log('FireyeSA service worker registered.');
+      })
+      .catch(error => {
+        console.warn('Service worker registration failed:', error);
+      });
+  });
+}
