@@ -3184,3 +3184,22 @@ button.readiness-chip:focus {
   border-color: #9fc6ea;
   box-shadow: 0 0 0 3px rgba(159, 198, 234, 0.25);
 }
+
+.inspection-project-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.inspection-project-card-actions .small-btn {
+  padding: 5px 8px;
+  font-size: 0.72rem;
+  border-radius: 8px;
+  line-height: 1.1;
+  min-height: 28px;
+}
+
+.inspection-project-card-actions .primary-small-btn {
+  font-weight: 700;
+}
