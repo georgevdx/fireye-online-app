@@ -3238,6 +3238,18 @@ function openServiceRequestCard(index) {
         class="service-followup-note"
         placeholder="Example: Client called, quote requested, technician to arrange visit..."
       ></textarea>
+    </div>
+
+      <div class="service-followup-box">
+      <label for="serviceFollowupNote">
+        Follow-up Note
+      </label>
+
+      <textarea
+        id="serviceFollowupNote"
+        class="service-followup-note"
+        placeholder="Example: Client called, quote requested, technician to arrange visit..."
+      ></textarea>
 
       <button
         type="button"
