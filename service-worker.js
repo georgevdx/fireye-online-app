@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fireyesa-cache-v90-offline-safe';
+const CACHE_NAME = 'fireyesa-cache-v92-offline-safe-network';
 
 const APP_SHELL = [
   './',
@@ -46,6 +46,20 @@ self.addEventListener('activate', event => {
 
 self.addEventListener('fetch', event => {
   const request = event.request;
+  const url = new URL(request.url);
+
+  // Never intercept Supabase or external API calls.
+  // Login, sync, storage upload, database calls, and GPS address lookups
+  // must go straight to the network.
+  if (
+    url.hostname.includes('supabase.co') ||
+    url.hostname.includes('supabase.in') ||
+    url.hostname.includes('openstreetmap.org') ||
+    url.hostname.includes('overpass-api.de') ||
+    url.hostname.includes('nominatim.openstreetmap.org')
+  ) {
+    return;
+  }
 
   if (request.method !== 'GET') return;
 
