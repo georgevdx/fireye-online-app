@@ -4705,7 +4705,7 @@ container.innerHTML = `
 
     <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
       ${
-        project.scheduledDate
+        project.scheduledDate && project.scheduledStatus === 'scheduled'
           ? `Scheduled: ${escapeHtml(project.scheduledDate)}`
           : escapeHtml(followStatus.label)
       }
@@ -4993,6 +4993,9 @@ function openProject(projectId, focusMode) {
 
   currentProjectId = project.id;
  
+    const shouldStartFreshScheduledInspection =
+    project.scheduleFreshInspection === true;
+
   populateProductTypes(project.productType);
   updateInspectionTypeOptions(project.inspectionType);
   getEl('organisationName').value = project.organisationName || '';
@@ -5025,11 +5028,14 @@ function openProject(projectId, focusMode) {
   getEl('finalComments').value = project.finalComments || '';
   toggleMallFields();
 
-  currentPhotos = project.photos || [];
-  renderPhotos();
-  updateDisplay();
+  currentPhotos = shouldStartFreshScheduledInspection
+      ? []
+      : (project.photos || []);
 
-  if (project.answers) {
+    renderPhotos();
+    updateDisplay();
+
+    if (!shouldStartFreshScheduledInspection && project.answers) {
    project.answers.forEach(item => {
       const field = document.getElementById(`check_${item.itemIndex}`);
      if (field) {
@@ -5542,6 +5548,14 @@ function saveProject() {
       followUpNotes,
       finalComments,
       photos: currentPhotos,
+
+      scheduledStatus:
+        projects[index].scheduleFreshInspection
+          ? 'completed'
+          : projects[index].scheduledStatus,
+
+      scheduleFreshInspection: false,
+
       lastSaved: new Date().toISOString()
     };
   }
@@ -5678,10 +5692,10 @@ function scheduleInspectionForProject(projectId) {
   }
 
   const projects = getProjects();
-  const original = projects.find(project => project.id === projectId);
+  const index = projects.findIndex(project => project.id === projectId);
 
-  if (!original) {
-    alert('Original inspection not found.');
+  if (index === -1) {
+    alert('Inspection/site not found.');
     return;
   }
 
@@ -5692,49 +5706,35 @@ function scheduleInspectionForProject(projectId) {
 
   if (!scheduledDate) return;
 
-  const scheduledProject = {
-    ...original,
-
-    id: crypto.randomUUID
-      ? crypto.randomUUID()
-      : String(Date.now()),
-
-    inspectionNumber: generateInspectionNumber(),
-
-    projectName: original.projectName || 'Scheduled Inspection',
-
-    answers: [],
-    photos: [],
+  projects[index] = {
+    ...projects[index],
 
     scheduledDate,
     scheduledStatus: 'scheduled',
 
+    // This tells the app:
+    // same site/card, but next open should start a fresh inspection cycle.
+    scheduleFreshInspection: true,
+
     followUpRequired: 'No',
     followUpDate: scheduledDate,
-    followUpNotes: 'Scheduled inspection',
-
-    linkedToInspectionId: original.id,
-    linkedToInspectionName: original.projectName || '',
-    linkedToInspectionNumber: original.inspectionNumber || '',
-    linkedToInspectionDate: original.lastSaved || '',
+    followUpNotes: 'Scheduled fresh inspection',
 
     syncPending: true,
     syncError: false,
-
-    createdFromSchedule: true,
     lastSaved: new Date().toISOString()
   };
 
-  projects.push(scheduledProject);
   setProjects(projects);
+  renderProjectsList();
 
-  currentProjectId = scheduledProject.id;
-  currentPhotos = [];
+  runBackgroundSync('inspection scheduled');
 
-  openProject(scheduledProject.id);
-
-  getEl('saveMessage').textContent =
-    `Inspection scheduled for ${scheduledDate}.`;
+  const syncStatus = document.getElementById('syncStatus');
+  if (syncStatus) {
+    syncStatus.textContent =
+      `Inspection scheduled for ${scheduledDate}.`;
+  }
 }
 
 function scheduleCurrentInspection() {
