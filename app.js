@@ -5128,6 +5128,8 @@ if (shouldStartFreshScheduledInspection) {
       }
     });
   }
+
+  renderInspectionArchive(project);
   renderSiteHistory(project);
   showProjectForm();
 
@@ -7657,6 +7659,339 @@ function updateAnswerSummary() {
 
   updateProjectReadinessPanel();
 }
+
+function renderInspectionArchive(project) {
+  const existing =
+    document.getElementById('inspectionArchivePanel');
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const history = project.inspectionHistory || [];
+
+  if (history.length === 0) return;
+
+  const panel = document.createElement('div');
+
+  panel.id = 'inspectionArchivePanel';
+  panel.className = 'site-history-panel';
+
+  const archiveHtml = history
+    .slice()
+    .reverse()
+    .map((inspection, index) => {
+      const photoCount =
+        (inspection.photos || []).length;
+
+      const answerCount =
+        (inspection.answers || []).filter(answer =>
+          ['yes', 'no', 'n/a'].includes(
+            String(answer.answer || '').trim().toLowerCase()
+          )
+        ).length;
+
+      const noCount =
+        (inspection.answers || []).filter(answer =>
+          String(answer.answer || '').trim().toLowerCase() === 'no'
+        ).length;
+
+      return `
+        <div class="archive-inspection-card">
+          <div>
+            <strong>
+              Previous Inspection ${history.length - index}
+            </strong>
+          </div>
+
+          <div>
+            <strong>Date:</strong>
+            ${
+              inspection.lastSaved
+                ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
+                : '-'
+            }
+          </div>
+
+          <div>
+            <strong>Inspection No:</strong>
+            ${escapeHtml(inspection.inspectionNumber || '-')}
+          </div>
+
+          <div>
+            <strong>Answered:</strong>
+            ${answerCount}
+          </div>
+
+          <div>
+            <strong>Findings:</strong>
+            ${noCount}
+          </div>
+
+          <div>
+            <strong>Photos:</strong>
+            ${photoCount}
+          </div>
+
+          <button
+            type="button"
+            class="small-btn"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+          >
+            View Previous Inspection
+          </button>
+        </div>
+      `;
+    })
+    .join('');
+
+  panel.innerHTML = `
+    <h3>Previous Inspection Archive</h3>
+
+    <div class="note">
+      Older inspection data and photos are stored here when a fresh scheduled inspection is started.
+    </div>
+
+    ${archiveHtml}
+  `;
+
+  const form =
+    document.getElementById('projectFormSection');
+
+  if (form) {
+    form.prepend(panel);
+  }
+}
+
+function viewArchivedInspection(projectId, historyIndex) {
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project || !project.inspectionHistory) {
+    alert('Archived inspection not found.');
+    return;
+  }
+
+  const archived =
+    project.inspectionHistory[historyIndex];
+
+  if (!archived) {
+    alert('Archived inspection not found.');
+    return;
+  }
+
+  const answeredItems =
+    (archived.answers || []).filter(answer =>
+      ['yes', 'no', 'n/a'].includes(
+        String(answer.answer || '').trim().toLowerCase()
+      ) || answer.note || answer.expiryDate
+    );
+
+  const findings =
+    answeredItems.filter(answer =>
+      String(answer.answer || '').trim().toLowerCase() === 'no'
+    );
+
+  const photos =
+    archived.photos || [];
+
+  const archiveWindow = window.open('', '_blank');
+
+  if (!archiveWindow) {
+    alert('Popup blocked. Allow popups to view archived inspection.');
+    return;
+  }
+
+  archiveWindow.document.write(`
+    <html>
+      <head>
+        <title>Previous Inspection</title>
+
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 18px;
+            background: #f6f8fb;
+            color: #1f2937;
+          }
+
+          .block {
+            background: white;
+            padding: 14px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            border: 1px solid #d9e2ec;
+          }
+
+          .answer {
+            padding: 10px;
+            border-bottom: 1px solid #e5e7eb;
+          }
+
+          .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+          }
+
+          .photo-card {
+            background: white;
+            border: 1px solid #d9e2ec;
+            border-radius: 10px;
+            padding: 8px;
+          }
+
+          .photo-card img {
+            width: 100%;
+            border-radius: 8px;
+            display: block;
+          }
+
+          .finding {
+            border-left: 4px solid #b91c1c;
+            background: #fff5f5;
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="block">
+          <h2>Previous Inspection</h2>
+
+          <div>
+            <strong>Inspection No:</strong>
+            ${escapeHtml(archived.inspectionNumber || '-')}
+          </div>
+
+          <div>
+            <strong>Date:</strong>
+            ${
+              archived.lastSaved
+                ? escapeHtml(new Date(archived.lastSaved).toLocaleString())
+                : '-'
+            }
+          </div>
+
+          <div>
+            <strong>Inspector:</strong>
+            ${escapeHtml(archived.inspectorName || '-')}
+          </div>
+
+          <div>
+            <strong>Inspection Type:</strong>
+            ${escapeHtml(archived.inspectionType || '-')}
+          </div>
+
+          <div>
+            <strong>Occupancy:</strong>
+            ${escapeHtml(archived.occupancy || '-')}
+          </div>
+        </div>
+
+        <div class="block">
+          <h3>Summary</h3>
+
+          <div>
+            <strong>Answered items:</strong>
+            ${answeredItems.length}
+          </div>
+
+          <div>
+            <strong>Findings / No answers:</strong>
+            ${findings.length}
+          </div>
+
+          <div>
+            <strong>Photos:</strong>
+            ${photos.length}
+          </div>
+
+          <div>
+            <strong>Final comments:</strong>
+            ${escapeHtml(archived.finalComments || '-')}
+          </div>
+        </div>
+
+        <div class="block">
+          <h3>Checklist Answers</h3>
+
+          ${
+            answeredItems.length
+              ? answeredItems.map(answer => `
+                <div class="answer ${
+                  String(answer.answer || '').toLowerCase() === 'no'
+                    ? 'finding'
+                    : ''
+                }">
+                  <div>
+                    <strong>Item:</strong>
+                    ${escapeHtml(answer.itemNumber || answer.itemIndex + 1)}
+                  </div>
+
+                  <div>
+                    <strong>Answer:</strong>
+                    ${escapeHtml(answer.answer || '-')}
+                  </div>
+
+                  ${
+                    answer.note
+                      ? `<div><strong>Note:</strong> ${escapeHtml(answer.note)}</div>`
+                      : ''
+                  }
+
+                  ${
+                    answer.expiryDate
+                      ? `<div><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}</div>`
+                      : ''
+                  }
+                </div>
+              `).join('')
+              : '<div>No checklist answers captured.</div>'
+          }
+        </div>
+
+        <div class="block">
+          <h3>Archived Photos</h3>
+
+          ${
+            photos.length
+              ? `<div class="photo-grid">
+                  ${photos.map((photo, index) => `
+                    <div class="photo-card">
+                      <strong>Photo ${index + 1}</strong>
+
+                      <div>
+                        Captured:
+                        ${
+                          photo.timestamp
+                            ? escapeHtml(new Date(photo.timestamp).toLocaleString())
+                            : '-'
+                        }
+                      </div>
+
+                      ${
+                        photo.src
+                          ? `<img src="${escapeHtml(photo.src)}" alt="Archived photo ${index + 1}">`
+                          : '<div>No image source available.</div>'
+                      }
+
+                      <div>
+                        <strong>Note:</strong>
+                        ${escapeHtml(photo.note || 'No note added.')}
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>`
+              : '<div>No archived photos.</div>'
+          }
+        </div>
+      </body>
+    </html>
+  `);
+
+  archiveWindow.document.close();
+}
+
 function renderSiteHistory(project) {
 
   const existing =
@@ -7921,3 +8256,4 @@ if ('serviceWorker' in navigator) {
 }
 window.scheduleInspectionForProject = scheduleInspectionForProject;
 window.scheduleCurrentInspection = scheduleCurrentInspection;
+window.viewArchivedInspection = viewArchivedInspection;
