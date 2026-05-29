@@ -395,7 +395,9 @@ function formatProjectDate(value) {
   );
 
   const projectName =
-    currentProject?.projectName || 'Inspection';
+  archivedReportContext
+    ? `${archivedReportContext.archived.projectName || archivedReportContext.parentProject.projectName || 'Archived Inspection'} Previous Inspection`
+    : currentProject?.projectName || 'Inspection';
   const reportDate =
     new Date().toISOString().slice(0, 10);
   const safeProjectName =
@@ -6271,33 +6273,94 @@ const reportTitle =
 
   const reportCompanyLogo =
   currentProject?.companyLogo || 'icon-192.png';
-  const inspectorName = getEl('inspectorName').value.trim() || '-';
-  const finalComments = getEl('finalComments').value.trim();
-  const occupancy = getEl('occupancySelect').value || '-';
+  const inspectorName = archivedReportContext
+  ? (currentProject?.inspectorName || '-')
+  : (getEl('inspectorName').value.trim() || '-');
 
-  const streetNumber = getEl('streetNumber').value.trim();
-  const addressLine = getEl('projectAddress').value.trim();
-  const projectAddress = combineStreetAddress(streetNumber, addressLine);
-  const gps = getEl('gps').value.trim();
+const finalComments = archivedReportContext
+  ? (currentProject?.finalComments || '')
+  : getEl('finalComments').value.trim();
 
-  const inMall = getEl('inMall').value || 'No';
-  const mallName = getEl('mallName').value.trim();
-  const unitNumber = getEl('unitNumber').value.trim();
-  const contactPerson = getEl('contactPerson').value.trim();
-  const contactTel = getEl('contactTel').value.trim();
-  const contactEmail = getEl('contactEmail').value.trim();
-  const productType = normalizeProductType(getEl('productType').value);
-  const inspectionType = getEl('inspectionType').value;
+const occupancy = archivedReportContext
+  ? (currentProject?.occupancy || '-')
+  : (getEl('occupancySelect').value || '-');
 
-  const selectedChecklist = getActiveTemplateChecklist() || [];
+const streetNumber = archivedReportContext
+  ? (currentProject?.streetNumber || '')
+  : getEl('streetNumber').value.trim();
+
+const addressLine = archivedReportContext
+  ? (currentProject?.addressLine || currentProject?.projectAddress || '')
+  : getEl('projectAddress').value.trim();
+
+const projectAddress = archivedReportContext
+  ? (
+      currentProject?.projectAddress ||
+      combineStreetAddress(streetNumber, addressLine)
+    )
+  : combineStreetAddress(streetNumber, addressLine);
+
+const gps = archivedReportContext
+  ? (currentProject?.gps || '')
+  : getEl('gps').value.trim();
+
+const inMall = archivedReportContext
+  ? (currentProject?.inMall || 'No')
+  : (getEl('inMall').value || 'No');
+
+const mallName = archivedReportContext
+  ? (currentProject?.mallName || '')
+  : getEl('mallName').value.trim();
+
+const unitNumber = archivedReportContext
+  ? (currentProject?.unitNumber || '')
+  : getEl('unitNumber').value.trim();
+
+const contactPerson = archivedReportContext
+  ? (currentProject?.contactPerson || '')
+  : getEl('contactPerson').value.trim();
+
+const contactTel = archivedReportContext
+  ? (currentProject?.contactTel || '')
+  : getEl('contactTel').value.trim();
+
+const contactEmail = archivedReportContext
+  ? (currentProject?.contactEmail || '')
+  : getEl('contactEmail').value.trim();
+
+const productType = archivedReportContext
+  ? normalizeProductType(currentProject?.productType)
+  : normalizeProductType(getEl('productType').value);
+
+const inspectionType = archivedReportContext
+  ? (currentProject?.inspectionType || '')
+  : getEl('inspectionType').value;
+
+  const selectedChecklist = archivedReportContext
+  ? getChecklistForProject(currentProject)
+  : (getActiveTemplateChecklist() || []);
   
   const inspectionNumber =
   currentProject?.inspectionNumber || '-';
+  
+  const inspectionDate =
+  archivedReportContext && currentProject?.lastSaved
+    ? new Date(currentProject.lastSaved).toLocaleDateString()
+    : new Date().toLocaleDateString();
+
   const reportContent = getEl('reportContent');
 
-  const followUpRequired = getEl('followUpRequired').value;
-  const followUpDate = getEl('followUpDate').value;
-  const followUpNotes = getEl('followUpNotes').value.trim();
+  const followUpRequired = archivedReportContext
+  ? (currentProject?.followUpRequired || 'No')
+  : getEl('followUpRequired').value;
+
+const followUpDate = archivedReportContext
+  ? (currentProject?.followUpDate || '')
+  : getEl('followUpDate').value;
+
+const followUpNotes = archivedReportContext
+  ? (currentProject?.followUpNotes || '')
+  : getEl('followUpNotes').value.trim();
 
   let answersHtml = '';
   let actionSections = {};
@@ -6307,7 +6370,11 @@ const reportTitle =
   let reportAnswers = [];
   let photosHtml = '';
 
-  if (currentPhotos.length > 0) {
+  const reportPhotos = archivedReportContext
+  ? (currentProject?.photos || [])
+  : currentPhotos;
+
+  if (reportPhotos.length > 0) {
 
     photosHtml += `
       <div class="report-page-break"></div>
@@ -6345,15 +6412,31 @@ const reportTitle =
   }
 
   selectedChecklist.forEach((item, index) => {
+    const archivedAnswer = archivedReportContext
+  ? (currentProject.answers || []).find(savedAnswer =>
+      savedAnswer.itemIndex === index ||
+      String(savedAnswer.itemNumber) === String(item["Item Number"])
+    )
+  : null;
+
     const field = document.getElementById(`check_${index}`);
-    const rawAnswer = field ? (field.value || 'Not answered') : 'Not answered';
+    const rawAnswer = archivedReportContext
+      ? (archivedAnswer?.answer || 'Not answered')
+      : (field ? (field.value || 'Not answered') : 'Not answered');
+
     const answer = rawAnswer.trim();
 
     const noteField = document.getElementById(`note_${index}`);
-    const itemNote = noteField ? noteField.value.trim() : '';
+    const itemNote = archivedReportContext
+      ? (archivedAnswer?.note || '')
+      : (noteField ? noteField.value.trim() : '');
+
     const expiryField =
       document.querySelector(`.expiry-date[data-index="${index}"]`);
-    const expiryDate = expiryField ? expiryField.value : '';
+
+    const expiryDate = archivedReportContext
+      ? (archivedAnswer?.expiryDate || '')
+      : (expiryField ? expiryField.value : '');
 
     const trackExpiry = isExpiryTrackedChecklistItem(item);
 const expiryApplies = isExpiryApplicableAnswer(answer);
@@ -6376,7 +6459,7 @@ reportAnswers.push({
   itemNumber: item["Item Number"] || String(index + 1),
   answer,
   note: itemNote,
-  expiryDate: expiryField ? expiryField.value : null
+  expiryDate: expiryDate || null
 });
 
 if (trackExpiry && expiryApplies && expiryDate) {
@@ -6785,11 +6868,11 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
     });
   }
 
-  if (currentPhotos.length > 0) {
+  if (reportPhotos.length > 0) {
   photosHtml = '';
 
-  for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
-    const pagePhotos = currentPhotos.slice(pageStart, pageStart + 4);
+  for (let pageStart = 0; pageStart < reportPhotos.length; pageStart += 4) {
+    const pagePhotos = reportPhotos.slice(pageStart, pageStart + 4);
     const isFirstPhotoPage = pageStart === 0;
 
     photosHtml += `
@@ -6907,7 +6990,7 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
 
       <div>
         <strong>Date:</strong>
-        ${new Date().toLocaleDateString()}
+        ${escapeHtml(inspectionDate)}
       </div>
 
       <div>
@@ -6978,7 +7061,7 @@ if (trackExpiry && hasRealAnswer && expiryApplies && !expiryDate) {
       ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
       <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
       <div class="report-line"><strong>Occupancy Classification:</strong> ${escapeHtml(occupancy)}</div>
-      <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
+      <div class="report-line"><strong>Inspection Date:</strong> ${escapeHtml(inspectionDate)}</div>
       ${dataQualityHtml}
     </div>
 
@@ -8459,6 +8542,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   // Restore app working context, but leave report visible.
   currentProjectId = previousCurrentProjectId;
   currentPhotos = previousCurrentPhotos;
+  renderPhotos();
 }
 
 function renderSiteHistory(project) {
