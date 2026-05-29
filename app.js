@@ -4986,6 +4986,43 @@ function closeProjectSummaryCard() {
   }
 }
 
+function archiveCurrentInspectionCycle(project) {
+  const hasInspectionData =
+    (project.answers || []).length > 0 ||
+    (project.photos || []).length > 0 ||
+    project.finalComments ||
+    project.followUpNotes;
+
+  if (!hasInspectionData) {
+    return project.inspectionHistory || [];
+  }
+
+  const previousInspectionSnapshot = {
+    archivedAt: new Date().toISOString(),
+
+    inspectionNumber: project.inspectionNumber || '',
+    lastSaved: project.lastSaved || '',
+    inspectorName: project.inspectorName || '',
+
+    productType: project.productType || '',
+    inspectionType: project.inspectionType || '',
+    occupancy: project.occupancy || '',
+
+    answers: project.answers || [],
+    photos: project.photos || [],
+
+    finalComments: project.finalComments || '',
+    followUpRequired: project.followUpRequired || '',
+    followUpDate: project.followUpDate || '',
+    followUpNotes: project.followUpNotes || ''
+  };
+
+  return [
+    ...(project.inspectionHistory || []),
+    previousInspectionSnapshot
+  ];
+}
+
 function openProject(projectId, focusMode) {
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
@@ -4993,6 +5030,44 @@ function openProject(projectId, focusMode) {
 
   currentProjectId = project.id;
  
+  const shouldStartFreshScheduledInspection =
+  project.scheduleFreshInspection === true;
+
+if (shouldStartFreshScheduledInspection) {
+  const projectIndex = projects.findIndex(p => p.id === project.id);
+
+  if (projectIndex !== -1) {
+    const inspectionHistory =
+      archiveCurrentInspectionCycle(projects[projectIndex]);
+
+    projects[projectIndex] = {
+      ...projects[projectIndex],
+
+      inspectionHistory,
+
+      answers: [],
+      photos: [],
+      finalComments: '',
+
+      scheduledStatus: 'in_progress',
+      scheduleFreshInspection: false,
+
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+
+    setProjects(projects);
+
+    project.inspectionHistory = inspectionHistory;
+    project.answers = [];
+    project.photos = [];
+    project.finalComments = '';
+    project.scheduledStatus = 'in_progress';
+    project.scheduleFreshInspection = false;
+  }
+}
+
     const shouldStartFreshScheduledInspection =
     project.scheduleFreshInspection === true;
 
@@ -5028,9 +5103,7 @@ function openProject(projectId, focusMode) {
   getEl('finalComments').value = project.finalComments || '';
   toggleMallFields();
 
-  currentPhotos = shouldStartFreshScheduledInspection
-      ? []
-      : (project.photos || []);
+  currentPhotos = project.photos || [];
 
     renderPhotos();
     updateDisplay();
