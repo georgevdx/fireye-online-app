@@ -5068,9 +5068,6 @@ if (shouldStartFreshScheduledInspection) {
   }
 }
 
-    const shouldStartFreshScheduledInspection =
-    project.scheduleFreshInspection === true;
-
   populateProductTypes(project.productType);
   updateInspectionTypeOptions(project.inspectionType);
   getEl('organisationName').value = project.organisationName || '';
@@ -5108,7 +5105,7 @@ if (shouldStartFreshScheduledInspection) {
     renderPhotos();
     updateDisplay();
 
-    if (!shouldStartFreshScheduledInspection && project.answers) {
+    if (project.answers) {
    project.answers.forEach(item => {
       const field = document.getElementById(`check_${item.itemIndex}`);
      if (field) {
