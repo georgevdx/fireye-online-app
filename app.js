@@ -7671,7 +7671,8 @@ GPS: ${gps}
 In Mall/Centre: ${inMall}
 ${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}
 Unit / Shop Number: ${unitNumber}
-` : ''}Inspector Name: ${inspectorName}
+` : ''}
+Inspector Name: ${inspectorName}
 Occupancy: ${occupancy}
 Inspection Date: ${new Date().toLocaleDateString()}
 
@@ -7875,8 +7876,15 @@ function renderInspectionArchive(project) {
               class="small-btn primary-small-btn"
               onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
             >
-              Report
+              Generate Client Report
             </button>
+            <button
+              type="button"
+              class="small-btn primary-small-btn"
+              onclick="exportArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            >
+              PDF
+            </button>          
           </div>
         </div>
       `;
@@ -8545,6 +8553,14 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   renderPhotos();
 }
 
+function exportArchivedInspectionReport(projectId, historyIndex) {
+  generateArchivedInspectionReport(projectId, historyIndex);
+
+  setTimeout(() => {
+    exportReport();
+  }, 500);
+}
+
 function renderSiteHistory(project) {
 
   const existing =
@@ -8811,3 +8827,4 @@ window.scheduleInspectionForProject = scheduleInspectionForProject;
 window.scheduleCurrentInspection = scheduleCurrentInspection;
 window.viewArchivedInspection = viewArchivedInspection;
 window.generateArchivedInspectionReport = generateArchivedInspectionReport;
+window.exportArchivedInspectionReport = exportArchivedInspectionReport;
