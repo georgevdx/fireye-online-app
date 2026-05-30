@@ -5929,61 +5929,63 @@ function createFollowUpInspection() {
     );
     return;
   }
-  if (!currentProjectId) {
-    getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
-    return;
-  }
-  
-  const projects = getProjects();
-  const original = projects.find(p => p.id === currentProjectId);
 
-  if (!original) {
-    getEl('saveMessage').textContent = 'Original inspection not found.';
+  if (!currentProjectId) {
+    getEl('saveMessage').textContent =
+      'Open or save an inspection before scheduling a follow-up.';
     return;
   }
+
+  const projects = getProjects();
+  const index = projects.findIndex(p => p.id === currentProjectId);
+
+  if (index === -1) {
+    getEl('saveMessage').textContent =
+      'Original inspection not found.';
+    return;
+  }
+
+  const original = projects[index];
+
+  const followUpDate = prompt(
+    'Enter follow-up inspection date in YYYY-MM-DD format:',
+    original.followUpDate || new Date().toISOString().slice(0, 10)
+  );
+
+  if (!followUpDate) return;
 
   const confirmed = confirm(
-    'Create a new follow-up inspection from this inspection? The original inspection will remain saved, and a new linked follow-up will be created. Continue?'
+    'Schedule a follow-up on this same site card? The current inspection will be kept in Previous Inspection Archive, and the next open will start a fresh follow-up inspection.'
   );
 
   if (!confirmed) return;
 
-  const followUpProject = {
+  projects[index] = {
     ...original,
 
-    id: crypto.randomUUID
-      ? crypto.randomUUID()
-      : String(Date.now()),
+    followUpRequired: 'Yes',
+    followUpDate,
+    followUpNotes:
+      original.followUpNotes ||
+      'Follow-up inspection scheduled.',
 
-    inspectionNumber: generateInspectionNumber(),
+    scheduledDate: followUpDate,
+    scheduledStatus: 'scheduled',
+    scheduleFreshInspection: true,
+    scheduledReason: 'follow_up',
 
-    projectName: `${original.projectName || 'Inspection'} - Follow-up`,
-
-    answers: [],
-    photos: [],
-
-    followUpRequired: 'No',
-    followUpDate: '',
-    followUpNotes: '',
-
-    linkedToInspectionId: original.id,
-    linkedToInspectionName: original.projectName || '',
-    linkedToInspectionNumber: original.inspectionNumber || '',
-    linkedToInspectionDate: original.lastSaved || '',
-
+    syncPending: true,
+    syncError: false,
     lastSaved: new Date().toISOString()
   };
 
-  projects.push(followUpProject);
   setProjects(projects);
+  renderProjectsList();
 
-  currentProjectId = followUpProject.id;
-  currentPhotos = [];
-
-  openProject(followUpProject.id);
+  runBackgroundSync('follow-up scheduled');
 
   getEl('saveMessage').textContent =
-    'Follow-up inspection created.';
+    `Follow-up scheduled for ${followUpDate}.`;
 }
 
 async function deleteProject() {
