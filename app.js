@@ -7877,10 +7877,26 @@ function renderInspectionArchive(project) {
         String(answer.answer || '').trim().toLowerCase() === 'no'
       ).length;
 
+    const archiveBusinessName =
+      inspection.projectName ||
+      [inspection.organisationName, inspection.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      project.projectName ||
+      [project.organisationName, project.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      'Unnamed business / site';
+
     return `
       <div class="archive-inspection-card">
         <div>
           <strong>${escapeHtml(label)}</strong>
+        </div>
+
+        <div>
+          <strong>Business / Site:</strong>
+          ${escapeHtml(archiveBusinessName)}
         </div>
 
         <div>
