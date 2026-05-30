@@ -7848,99 +7848,139 @@ function renderInspectionArchive(project) {
   panel.id = 'inspectionArchivePanel';
   panel.className = 'site-history-panel';
 
-  const archiveHtml = history
+  const latestIndex = history.length - 1;
+  const latestInspection = history[latestIndex];
+
+  const olderInspections = history
     .slice()
+    .map((inspection, originalIndex) => ({
+      inspection,
+      originalIndex
+    }))
+    .filter(item => item.originalIndex !== latestIndex)
     .reverse()
-    .map((inspection, index) => {
-      const photoCount =
-        (inspection.photos || []).length;
+    .slice(0, 4);
 
-      const answerCount =
-        (inspection.answers || []).filter(answer =>
-          ['yes', 'no', 'n/a'].includes(
-            String(answer.answer || '').trim().toLowerCase()
-          )
-        ).length;
+  function buildArchiveCard(inspection, historyIndex, label) {
+    const photoCount =
+      (inspection.photos || []).length;
 
-      const noCount =
-        (inspection.answers || []).filter(answer =>
-          String(answer.answer || '').trim().toLowerCase() === 'no'
-        ).length;
+    const answerCount =
+      (inspection.answers || []).filter(answer =>
+        ['yes', 'no', 'n/a'].includes(
+          String(answer.answer || '').trim().toLowerCase()
+        )
+      ).length;
 
-      return `
-        <div class="archive-inspection-card">
-          <div>
-            <strong>
-              Previous Inspection ${history.length - index}
-            </strong>
-          </div>
+    const noCount =
+      (inspection.answers || []).filter(answer =>
+        String(answer.answer || '').trim().toLowerCase() === 'no'
+      ).length;
 
-          <div>
-            <strong>Date:</strong>
+    return `
+      <div class="archive-inspection-card">
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+        </div>
+
+        <div>
+          <strong>Date:</strong>
+          ${
+            inspection.lastSaved
+              ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
+              : '-'
+          }
+        </div>
+
+        <div>
+          <strong>Inspection No:</strong>
+          ${escapeHtml(inspection.inspectionNumber || '-')}
+        </div>
+
+        <div>
+          <strong>Answered:</strong>
+          ${answerCount}
+        </div>
+
+        <div>
+          <strong>Findings:</strong>
+          ${noCount}
+        </div>
+
+        <div>
+          <strong>Photos:</strong>
+          ${photoCount}
+        </div>
+
+        <div class="archive-actions">
+          <button
+            type="button"
+            class="small-btn"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
+          >
+            View
+          </button>
+
+          <button
+            type="button"
+            class="small-btn primary-small-btn"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
+          >
+            Client Report
+          </button>
+
+          <button
+            type="button"
+            class="small-btn primary-small-btn"
+            onclick="exportArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
+          >
+            PDF
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  const latestHtml =
+    buildArchiveCard(
+      latestInspection,
+      latestIndex,
+      'Latest Previous Inspection'
+    );
+
+  const olderHtml =
+    olderInspections.length > 0
+      ? `
+        <details class="archive-more-details">
+          <summary>
+            Show older previous inspections (${olderInspections.length})
+          </summary>
+
+          <div class="archive-older-list">
             ${
-              inspection.lastSaved
-                ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
-                : '-'
+              olderInspections.map((item, index) =>
+                buildArchiveCard(
+                  item.inspection,
+                  item.originalIndex,
+                  `Older Previous Inspection ${index + 1}`
+                )
+              ).join('')
             }
           </div>
-
-          <div>
-            <strong>Inspection No:</strong>
-            ${escapeHtml(inspection.inspectionNumber || '-')}
-          </div>
-
-          <div>
-            <strong>Answered:</strong>
-            ${answerCount}
-          </div>
-
-          <div>
-            <strong>Findings:</strong>
-            ${noCount}
-          </div>
-
-          <div>
-            <strong>Photos:</strong>
-            ${photoCount}
-          </div>
-
-          <div class="archive-actions">
-            <button
-              type="button"
-              class="small-btn"
-              onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
-            >
-              View
-            </button>
-
-            <button
-              type="button"
-              class="small-btn primary-small-btn"
-              onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
-            >
-              Generate Client Report
-            </button>
-            <button
-              type="button"
-              class="small-btn primary-small-btn"
-              onclick="exportArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
-            >
-              PDF
-            </button>          
-          </div>
-        </div>
-      `;
-    })
-    .join('');
+        </details>
+      `
+      : '';
 
   panel.innerHTML = `
     <h3>Previous Inspection Archive</h3>
 
     <div class="note">
-      Older inspection data and photos are stored here when a fresh scheduled inspection is started.
+      The latest previous inspection is shown below. Older inspections are available from the dropdown, limited to the last 5 archived inspections.
     </div>
 
-    ${archiveHtml}
+    ${latestHtml}
+
+    ${olderHtml}
   `;
 
   const form =
