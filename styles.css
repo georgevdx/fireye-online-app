@@ -3289,3 +3289,76 @@ button.readiness-chip:focus {
   font-size: 0.75rem;
   line-height: 1.25;
 }
+
+.project-action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 8px 0 12px;
+}
+
+.compact-action-btn {
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  min-height: 34px;
+  border: none;
+  cursor: pointer;
+}
+
+.compact-action-secondary {
+  opacity: 0.92;
+}
+
+@media (max-width: 520px) {
+  .project-action-buttons {
+    gap: 6px;
+  }
+
+  .compact-action-btn {
+    padding: 7px 10px;
+    font-size: 0.78rem;
+    min-height: 32px;
+  }
+}
+
+.project-action-buttons {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 12px 0 18px;
+}
+
+.compact-action-btn {
+  padding: 8px 13px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1;
+  min-height: 36px;
+  border: none;
+  cursor: pointer;
+  min-width: 92px;
+}
+
+.compact-action-secondary {
+  opacity: 0.92;
+}
+
+@media (max-width: 520px) {
+  .project-action-buttons {
+    gap: 12px;
+    margin: 12px 0 18px;
+  }
+
+  .compact-action-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    min-height: 36px;
+    min-width: 88px;
+  }
+}
