@@ -3184,3 +3184,52 @@ button.readiness-chip:focus {
   border-color: #9fc6ea;
   box-shadow: 0 0 0 3px rgba(159, 198, 234, 0.25);
 }
+
+.archived-photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.archived-photo-card {
+  border: 1px solid #d9e2ec;
+  border-radius: 10px;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.archived-photo-header {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.archived-photo-time {
+  font-size: 0.8rem;
+  color: #607080;
+  margin-bottom: 8px;
+}
+
+.archived-photo-image-box {
+  width: 100%;
+  height: 220px;
+  border: 1px solid #e5eaf0;
+  border-radius: 8px;
+  background: #f7f9fb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.archived-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.archived-photo-note {
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
