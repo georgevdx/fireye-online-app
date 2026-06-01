@@ -2103,6 +2103,13 @@ function initApp() {
   getEl('deleteBtn').addEventListener('click', deleteProject);
   getEl('newProjectBtn').addEventListener('click', createNewProject);
   
+  const scheduleNewInspectionBtn =
+    document.getElementById('scheduleNewInspectionBtn');
+
+  if (scheduleNewInspectionBtn) {
+    scheduleNewInspectionBtn.addEventListener('click', scheduleNewInspection);
+  }
+
   const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
 
   if (toggleFiltersBtn) {
@@ -2703,6 +2710,172 @@ function migrateLegacyProductTypes() {
   if (changed) {
     setProjects(migratedProjects);
   }
+}
+
+function scheduleNewInspection() {
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow scheduling new inspections. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  const organisationName = prompt(
+    'Client / Organisation name:',
+    ''
+  );
+
+  if (organisationName === null) return;
+
+  const siteName = prompt(
+    'Site / Premises name:',
+    ''
+  );
+
+  if (siteName === null) return;
+
+  const scheduledDate = prompt(
+    'Scheduled inspection date in YYYY-MM-DD format:',
+    new Date().toISOString().slice(0, 10)
+  );
+
+  if (!scheduledDate) return;
+
+  const inspectionType = prompt(
+    'Inspection type:',
+    'General Fire Inspection'
+  );
+
+  if (inspectionType === null) return;
+
+  const occupancy = prompt(
+    'Occupancy classification if known, for example H4, G1, A3. Leave blank if unknown:',
+    ''
+  );
+
+  if (occupancy === null) return;
+
+  const addressLine = prompt(
+    'Address / location if known. Leave blank if unknown:',
+    ''
+  );
+
+  if (addressLine === null) return;
+
+  const contactPerson = prompt(
+    'Contact person if known. Leave blank if unknown:',
+    ''
+  );
+
+  if (contactPerson === null) return;
+
+  const contactTel = prompt(
+    'Contact telephone if known. Leave blank if unknown:',
+    ''
+  );
+
+  if (contactTel === null) return;
+
+  const accessMetadata = getAccessMetadata();
+
+  const cleanOrganisationName = organisationName.trim();
+  const cleanSiteName = siteName.trim();
+  const cleanAddressLine = addressLine.trim();
+
+  const projectName =
+    [cleanOrganisationName, cleanSiteName]
+      .filter(Boolean)
+      .join(' ') ||
+    'Scheduled New Inspection';
+
+  const siteId =
+    [
+      cleanAddressLine.toLowerCase(),
+      cleanOrganisationName.toLowerCase(),
+      cleanSiteName.toLowerCase()
+    ]
+      .filter(Boolean)
+      .join('|') ||
+    `scheduled-new-site-${Date.now()}`;
+
+  const newProject = {
+    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+
+    companyId: accessMetadata.companyId,
+    companyName: accessMetadata.companyName,
+
+    createdByUserId: accessMetadata.createdByUserId,
+    createdByEmail: accessMetadata.createdByEmail,
+
+    lastEditedByUserId: accessMetadata.createdByUserId,
+    lastEditedByEmail: accessMetadata.createdByEmail,
+
+    userRoleAtSave: accessMetadata.userRole,
+    companyAccessStatus: accessMetadata.companyAccessStatus,
+
+    siteId,
+
+    inspectionNumber: generateInspectionNumber(),
+
+    projectName,
+    organisationName: cleanOrganisationName,
+    siteName: cleanSiteName,
+
+    streetNumber: '',
+    addressLine: cleanAddressLine,
+    projectAddress: cleanAddressLine,
+    gps: '',
+
+    inMall: 'No',
+    mallName: '',
+    unitNumber: '',
+
+    contactPerson: contactPerson.trim(),
+    contactTel: contactTel.trim(),
+    contactEmail: '',
+
+    productType: getDefaultProductType(),
+    inspectionType: inspectionType.trim() || 'General Fire Inspection',
+    inspectorName: '',
+    occupancy: occupancy.trim(),
+
+    answers: [],
+    photos: [],
+
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+
+    finalComments: '',
+
+    scheduledDate,
+    scheduledStatus: 'scheduled',
+    scheduleType: 'new_site',
+    scheduleFreshInspection: false,
+    scheduledReason: 'New inspection scheduled',
+
+    inspectionHistory: [],
+
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+
+  const projects = getProjects();
+  projects.push(newProject);
+
+  setProjects(projects);
+  renderProjectsList();
+
+  uploadSingleInspection(newProject)
+    .catch(error => {
+      console.warn('Scheduled new inspection upload failed:', error);
+    });
+
+  getEl('saveMessage').textContent =
+    `New inspection scheduled for ${scheduledDate}.`;
+
+  showProjectList();
 }
 
 function createNewProject() {
@@ -4882,8 +5055,11 @@ container.innerHTML = `
       const followStatus = getFollowUpStatus(project);
       const inspectionStatus = getProjectInspectionStatus(project);
       const scheduledLabel =
-        project.scheduleFreshInspection === true ||
-        project.scheduledStatus === 'scheduled'
+        project.scheduledStatus === 'scheduled' &&
+        project.scheduleType === 'new_site'
+          ? 'Scheduled new inspection'
+          : project.scheduleFreshInspection === true ||
+            project.scheduledStatus === 'scheduled'
           ? 'Open to start follow-up'
           : followStatus.label;
       const projectTitle =
@@ -4937,6 +5113,17 @@ container.innerHTML = `
 }
 
 function getProjectPrimaryAction(project) {
+    if (
+      project.scheduledStatus === 'scheduled' &&
+      project.scheduleType === 'new_site'
+    ) {
+      return {
+        label: 'Start Scheduled Inspection',
+        focusMode: '',
+        className: 'action-primary'
+      };
+    }
+
     if (
       project.scheduleFreshInspection === true ||
       project.scheduledStatus === 'scheduled'
@@ -5011,10 +5198,13 @@ function openProjectSummaryCard(index) {
   const syncStatus = getSyncStatus(project);
   const followStatus = getFollowUpStatus(project);
   const scheduledLabel =
-      project.scheduleFreshInspection === true ||
-      project.scheduledStatus === 'scheduled'
-        ? 'Open to start follow-up'
-        : followStatus.label;
+    project.scheduledStatus === 'scheduled' &&
+    project.scheduleType === 'new_site'
+      ? 'Scheduled new inspection'
+      : project.scheduleFreshInspection === true ||
+        project.scheduledStatus === 'scheduled'
+      ? 'Open to start follow-up'
+      : followStatus.label;
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
