@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-archive-view1';
+const APP_VERSION = 'v90-archive-report1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -7557,6 +7557,521 @@ function updateAnswerSummary() {
   updateProjectReadinessPanel();
 }
 
+function generateArchivedInspectionReport(projectId, historyIndex) {
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow viewing reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project || !project.inspectionHistory) {
+    alert('Archived inspection was not found.');
+    return;
+  }
+
+  const inspection = project.inspectionHistory[historyIndex];
+
+  if (!inspection) {
+    alert('Archived inspection was not found.');
+    return;
+  }
+
+  const checklist = getChecklistForProject(inspection);
+
+  const projectName =
+    inspection.projectName ||
+    [inspection.organisationName, inspection.siteName]
+      .filter(Boolean)
+      .join(' ') ||
+    project.projectName ||
+    'Archived Inspection';
+
+  const projectAddress =
+    inspection.projectAddress ||
+    combineStreetAddress(inspection.streetNumber, inspection.addressLine) ||
+    '-';
+
+  const inspectorName = inspection.inspectorName || '-';
+  const occupancy = inspection.occupancy || '-';
+  const inspectionType = inspection.inspectionType || '-';
+  const productType = normalizeProductType(inspection.productType);
+  const finalComments = inspection.finalComments || '';
+  const inspectionNumber = inspection.inspectionNumber || '-';
+
+  let yesCount = 0;
+  let noCount = 0;
+  let naCount = 0;
+  let actionSections = {};
+  let nonCompliance = {};
+  let answersHtml = '';
+
+  (inspection.answers || []).forEach(answer => {
+    const item =
+      checklist[answer.itemIndex] || {};
+
+    const itemNumber =
+      answer.itemNumber ||
+      item["Item Number"] ||
+      String((answer.itemIndex || 0) + 1);
+
+    const itemText =
+      item["Checklist Item"] ||
+      `Checklist item ${itemNumber}`;
+
+    const answerValue =
+      answer.answer || 'Not answered';
+
+    const answerLower =
+      String(answerValue).trim().toLowerCase();
+
+    if (answerLower === 'yes') yesCount++;
+    if (answerLower === 'no') noCount++;
+    if (answerLower === 'n/a') naCount++;
+
+    const sectionName =
+      item.Section || 'General';
+
+    if (answerLower === 'no') {
+      if (!actionSections[sectionName]) {
+        actionSections[sectionName] = 0;
+      }
+
+      actionSections[sectionName]++;
+
+      if (!nonCompliance[sectionName]) {
+        nonCompliance[sectionName] = [];
+      }
+
+      nonCompliance[sectionName].push({
+        itemNumber,
+        checklistItem: itemText,
+        text: item["Non Compliance Text"] || itemText,
+        note: answer.note || '',
+        reference: item["Reference"] || '',
+        correctiveAction: item["Corrective Action"] || '',
+        severity: item["Severity"] || 'Medium'
+      });
+    }
+
+    const answerClass =
+      answerLower === 'no'
+        ? 'answer-no'
+        : answerLower === 'yes'
+        ? 'answer-yes'
+        : answerLower === 'n/a'
+        ? 'answer-na'
+        : '';
+
+    answersHtml += `
+      <div class="report-answer ${answerClass}">
+        <strong>${escapeHtml(itemNumber)}. ${escapeHtml(itemText)}</strong><br>
+
+        <strong>Answer:</strong>
+        ${escapeHtml(answerValue)}
+
+        ${
+          answer.note
+            ? `<br><strong>Note:</strong> ${escapeHtml(answer.note)}`
+            : ''
+        }
+
+        ${
+          answer.expiryDate
+            ? `<br><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}`
+            : ''
+        }
+      </div>
+    `;
+  });
+
+  const answeredCount = yesCount + noCount + naCount;
+
+  let overallStatus = 'Compliant / Acceptable';
+  let riskRating = 'LOW RISK';
+  let riskComment = 'No significant fire safety risks identified.';
+
+  if (noCount > 0) {
+    overallStatus = 'Attention Required';
+    riskRating = noCount >= 5 ? 'HIGH RISK' : 'MEDIUM RISK';
+    riskComment =
+      noCount >= 5
+        ? 'Immediate attention required. Multiple fire safety non-compliances identified.'
+        : 'Fire safety deficiencies identified. Corrective action required.';
+  }
+
+  let actionHtml = '';
+
+  const sections =
+    Object.keys(actionSections)
+      .sort((a, b) => actionSections[b] - actionSections[a]);
+
+  if (sections.length > 0) {
+    actionHtml = sections.map(section => {
+      const count = actionSections[section];
+      const label = count === 1 ? 'item' : 'items';
+
+      return `
+        <div class="action-item">
+          - ${escapeHtml(section.toUpperCase())} - ${count} No ${label}
+        </div>
+      `;
+    }).join('');
+  } else {
+    actionHtml = `<div class="note">No action required.</div>`;
+  }
+
+  let nonComplianceHtml = '';
+
+  const ncSections = Object.keys(nonCompliance);
+
+  if (ncSections.length > 0) {
+    ncSections.forEach(section => {
+      nonComplianceHtml += `
+        <div class="nc-section">
+          <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
+      `;
+
+      nonCompliance[section].forEach(item => {
+        nonComplianceHtml += `
+          <div class="nc-item nc-${escapeHtml(String(item.severity).toLowerCase())}">
+            <div>
+              <strong>Severity:</strong>
+              ${escapeHtml(item.severity)}
+            </div>
+
+            <div>
+              <strong>Finding:</strong>
+              ${escapeHtml(item.text)}
+            </div>
+
+            ${
+              item.note
+                ? `
+                  <div>
+                    <strong>Inspector Note:</strong>
+                    ${escapeHtml(item.note)}
+                  </div>
+                `
+                : ''
+            }
+
+            ${
+              item.reference
+                ? `
+                  <div class="note">
+                    <strong>Reference:</strong>
+                    ${escapeHtml(item.reference)}
+                  </div>
+                `
+                : ''
+            }
+
+            ${
+              item.correctiveAction
+                ? `
+                  <div>
+                    <strong>Corrective Action:</strong>
+                    ${escapeHtml(item.correctiveAction)}
+                  </div>
+                `
+                : ''
+            }
+          </div>
+        `;
+      });
+
+      nonComplianceHtml += `</div>`;
+    });
+  } else {
+    nonComplianceHtml = `<div class="note">No non-compliances recorded.</div>`;
+  }
+
+  const photosHtml =
+    (inspection.photos || []).length > 0
+      ? `
+        <div class="report-photo-page">
+          <h2 class="appendix-title">
+            APPENDIX A - PHOTO EVIDENCE
+          </h2>
+
+          <div class="report-photo-grid">
+            ${(inspection.photos || []).map((photo, index) => `
+              <div class="report-photo-card">
+                <div class="report-photo-header">
+                  Photo ${index + 1}
+                </div>
+
+                <div class="report-photo-time">
+                  Captured:
+                  ${
+                    photo.timestamp
+                      ? escapeHtml(new Date(photo.timestamp).toLocaleString())
+                      : 'Not recorded'
+                  }
+                </div>
+
+                <div class="report-photo-image-box">
+                  <img
+                    src="${photo.src || ''}"
+                    class="report-photo-img"
+                    alt="Archived inspection photo ${index + 1}"
+                  >
+                </div>
+
+                <div class="report-photo-note">
+                  <strong>Photo Note:</strong>
+                  ${escapeHtml(photo.note || 'No note added.')}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `
+      : `
+        <div class="report-photo-page">
+          <h2 class="appendix-title">
+            APPENDIX A - PHOTO EVIDENCE
+          </h2>
+
+          <div class="note">
+            No photo evidence was added to this archived inspection.
+          </div>
+        </div>
+      `;
+
+  const reportContent = getEl('reportContent');
+
+  reportContent.innerHTML = `
+    <div class="report-header report-client-header">
+      <div class="report-client-brand">
+        <img
+          class="report-client-logo"
+          src="${escapeHtml(project.companyLogo || 'icon-192.png')}"
+          alt="Company logo"
+        >
+
+        <div>
+          <h1>${escapeHtml(project.companyName || 'Client Company')}</h1>
+
+          <div class="report-subtitle">
+            Archived Fire Safety Inspection Report
+          </div>
+
+          <div class="report-platform-note">
+            Generated by FireyeSA Fire Safety App | Version ${escapeHtml(APP_VERSION)}
+          </div>
+        </div>
+      </div>
+
+      <div class="report-meta-card">
+        <div>
+          <strong>Inspection No:</strong>
+          ${escapeHtml(inspectionNumber)}
+        </div>
+
+        <div>
+          <strong>Inspection Date:</strong>
+          ${
+            inspection.lastSaved
+              ? escapeHtml(new Date(inspection.lastSaved).toLocaleDateString())
+              : '-'
+          }
+        </div>
+
+        <div>
+          <strong>Inspector:</strong>
+          ${escapeHtml(inspectorName)}
+        </div>
+
+        <div>
+          <strong>Premises / Site:</strong>
+          ${escapeHtml(projectName)}
+        </div>
+
+        <div>
+          <strong>Occupancy:</strong>
+          ${escapeHtml(occupancy)}
+        </div>
+
+        <div>
+          <strong>Inspection Type:</strong>
+          ${escapeHtml(inspectionType)}
+        </div>
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h3>Premises Information</h3>
+
+      <div class="report-line">
+        <strong>Premises / Site:</strong>
+        ${escapeHtml(projectName)}
+      </div>
+
+      <div class="report-line">
+        <strong>Inspection Number:</strong>
+        ${escapeHtml(inspectionNumber)}
+      </div>
+
+      <div class="report-line">
+        <strong>Contact Person:</strong>
+        ${escapeHtml(inspection.contactPerson || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Telephone:</strong>
+        ${escapeHtml(inspection.contactTel || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Email:</strong>
+        ${escapeHtml(inspection.contactEmail || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Compliance Area:</strong>
+        ${escapeHtml(productType || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Inspection Type:</strong>
+        ${escapeHtml(inspectionType)}
+      </div>
+
+      <div class="report-line">
+        <strong>Address:</strong>
+        ${escapeHtml(projectAddress)}
+      </div>
+
+      <div class="report-line">
+        <strong>GPS:</strong>
+        ${escapeHtml(inspection.gps || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Inspector Name:</strong>
+        ${escapeHtml(inspectorName)}
+      </div>
+
+      <div class="report-line">
+        <strong>Occupancy Classification:</strong>
+        ${escapeHtml(occupancy)}
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h3>Executive Inspection Summary</h3>
+
+      <div class="report-line">
+        <strong>Overall Status:</strong>
+        <span class="${
+          overallStatus === 'Compliant / Acceptable'
+            ? 'status-good'
+            : 'status-warning'
+        }">
+          ${escapeHtml(overallStatus)}
+        </span>
+      </div>
+
+      <div class="report-line">
+        <strong>Risk Rating:</strong>
+        <span class="${
+          riskRating === 'HIGH RISK'
+            ? 'risk-high'
+            : riskRating === 'MEDIUM RISK'
+            ? 'risk-medium'
+            : 'risk-low'
+        }">
+          ${escapeHtml(riskRating)}
+        </span>
+      </div>
+
+      <div class="report-line note">
+        ${escapeHtml(riskComment)}
+      </div>
+
+      <div class="report-summary-grid">
+        <div class="report-summary-card">
+          <span>Answered</span>
+          <strong>${answeredCount}</strong>
+        </div>
+
+        <div class="report-summary-card">
+          <span>Yes</span>
+          <strong>${yesCount}</strong>
+        </div>
+
+        <div class="report-summary-card">
+          <span>No</span>
+          <strong>${noCount}</strong>
+        </div>
+
+        <div class="report-summary-card">
+          <span>N/A</span>
+          <strong>${naCount}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h3>Priority Actions Required</h3>
+      ${actionHtml}
+    </div>
+
+    <div class="report-block">
+      <h3>Non-Compliance Details</h3>
+      ${nonComplianceHtml}
+    </div>
+
+    <div class="report-block">
+      <h3>Checklist Results</h3>
+      ${answersHtml || '<div class="note">No checklist answers archived.</div>'}
+    </div>
+
+    <div class="report-block">
+      <h3>Inspector Comments and Conclusion</h3>
+      <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
+    </div>
+
+    <div class="report-signoff">
+      <div>
+        <strong>Inspector:</strong>
+        ${escapeHtml(inspectorName)}
+      </div>
+
+      <div>
+        <strong>Report Date:</strong>
+        ${new Date().toLocaleDateString()}
+      </div>
+
+      <div class="signature-line">
+        Inspector Signature
+      </div>
+
+      <div class="report-disclaimer">
+        This archived report records observations made at the time of the previous inspection. It should be read together with applicable fire safety legislation, standards, municipal by-laws, and competent professional judgement where required.
+      </div>
+
+      <div class="report-generated">
+        Generated by FireyeSA Fire Safety App | Version ${escapeHtml(APP_VERSION)}
+      </div>
+    </div>
+
+    ${photosHtml}
+  `;
+
+  getEl('reportSection').style.display = 'block';
+
+  reportContent.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
 function viewArchivedInspection(projectId, historyIndex) {
   const projects = getProjects();
   const project = projects.find(p => p.id === projectId);
@@ -7967,9 +8482,17 @@ function renderInspectionArchive(project) {
           >
             View
           </button>
+
+          <button
+            type="button"
+            class="small-btn primary-small-btn"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.indexOf(inspection)})"
+          >
+            Report
+          </button>
         </div>
 
-       </div>
+      </div>
     `;
   }
 
@@ -8207,6 +8730,7 @@ loadData();
 window.openProject = openProject;
 window.viewArchivedInspection = viewArchivedInspection;
 window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
+window.generateArchivedInspectionReport = generateArchivedInspectionReport;
 window.scheduleAutoSave = scheduleAutoSave;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
