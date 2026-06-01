@@ -4380,6 +4380,12 @@ function renderDashboardMetrics(projectsOverride) {
     p => p.followUpRequired === 'Yes'
   );
 
+  const scheduledNewInspections = projects.filter(
+    p =>
+      p.scheduledStatus === 'scheduled' &&
+      p.scheduleType === 'new_site'
+  );
+
   const overdue = followUps.filter(p => {
 
     if (!p.followUpDate) return false;
@@ -4433,6 +4439,15 @@ function renderDashboardMetrics(projectsOverride) {
           <div class="metric-number">${followUps.length}</div>
           <div class="metric-label">
             Follow-ups
+          </div>
+        </div>
+
+        <div class="metric-card"
+        data-filter="scheduled-new"
+        onclick="setFilter('scheduled-new')">
+          <div class="metric-number">${scheduledNewInspections.length}</div>
+          <div class="metric-label">
+            Scheduled New
           </div>
         </div>
 
@@ -4621,6 +4636,7 @@ function getFilterLabel(filter) {
     soon: 'Due soon',
     overdue: 'Overdue',
     risk: 'High risk',
+    'scheduled-new': 'Scheduled new inspections',
     'inspection-attention': 'Needs attention',
     'inspection-warning': 'Missing data',
     'inspection-progress': 'In progress',
@@ -4628,7 +4644,7 @@ function getFilterLabel(filter) {
     'inspection-draft': 'Draft',
     'expiry-overdue': 'Expired equipment',
     'expiry-soon': 'Equipment due soon',
-    'expiry-scheduled': 'Equipment scheduled',
+    'expiry-scheduled': 'Valid equipment',
     'expiry-missing': 'Equipment date missing'
   };
 
