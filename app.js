@@ -23,7 +23,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-schedule-label1';
+const APP_VERSION = 'v90-schedule-new3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4548,7 +4548,7 @@ function renderDashboardMetrics(projectsOverride) {
           data-filter="expiry-scheduled"
           onclick="setFilter('expiry-scheduled')">
           <div class="metric-number">${scheduledItems}</div>
-          <div class="metric-label">Scheduled</div>
+          <div class="metric-label">Valid</div>
         </div>
 
         <div class="metric-card"
@@ -4952,6 +4952,13 @@ function renderProjectsList() {
     return project.followUpRequired === 'Yes';
   }
 
+  if (currentFilter === 'scheduled-new') {
+    return (
+      project.scheduledStatus === 'scheduled' &&
+      project.scheduleType === 'new_site'
+    );
+  }
+
   if (currentFilter === 'risk') {
     return project.answers?.some(
       a => a.answer === 'No'
@@ -5331,7 +5338,7 @@ function openProjectSummaryCard(index) {
           </span>
 
           <span class="project-expiry-chip expiry-chip-scheduled">
-            Scheduled: ${expiryCounts.scheduled}
+            Valid: ${expiryCounts.scheduled}
           </span>
 
           <span class="project-expiry-chip expiry-chip-missing">
