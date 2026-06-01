@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-archive-report1';
+const APP_VERSION = 'v90-archive-report3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -7666,26 +7666,28 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
         ? 'answer-na'
         : '';
 
-    answersHtml += `
-      <div class="report-answer ${answerClass}">
-        <strong>${escapeHtml(itemNumber)}. ${escapeHtml(itemText)}</strong><br>
+    if (answerLower === 'no') {
+        answersHtml += `
+          <div class="report-answer ${answerClass}">
+            <strong>${escapeHtml(itemNumber)}. ${escapeHtml(itemText)}</strong><br>
 
-        <strong>Answer:</strong>
-        ${escapeHtml(answerValue)}
+            <strong>Answer:</strong>
+            ${escapeHtml(answerValue)}
 
-        ${
-          answer.note
-            ? `<br><strong>Note:</strong> ${escapeHtml(answer.note)}`
-            : ''
-        }
+            ${
+              answer.note
+                ? `<br><strong>Inspector Note:</strong> ${escapeHtml(answer.note)}`
+                : ''
+            }
 
-        ${
-          answer.expiryDate
-            ? `<br><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}`
-            : ''
-        }
-      </div>
-    `;
+            ${
+              answer.expiryDate
+                ? `<br><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}`
+                : ''
+            }
+          </div>
+        `;
+      }
   });
 
   const answeredCount = yesCount + noCount + naCount;
@@ -8028,8 +8030,8 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     </div>
 
     <div class="report-block">
-      <h3>Checklist Results</h3>
-      ${answersHtml || '<div class="note">No checklist answers archived.</div>'}
+      <h3>Findings / Non-Compliant Checklist Items</h3>
+      ${answersHtml || '<div class="note">No findings recorded for this archived inspection.</div>'}
     </div>
 
     <div class="report-block">
