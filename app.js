@@ -23,7 +23,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-archive-pdf1';
+const APP_VERSION = 'v90-consolidate1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4881,6 +4881,11 @@ container.innerHTML = `
     ${visibleProjects.map((project, index) => {
       const followStatus = getFollowUpStatus(project);
       const inspectionStatus = getProjectInspectionStatus(project);
+      const scheduledLabel =
+        project.scheduleFreshInspection === true ||
+        project.scheduledStatus === 'scheduled'
+          ? 'Open to start follow-up'
+          : followStatus.label;
       const projectTitle =
         project.projectName ||
         [project.organisationName, project.siteName]
@@ -4912,7 +4917,7 @@ container.innerHTML = `
           </span>
 
           <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
-            ${escapeHtml(followStatus.label)}
+            ${escapeHtml(scheduledLabel)}
           </span>
 
           <span class="inspection-project-list-address">
@@ -4932,6 +4937,16 @@ container.innerHTML = `
 }
 
 function getProjectPrimaryAction(project) {
+    if (
+      project.scheduleFreshInspection === true ||
+      project.scheduledStatus === 'scheduled'
+    ) {
+      return {
+        label: 'Start Scheduled Follow-up',
+        focusMode: '',
+        className: 'action-primary'
+      };
+    }
   const completion = getProjectCompletionCounts(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -4995,6 +5010,11 @@ function openProjectSummaryCard(index) {
 
   const syncStatus = getSyncStatus(project);
   const followStatus = getFollowUpStatus(project);
+  const scheduledLabel =
+      project.scheduleFreshInspection === true ||
+      project.scheduledStatus === 'scheduled'
+        ? 'Open to start follow-up'
+        : followStatus.label;
   const inspectionStatus = getProjectInspectionStatus(project);
   const expiryCounts = getProjectExpiryCounts(project);
   const highRiskSummary = getHighRiskSummary(project);
@@ -5056,7 +5076,7 @@ function openProjectSummaryCard(index) {
         </span>
 
         <span class="project-follow ${escapeHtml(followStatus.class)}">
-          ${escapeHtml(followStatus.label)}
+          ${escapeHtml(scheduledLabel)}
           ${project.followUpDate ? `(${escapeHtml(project.followUpDate)})` : ''}
         </span>
 
