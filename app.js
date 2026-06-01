@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-archive1';
+const APP_VERSION = 'v90-archive-view1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -7557,6 +7557,229 @@ function updateAnswerSummary() {
   updateProjectReadinessPanel();
 }
 
+function viewArchivedInspection(projectId, historyIndex) {
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project || !project.inspectionHistory) return;
+
+  const inspection = project.inspectionHistory[historyIndex];
+
+  if (!inspection) return;
+
+  const existing =
+    document.getElementById('archivedInspectionDetailPanel');
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const panel = document.createElement('div');
+  panel.id = 'archivedInspectionDetailPanel';
+  panel.className = 'site-history-panel';
+
+  const checklist =
+    getChecklistForProject(inspection);
+
+  const answersHtml =
+    (inspection.answers || []).length > 0
+      ? (inspection.answers || []).map(answer => {
+          const checklistItem =
+            checklist[answer.itemIndex] || {};
+
+          const itemText =
+            checklistItem["Checklist Item"] ||
+            `Checklist item ${answer.itemNumber || answer.itemIndex + 1}`;
+
+          const answerValue =
+            answer.answer || 'Not answered';
+
+          const answerClass =
+            String(answerValue).toLowerCase() === 'no'
+              ? 'answer-no'
+              : String(answerValue).toLowerCase() === 'yes'
+              ? 'answer-yes'
+              : String(answerValue).toLowerCase() === 'n/a'
+              ? 'answer-na'
+              : '';
+
+          return `
+            <div class="report-answer ${answerClass}">
+              <strong>
+                ${escapeHtml(answer.itemNumber || answer.itemIndex + 1)}.
+                ${escapeHtml(itemText)}
+              </strong><br>
+
+              <strong>Answer:</strong>
+              ${escapeHtml(answerValue)}
+
+              ${
+                answer.note
+                  ? `<br><strong>Note:</strong> ${escapeHtml(answer.note)}`
+                  : ''
+              }
+
+              ${
+                answer.expiryDate
+                  ? `<br><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}`
+                  : ''
+              }
+            </div>
+          `;
+        }).join('')
+      : `<div class="note">No checklist answers archived.</div>`;
+
+  const photosHtml =
+    (inspection.photos || []).length > 0
+      ? `
+        <div class="report-photo-grid">
+          ${(inspection.photos || []).map((photo, index) => `
+            <div class="report-photo-card">
+              <div class="report-photo-header">
+                Photo ${index + 1}
+              </div>
+
+              <div class="report-photo-time">
+                Captured:
+                ${
+                  photo.timestamp
+                    ? escapeHtml(new Date(photo.timestamp).toLocaleString())
+                    : 'Not recorded'
+                }
+              </div>
+
+              <div class="report-photo-image-box">
+                <img
+                  src="${photo.src || ''}"
+                  class="report-photo-img"
+                  alt="Archived inspection photo ${index + 1}"
+                >
+              </div>
+
+              <div class="report-photo-note">
+                <strong>Photo Note:</strong>
+                ${escapeHtml(photo.note || 'No note added.')}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `
+      : `<div class="note">No archived photos.</div>`;
+
+  const businessName =
+    inspection.projectName ||
+    [inspection.organisationName, inspection.siteName]
+      .filter(Boolean)
+      .join(' ') ||
+    project.projectName ||
+    'Unnamed business / site';
+
+  panel.innerHTML = `
+    <div class="project-summary-actions">
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="closeArchivedInspectionDetail()"
+      >
+        Close Archived View
+      </button>
+    </div>
+
+    <h3>Archived Inspection Detail</h3>
+
+    <div class="report-block">
+      <h3>Inspection Information</h3>
+
+      <div class="report-line">
+        <strong>Business / Site:</strong>
+        ${escapeHtml(businessName)}
+      </div>
+
+      <div class="report-line">
+        <strong>Inspection No:</strong>
+        ${escapeHtml(inspection.inspectionNumber || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Date:</strong>
+        ${
+          inspection.lastSaved
+            ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
+            : '-'
+        }
+      </div>
+
+      <div class="report-line">
+        <strong>Inspector:</strong>
+        ${escapeHtml(inspection.inspectorName || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Inspection Type:</strong>
+        ${escapeHtml(inspection.inspectionType || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Occupancy:</strong>
+        ${escapeHtml(inspection.occupancy || '-')}
+      </div>
+
+      <div class="report-line">
+        <strong>Address:</strong>
+        ${escapeHtml(
+          inspection.projectAddress ||
+          combineStreetAddress(inspection.streetNumber, inspection.addressLine) ||
+          '-'
+        )}
+      </div>
+
+      <div class="report-line">
+        <strong>GPS:</strong>
+        ${escapeHtml(inspection.gps || '-')}
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h3>Checklist Answers</h3>
+      ${answersHtml}
+    </div>
+
+    <div class="report-block">
+      <h3>Inspector Comments</h3>
+      <div>${escapeHtml(inspection.finalComments || 'No comments provided.')}</div>
+    </div>
+
+    <div class="report-block">
+      <h3>Archived Photos</h3>
+      ${photosHtml}
+    </div>
+  `;
+
+  const archivePanel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (archivePanel) {
+    archivePanel.insertAdjacentElement('afterend', panel);
+  } else {
+    const form = document.getElementById('projectFormSection');
+    if (form) form.prepend(panel);
+  }
+
+  panel.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function closeArchivedInspectionDetail() {
+  const panel =
+    document.getElementById('archivedInspectionDetailPanel');
+
+  if (panel) {
+    panel.remove();
+  }
+}
+
 function renderInspectionArchive(project) {
   const existingArchive =
     document.getElementById('inspectionArchivePanel');
@@ -7700,6 +7923,16 @@ function renderInspectionArchive(project) {
             `
             : ''
         }
+
+        <div class="archive-actions">
+          <button
+            type="button"
+            class="small-btn"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.indexOf(inspection)})"
+          >
+            View
+          </button>
+        </div>
 
         ${buildPhotoPreview(inspection)}
       </div>
@@ -7938,6 +8171,8 @@ function renderSiteHistory(project) {
 }
 loadData();
 window.openProject = openProject;
+window.viewArchivedInspection = viewArchivedInspection;
+window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
 window.scheduleAutoSave = scheduleAutoSave;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
