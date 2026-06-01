@@ -1,4 +1,4 @@
-﻿let currentFilter = 'all';
+let currentFilter = 'all';
 let currentProjectPage = 1;
 const PROJECTS_PER_PAGE = 10;
 function setFilter(filter) {
@@ -21,6 +21,7 @@ let currentProjectId = null;
 let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
+let archivedReportContext = null;
 
 const APP_VERSION = 'v96';
 const MAX_PHOTOS_PER_INSPECTION = 10;
@@ -2712,6 +2713,13 @@ function createNewProject() {
     existingHistoryPanel.remove();
   }
 
+  const existingArchivePanel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (existingArchivePanel) {
+    existingArchivePanel.remove();
+  }
+
   populateProductTypes('Fire Safety Compliance');
   updateInspectionTypeOptions();
   clearInputValue('organisationName');
@@ -4182,6 +4190,10 @@ function renderDashboardMetrics(projectsOverride) {
     missingExpiryItems += counts.missing;
   });
 
+  const draftInspections = projects.filter(project =>
+    project.inspectionCompleted === false
+  ).length;
+
   const total = projects.length;
 
   const followUps = projects.filter(
@@ -4232,6 +4244,15 @@ function renderDashboardMetrics(projectsOverride) {
           <div class="metric-number">${total}</div>
           <div class="metric-label">
             Total Inspections
+          </div>
+        </div>
+
+        <div class="metric-card"
+         data-filter="draft-inspections"
+         onclick="setFilter('draft-inspections')">
+          <div class="metric-number">${draftInspections}</div>
+          <div class="metric-label">
+            Drafts
           </div>
         </div>
 
@@ -4425,6 +4446,7 @@ function previousProjectPage() {
 function getFilterLabel(filter) {
   const labels = {
     all: 'All inspections',
+    'draft-inspections': 'Draft inspections',
     followups: 'Follow-ups',
     soon: 'Due soon',
     overdue: 'Overdue',
@@ -4495,6 +4517,564 @@ function clearProjectSearchAndFilter() {
   scrollToFirstVisibleProject();
 }
 
+
+function shouldShowProjectInMainList(project) {
+  if (!project) return false;
+
+  // Older inspections created before this feature must remain visible.
+  if (project.inspectionCompleted === undefined) {
+    return true;
+  }
+
+  if (project.inspectionCompleted === true) {
+    return true;
+  }
+
+  if (
+    project.scheduledStatus === 'scheduled' ||
+    project.scheduledStatus === 'in_progress'
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+function normalizeGroupText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[.,]/g, '');
+}
+
+function getProjectGroupKey(project) {
+  const siteId = normalizeGroupText(project.siteId);
+
+  if (siteId) return siteId;
+
+  const name =
+    project.projectName ||
+    [project.organisationName, project.siteName]
+      .filter(Boolean)
+      .join(' ');
+
+  const address =
+    project.projectAddress ||
+    combineStreetAddress(project.streetNumber, project.addressLine) ||
+    project.addressLine ||
+    '';
+
+  return [
+    normalizeGroupText(name),
+    normalizeGroupText(address),
+    normalizeGroupText(project.mallName || ''),
+    normalizeGroupText(project.unitNumber || '')
+  ]
+    .filter(Boolean)
+    .join('|');
+}
+
+function convertProjectToHistorySnapshot(project) {
+  return {
+    archivedAt: new Date().toISOString(),
+    inspectionNumber: project.inspectionNumber || '',
+    lastSaved: project.lastSaved || '',
+    inspectorName: project.inspectorName || '',
+    projectName: project.projectName || '',
+    organisationName: project.organisationName || '',
+    siteName: project.siteName || '',
+    streetNumber: project.streetNumber || '',
+    addressLine: project.addressLine || '',
+    projectAddress: project.projectAddress || '',
+    gps: project.gps || '',
+    inMall: project.inMall || 'No',
+    mallName: project.mallName || '',
+    unitNumber: project.unitNumber || '',
+    contactPerson: project.contactPerson || '',
+    contactTel: project.contactTel || '',
+    contactEmail: project.contactEmail || '',
+    productType: project.productType || '',
+    inspectionType: project.inspectionType || '',
+    occupancy: project.occupancy || '',
+    answers: project.answers || [],
+    photos: project.photos || [],
+    finalComments: project.finalComments || '',
+    followUpRequired: project.followUpRequired || '',
+    followUpDate: project.followUpDate || '',
+    followUpNotes: project.followUpNotes || ''
+  };
+}
+
+function archiveCurrentInspectionCycle(project) {
+  const hasInspectionData =
+    (project.answers || []).length > 0 ||
+    (project.photos || []).length > 0 ||
+    String(project.finalComments || '').trim() ||
+    String(project.followUpNotes || '').trim();
+
+  if (!hasInspectionData) {
+    return project.inspectionHistory || [];
+  }
+
+  return [
+    ...(project.inspectionHistory || []),
+    convertProjectToHistorySnapshot(project)
+  ];
+}
+
+function renderInspectionArchive(project) {
+  const existing = document.getElementById('inspectionArchivePanel');
+
+  if (existing) {
+    existing.remove();
+  }
+
+  const history = project.inspectionHistory || [];
+
+  if (history.length === 0) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'inspectionArchivePanel';
+  panel.className = 'site-history-panel';
+
+  const latestIndex = history.length - 1;
+  const latestInspection = history[latestIndex];
+
+  const olderInspections = history
+    .slice()
+    .map((inspection, originalIndex) => ({ inspection, originalIndex }))
+    .filter(item => item.originalIndex !== latestIndex)
+    .reverse()
+    .slice(0, 4);
+
+  function buildArchiveCard(inspection, historyIndex, label) {
+    const photoCount = (inspection.photos || []).length;
+
+    const answerCount = (inspection.answers || []).filter(answer =>
+      ['yes', 'no', 'n/a'].includes(
+        String(answer.answer || '').trim().toLowerCase()
+      )
+    ).length;
+
+    const noCount = (inspection.answers || []).filter(answer =>
+      String(answer.answer || '').trim().toLowerCase() === 'no'
+    ).length;
+
+    const archiveBusinessName =
+      inspection.projectName ||
+      [inspection.organisationName, inspection.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      project.projectName ||
+      [project.organisationName, project.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      'Unnamed business / site';
+
+    return `
+      <div class="archive-inspection-card">
+        <div><strong>${escapeHtml(label)}</strong></div>
+
+        <div>
+          <strong>Business / Site:</strong>
+          ${escapeHtml(archiveBusinessName)}
+        </div>
+
+        <div>
+          <strong>Date:</strong>
+          ${
+            inspection.lastSaved
+              ? escapeHtml(new Date(inspection.lastSaved).toLocaleString())
+              : '-'
+          }
+        </div>
+
+        <div>
+          <strong>Inspection No:</strong>
+          ${escapeHtml(inspection.inspectionNumber || '-')}
+        </div>
+
+        <div><strong>Answered:</strong> ${answerCount}</div>
+        <div><strong>Findings:</strong> ${noCount}</div>
+        <div><strong>Photos:</strong> ${photoCount}</div>
+
+        <div class="archive-actions">
+          <button
+            type="button"
+            class="small-btn"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
+          >
+            View
+          </button>
+
+          <button
+            type="button"
+            class="small-btn primary-small-btn"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
+          >
+            Client Report
+          </button>
+
+          <button
+            type="button"
+            class="small-btn primary-small-btn"
+            onclick="exportArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
+          >
+            PDF
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  const latestHtml = buildArchiveCard(
+    latestInspection,
+    latestIndex,
+    'Latest Previous Inspection'
+  );
+
+  const olderHtml =
+    olderInspections.length > 0
+      ? `
+        <details class="archive-more-details">
+          <summary>
+            Show older previous inspections (${olderInspections.length})
+          </summary>
+
+          <div class="archive-older-list">
+            ${olderInspections.map((item, index) =>
+              buildArchiveCard(
+                item.inspection,
+                item.originalIndex,
+                `Older Previous Inspection ${index + 1}`
+              )
+            ).join('')}
+          </div>
+        </details>
+      `
+      : '';
+
+  panel.innerHTML = `
+    <h3>Previous Inspection Archive</h3>
+
+    <div class="note">
+      The latest previous inspection is shown below. Older inspections are available from the dropdown, limited to the last 5 archived inspections.
+    </div>
+
+    ${latestHtml}
+    ${olderHtml}
+  `;
+
+  const form = document.getElementById('projectFormSection');
+
+  if (form) {
+    form.prepend(panel);
+  }
+}
+
+function buildArchivedInspectionReportHtml(project, inspection) {
+  const businessName =
+    inspection.projectName ||
+    [inspection.organisationName, inspection.siteName].filter(Boolean).join(' ') ||
+    project.projectName ||
+    'Archived Inspection';
+
+  const address =
+    inspection.projectAddress ||
+    combineStreetAddress(inspection.streetNumber, inspection.addressLine) ||
+    '-';
+
+  const answers = inspection.answers || [];
+  const photos = inspection.photos || [];
+
+  const yesCount = answers.filter(a => String(a.answer || '').toLowerCase() === 'yes').length;
+  const noCount = answers.filter(a => String(a.answer || '').toLowerCase() === 'no').length;
+  const naCount = answers.filter(a => String(a.answer || '').toLowerCase() === 'n/a').length;
+
+  const answersHtml = answers.length
+    ? answers.map(answer => `
+      <div class="report-answer ${String(answer.answer || '').toLowerCase() === 'no' ? 'answer-no' : ''}">
+        <strong>Item ${escapeHtml(answer.itemNumber || answer.itemIndex + 1)}:</strong>
+        ${escapeHtml(answer.answer || 'Not answered')}
+        ${answer.note ? `<br><strong>Note:</strong> ${escapeHtml(answer.note)}` : ''}
+        ${answer.expiryDate ? `<br><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}` : ''}
+      </div>
+    `).join('')
+    : '<div class="note">No checklist answers were archived.</div>';
+
+  const photosHtml = photos.length
+    ? photos.map((photo, index) => `
+      <div class="report-photo-card">
+        <div class="report-photo-header">Photo ${index + 1}</div>
+        <div class="report-photo-time">
+          Captured: ${photo.timestamp ? escapeHtml(new Date(photo.timestamp).toLocaleString()) : 'Not recorded'}
+        </div>
+        ${photo.src ? `<img src="${photo.src}" class="report-photo-img" alt="Archived inspection photo ${index + 1}">` : ''}
+        <div class="report-photo-note"><strong>Photo Note:</strong> ${escapeHtml(photo.note || 'No note added.')}</div>
+      </div>
+    `).join('')
+    : '<div class="note">No photo evidence was archived.</div>';
+
+  return `
+    <div class="report-header report-client-header">
+      <div class="report-client-brand">
+        <img class="report-client-logo" src="icon-192.png" alt="FireyeSA logo">
+        <div>
+          <h1>${escapeHtml(project.companyName || 'FireyeSA')}</h1>
+          <div class="report-subtitle">Archived Fire Safety Inspection Report</div>
+          <div class="report-platform-note">Generated by FireyeSA Fire Safety App | Version ${escapeHtml(APP_VERSION)}</div>
+        </div>
+      </div>
+
+      <div class="report-meta-card">
+        <div><strong>Inspection No:</strong> ${escapeHtml(inspection.inspectionNumber || '-')}</div>
+        <div><strong>Date:</strong> ${inspection.lastSaved ? escapeHtml(new Date(inspection.lastSaved).toLocaleDateString()) : '-'}</div>
+        <div><strong>Inspector:</strong> ${escapeHtml(inspection.inspectorName || '-')}</div>
+        <div><strong>Premises / Site:</strong> ${escapeHtml(businessName)}</div>
+        <div><strong>Occupancy:</strong> ${escapeHtml(inspection.occupancy || '-')}</div>
+      </div>
+    </div>
+
+    <div class="report-block">
+      <h3>Premises Information</h3>
+      <div class="report-line"><strong>Premises / Site:</strong> ${escapeHtml(businessName)}</div>
+      <div class="report-line"><strong>Address:</strong> ${escapeHtml(address)}</div>
+      <div class="report-line"><strong>GPS:</strong> ${escapeHtml(inspection.gps || '-')}</div>
+      <div class="report-line"><strong>Contact Person:</strong> ${escapeHtml(inspection.contactPerson || '-')}</div>
+      <div class="report-line"><strong>Telephone:</strong> ${escapeHtml(inspection.contactTel || '-')}</div>
+      <div class="report-line"><strong>Email:</strong> ${escapeHtml(inspection.contactEmail || '-')}</div>
+      <div class="report-line"><strong>Inspection Type:</strong> ${escapeHtml(inspection.inspectionType || '-')}</div>
+    </div>
+
+    <div class="report-block">
+      <h3>Executive Inspection Summary</h3>
+      <div class="report-line"><strong>Yes:</strong> ${yesCount}</div>
+      <div class="report-line"><strong>No / Findings:</strong> ${noCount}</div>
+      <div class="report-line"><strong>N/A:</strong> ${naCount}</div>
+      <div class="report-line"><strong>Final Comments:</strong> ${escapeHtml(inspection.finalComments || 'No comments provided.')}</div>
+    </div>
+
+    <div class="report-block">
+      <h3>Checklist Answers</h3>
+      ${answersHtml}
+    </div>
+
+    <div class="report-photo-page">
+      <h2 class="appendix-title">APPENDIX A - PHOTO EVIDENCE</h2>
+      <div class="report-photo-grid">
+        ${photosHtml}
+      </div>
+    </div>
+  `;
+}
+
+function getArchivedInspection(projectId, historyIndex) {
+  const project = getProjects().find(p => p.id === projectId);
+  if (!project) return null;
+
+  const inspection = (project.inspectionHistory || [])[historyIndex];
+  if (!inspection) return null;
+
+  return { project, inspection };
+}
+
+function viewArchivedInspection(projectId, historyIndex) {
+  const archived = getArchivedInspection(projectId, historyIndex);
+
+  if (!archived) {
+    alert('Archived inspection not found.');
+    return;
+  }
+
+  generateArchivedInspectionReport(projectId, historyIndex);
+
+  const reportSection = document.getElementById('reportSection');
+  if (reportSection) {
+    reportSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function generateArchivedInspectionReport(projectId, historyIndex) {
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow viewing reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  const archived = getArchivedInspection(projectId, historyIndex);
+
+  if (!archived) {
+    alert('Archived inspection not found.');
+    return;
+  }
+
+  archivedReportContext = archived;
+
+  const reportContent = getEl('reportContent');
+  reportContent.innerHTML = buildArchivedInspectionReportHtml(
+    archived.project,
+    archived.inspection
+  );
+
+  getEl('reportSection').style.display = 'block';
+}
+
+function exportArchivedInspectionReport(projectId, historyIndex) {
+  if (!canViewReports()) {
+    alert(
+      'Your company access does not allow exporting reports. Please contact your company admin or FireyeSA support.'
+    );
+    return;
+  }
+
+  generateArchivedInspectionReport(projectId, historyIndex);
+
+  const archived = getArchivedInspection(projectId, historyIndex);
+  if (!archived) return;
+
+  const element = document.getElementById('reportContent');
+  const businessName =
+    archived.inspection.projectName ||
+    archived.project.projectName ||
+    'Archived_Inspection';
+  const safeProjectName = sanitizeFileName(businessName);
+  const reportDate = new Date().toISOString().slice(0, 10);
+
+  const opt = {
+    margin: [15, 12, 15, 12],
+    filename: `FireyeSA_Archived_Report_${safeProjectName}_${reportDate}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: {
+      scale: 1,
+      useCORS: true,
+      scrollY: 0,
+      windowWidth: element.scrollWidth
+    },
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+    pagebreak: {
+      mode: ['css', 'legacy']
+    }
+  };
+
+  setTimeout(() => {
+    html2pdf().set(opt).from(element).save();
+  }, 300);
+}
+
+function consolidateDuplicateSiteCards() {
+  const confirmed = confirm(
+    'This will merge duplicate cards for the same premises into one card and move older inspections into Previous Inspection Archive. Export a backup first if you are unsure. Continue?'
+  );
+
+  if (!confirmed) return;
+
+  const projects = getProjects();
+  const groups = new Map();
+
+  projects.forEach(project => {
+    const key = getProjectGroupKey(project);
+
+    if (!key) return;
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    groups.get(key).push(project);
+  });
+
+  const mergedProjects = [];
+  const duplicateIdsToRemove = [];
+  const processedIds = new Set();
+
+  groups.forEach(group => {
+    if (group.length === 1) {
+      mergedProjects.push(group[0]);
+      processedIds.add(group[0].id);
+      return;
+    }
+
+    const sorted = group
+      .slice()
+      .sort((a, b) => {
+        const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+        const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+        return bTime - aTime;
+      });
+
+    const primary = sorted[0];
+    const older = sorted.slice(1);
+
+    const existingHistory = primary.inspectionHistory || [];
+    const olderHistory = older.map(convertProjectToHistorySnapshot);
+
+    const mergedHistory = [
+      ...existingHistory,
+      ...olderHistory
+    ].sort((a, b) => {
+      const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+      const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+      return aTime - bTime;
+    });
+
+    mergedProjects.push({
+      ...primary,
+      inspectionHistory: mergedHistory,
+      hasSiteHistory: mergedHistory.length > 0,
+      previousInspectionCount: mergedHistory.length,
+      inspectionCompleted:
+        primary.inspectionCompleted === undefined
+          ? true
+          : primary.inspectionCompleted,
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    });
+
+    older.forEach(project => {
+      duplicateIdsToRemove.push(project.id);
+    });
+
+    sorted.forEach(project => {
+      processedIds.add(project.id);
+    });
+  });
+
+  projects.forEach(project => {
+    if (!processedIds.has(project.id)) {
+      mergedProjects.push(project);
+    }
+  });
+
+  duplicateIdsToRemove.forEach(id => {
+    markProjectDeleted(id);
+  });
+
+  setProjects(mergedProjects);
+  renderProjectsList();
+
+  runBackgroundSync('duplicate site cards consolidated');
+
+  const syncStatus = document.getElementById('syncStatus');
+
+  if (syncStatus) {
+    syncStatus.textContent =
+      `Duplicate site cards consolidated. Removed ${duplicateIdsToRemove.length} duplicate card(s).`;
+  }
+
+  alert(
+    `Done. Removed ${duplicateIdsToRemove.length} duplicate card(s). Refresh/sync once to confirm.`
+  );
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -4519,6 +5099,11 @@ function renderProjectsList() {
   const allProjects = getProjects();
   const projects = getVisibleProjectsForCurrentUser(allProjects);
 
+  const visibleMainProjects =
+    currentFilter === 'draft-inspections'
+      ? projects
+      : projects.filter(shouldShowProjectInMainList);
+
   updateAppInfo();
 
   // renderReminderBanner(projects);
@@ -4529,9 +5114,13 @@ function renderProjectsList() {
 
   container.innerHTML = '';
 
- const filteredProjects = projects.filter(project => {
+ const filteredProjects = visibleMainProjects.filter(project => {
 
   const followStatus = getFollowUpStatus(project);
+
+  if (currentFilter === 'draft-inspections') {
+    return project.inspectionCompleted === false;
+  }
 
   // Search filter
   if (searchText) {
@@ -4972,10 +5561,39 @@ function closeProjectSummaryCard() {
 
 function openProject(projectId, focusMode) {
   const projects = getProjects();
-  const project = projects.find(p => p.id === projectId);
+  let project = projects.find(p => p.id === projectId);
   if (!project) return;
 
   currentProjectId = project.id;
+  archivedReportContext = null;
+
+  const shouldStartFreshScheduledInspection =
+    project.scheduleFreshInspection === true;
+
+  if (shouldStartFreshScheduledInspection) {
+    const projectIndex = projects.findIndex(p => p.id === project.id);
+
+    if (projectIndex !== -1) {
+      const inspectionHistory =
+        archiveCurrentInspectionCycle(projects[projectIndex]);
+
+      projects[projectIndex] = {
+        ...projects[projectIndex],
+        inspectionHistory,
+        answers: [],
+        photos: [],
+        finalComments: '',
+        scheduledStatus: 'in_progress',
+        scheduleFreshInspection: false,
+        syncPending: true,
+        syncError: false,
+        lastSaved: new Date().toISOString()
+      };
+
+      setProjects(projects);
+      project = projects[projectIndex];
+    }
+  }
  
   populateProductTypes(project.productType);
   updateInspectionTypeOptions(project.inspectionType);
@@ -5036,7 +5654,7 @@ function openProject(projectId, focusMode) {
       }
     });
   }
-  renderSiteHistory(project);
+  renderInspectionArchive(project);
   showProjectForm();
 
   if (focusMode === 'issues') {
@@ -5532,6 +6150,7 @@ function saveProject() {
 } else {
     const newProject = {
       id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      inspectionCompleted: false,
       
       companyId: accessMetadata.companyId,
       companyName: accessMetadata.companyName,
@@ -5650,6 +6269,37 @@ function saveProject() {
 
 function finishInspection() {
   saveProject();
+
+  if (!currentProjectId) {
+    getEl('saveMessage').textContent =
+      'Inspection could not be finished. Complete the premises/site information first.';
+    return;
+  }
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === currentProjectId);
+
+  if (index !== -1) {
+    projects[index] = {
+      ...projects[index],
+      inspectionCompleted: true,
+      scheduledStatus:
+        projects[index].scheduledStatus === 'in_progress'
+          ? 'completed'
+          : projects[index].scheduledStatus,
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+
+    setProjects(projects);
+
+    uploadSingleInspection(projects[index])
+      .catch(error => {
+        console.warn('Finish inspection upload failed:', error);
+      });
+  }
+
   showProjectList();
 }
 
@@ -5660,61 +6310,58 @@ function createFollowUpInspection() {
     );
     return;
   }
+
   if (!currentProjectId) {
-    getEl('saveMessage').textContent = 'Open or save an inspection before creating a follow-up.';
+    getEl('saveMessage').textContent =
+      'Open or save an inspection before scheduling a follow-up.';
     return;
   }
-  
-  const projects = getProjects();
-  const original = projects.find(p => p.id === currentProjectId);
 
-  if (!original) {
+  const projects = getProjects();
+  const index = projects.findIndex(p => p.id === currentProjectId);
+
+  if (index === -1) {
     getEl('saveMessage').textContent = 'Original inspection not found.';
     return;
   }
 
+  const original = projects[index];
+
+  const followUpDate = prompt(
+    'Enter follow-up inspection date in YYYY-MM-DD format:',
+    original.followUpDate || new Date().toISOString().slice(0, 10)
+  );
+
+  if (!followUpDate) return;
+
   const confirmed = confirm(
-    'Create a new follow-up inspection from this inspection? The original inspection will remain saved, and a new linked follow-up will be created. Continue?'
+    'Schedule a follow-up on this same site card? This will not create a separate follow-up card.'
   );
 
   if (!confirmed) return;
 
-  const followUpProject = {
+  projects[index] = {
     ...original,
-
-    id: crypto.randomUUID
-      ? crypto.randomUUID()
-      : String(Date.now()),
-
-    inspectionNumber: generateInspectionNumber(),
-
-    projectName: `${original.projectName || 'Inspection'} - Follow-up`,
-
-    answers: [],
-    photos: [],
-
-    followUpRequired: 'No',
-    followUpDate: '',
-    followUpNotes: '',
-
-    linkedToInspectionId: original.id,
-    linkedToInspectionName: original.projectName || '',
-    linkedToInspectionNumber: original.inspectionNumber || '',
-    linkedToInspectionDate: original.lastSaved || '',
-
+    followUpRequired: 'Yes',
+    followUpDate,
+    followUpNotes:
+      original.followUpNotes ||
+      'Follow-up inspection scheduled.',
+    scheduledDate: followUpDate,
+    scheduledStatus: 'scheduled',
+    scheduleFreshInspection: true,
+    scheduledReason: 'follow_up',
+    syncPending: true,
+    syncError: false,
     lastSaved: new Date().toISOString()
   };
 
-  projects.push(followUpProject);
   setProjects(projects);
-
-  currentProjectId = followUpProject.id;
-  currentPhotos = [];
-
-  openProject(followUpProject.id);
+  renderProjectsList();
+  runBackgroundSync('follow-up scheduled');
 
   getEl('saveMessage').textContent =
-    'Follow-up inspection created.';
+    `Follow-up scheduled for ${followUpDate}.`;
 }
 
 async function deleteProject() {
@@ -7649,6 +8296,10 @@ function renderSiteHistory(project) {
 }
 loadData();
 window.openProject = openProject;
+window.consolidateDuplicateSiteCards = consolidateDuplicateSiteCards;
+window.viewArchivedInspection = viewArchivedInspection;
+window.generateArchivedInspectionReport = generateArchivedInspectionReport;
+window.exportArchivedInspectionReport = exportArchivedInspectionReport;
 window.scheduleAutoSave = scheduleAutoSave;
 window.nextProjectPage = nextProjectPage;
 window.previousProjectPage = previousProjectPage;
