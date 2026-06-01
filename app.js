@@ -22,7 +22,7 @@ let currentPhotos = [];
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-followup2';
+const APP_VERSION = 'v90-archive1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2712,6 +2712,13 @@ function createNewProject() {
     existingHistoryPanel.remove();
   }
 
+  const existingArchivePanel =
+  document.getElementById('inspectionArchivePanel');
+
+if (existingArchivePanel) {
+  existingArchivePanel.remove();
+}
+
   populateProductTypes('Fire Safety Compliance');
   updateInspectionTypeOptions();
   clearInputValue('organisationName');
@@ -5131,6 +5138,7 @@ if (shouldStartFreshScheduledInspection) {
   }
 
   showProjectForm();
+  renderInspectionArchive(project);
 
   if (focusMode === 'issues') {
     setTimeout(() => {
@@ -7548,6 +7556,196 @@ function updateAnswerSummary() {
 
   updateProjectReadinessPanel();
 }
+
+function renderInspectionArchive(project) {
+  const existingArchive =
+    document.getElementById('inspectionArchivePanel');
+
+  if (existingArchive) {
+    existingArchive.remove();
+  }
+
+  const history = project.inspectionHistory || [];
+
+  if (history.length === 0) return;
+
+  const panel = document.createElement('div');
+
+  panel.id = 'inspectionArchivePanel';
+  panel.className = 'site-history-panel';
+
+  const sortedHistory = history
+    .slice()
+    .sort((a, b) => {
+      const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
+      const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
+
+      return bTime - aTime;
+    });
+
+  const latestInspection = sortedHistory[0];
+  const olderInspections = sortedHistory.slice(1, 5);
+
+  function countAnswered(inspection) {
+    return (inspection.answers || []).filter(answer =>
+      ['yes', 'no', 'n/a'].includes(
+        String(answer.answer || '').trim().toLowerCase()
+      )
+    ).length;
+  }
+
+  function countFindings(inspection) {
+    return (inspection.answers || []).filter(answer =>
+      String(answer.answer || '').trim().toLowerCase() === 'no'
+    ).length;
+  }
+
+  function buildPhotoPreview(inspection) {
+    const photos = (inspection.photos || []).slice(0, 4);
+
+    if (photos.length === 0) {
+      return `<div class="note">No archived photos.</div>`;
+    }
+
+    return `
+      <div class="archive-photo-preview">
+        ${photos.map((photo, index) => `
+          <div class="archive-photo-thumb">
+            <img
+              src="${photo.src || ''}"
+              alt="Archived photo ${index + 1}"
+            >
+            <small>
+              ${
+                photo.timestamp
+                  ? escapeHtml(new Date(photo.timestamp).toLocaleString())
+                  : 'No timestamp'
+              }
+            </small>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function buildArchiveCard(inspection, label) {
+    const businessName =
+      inspection.projectName ||
+      [inspection.organisationName, inspection.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      project.projectName ||
+      [project.organisationName, project.siteName]
+        .filter(Boolean)
+        .join(' ') ||
+      'Unnamed business / site';
+
+    const archivedDate =
+      inspection.lastSaved
+        ? new Date(inspection.lastSaved).toLocaleString()
+        : '-';
+
+    const answeredCount = countAnswered(inspection);
+    const findingCount = countFindings(inspection);
+    const photoCount = (inspection.photos || []).length;
+
+    return `
+      <div class="archive-inspection-card">
+        <div>
+          <strong>${escapeHtml(label)}</strong>
+        </div>
+
+        <div>
+          <strong>Business / Site:</strong>
+          ${escapeHtml(businessName)}
+        </div>
+
+        <div>
+          <strong>Inspection No:</strong>
+          ${escapeHtml(inspection.inspectionNumber || '-')}
+        </div>
+
+        <div>
+          <strong>Date:</strong>
+          ${escapeHtml(archivedDate)}
+        </div>
+
+        <div>
+          <strong>Inspector:</strong>
+          ${escapeHtml(inspection.inspectorName || '-')}
+        </div>
+
+        <div>
+          <strong>Answered items:</strong>
+          ${answeredCount}
+        </div>
+
+        <div>
+          <strong>Findings:</strong>
+          ${findingCount}
+        </div>
+
+        <div>
+          <strong>Photos:</strong>
+          ${photoCount}
+        </div>
+
+        ${
+          inspection.finalComments
+            ? `
+              <div>
+                <strong>Final comments:</strong>
+                ${escapeHtml(inspection.finalComments)}
+              </div>
+            `
+            : ''
+        }
+
+        ${buildPhotoPreview(inspection)}
+      </div>
+    `;
+  }
+
+  const olderHtml =
+    olderInspections.length > 0
+      ? `
+        <details class="archive-more-details">
+          <summary>
+            Show older previous inspections (${olderInspections.length})
+          </summary>
+
+          <div class="archive-older-list">
+            ${olderInspections.map((inspection, index) =>
+              buildArchiveCard(
+                inspection,
+                `Older Previous Inspection ${index + 1}`
+              )
+            ).join('')}
+          </div>
+        </details>
+      `
+      : '';
+
+  panel.innerHTML = `
+    <h3>Previous Inspection Archive</h3>
+
+    <div class="note">
+      The latest previous inspection is shown below. Older inspections are available from the dropdown.
+    </div>
+
+    ${buildArchiveCard(latestInspection, 'Latest Previous Inspection')}
+
+    ${olderHtml}
+  `;
+
+  const form =
+    document.getElementById('projectFormSection');
+
+  if (form) {
+    form.prepend(panel);
+  }
+}
+
 function renderSiteHistory(project) {
 
   const existing =
