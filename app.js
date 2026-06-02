@@ -23,7 +23,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-report-clean1';
+const APP_VERSION = 'v90-report-clean2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -8605,11 +8605,6 @@ reportContent.innerHTML = `
     <div class="report-block">
       <h3>Non-Compliance Details</h3>
       ${nonComplianceHtml}
-    </div>
-
-    <div class="report-block">
-      <h3>Findings / Non-Compliant Checklist Items</h3>
-      ${answersHtml || '<div class="note">No findings recorded for this archived inspection.</div>'}
     </div>
 
     <div class="report-block">
