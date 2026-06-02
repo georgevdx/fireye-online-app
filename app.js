@@ -7010,7 +7010,7 @@ function generateReport() {
 
       actionHtml += `
         <a class="action-item action-link" href="#${actionSectionId}">
-          - ${escapeHtml(section.toUpperCase())} - ${count} No ${label}
+          ${escapeHtml(section.toUpperCase())} — ${count} action ${count === 1 ? 'item' : 'items'}
         </a>
       `;
     });
@@ -8286,7 +8286,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
       return `
         <div class="action-item">
-          - ${escapeHtml(section.toUpperCase())} - ${count} No ${label}
+          ${escapeHtml(section.toUpperCase())} — ${count} action ${count === 1 ? 'item' : 'items'}
         </div>
       `;
     }).join('');
@@ -8867,11 +8867,6 @@ const photosHtml =
         <strong>GPS:</strong>
         ${escapeHtml(inspection.gps || '-')}
       </div>
-    </div>
-
-    <div class="report-block">
-      <h3>Checklist Answers</h3>
-      ${answersHtml}
     </div>
 
     <div class="report-block">
