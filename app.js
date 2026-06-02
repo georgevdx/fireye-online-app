@@ -6216,7 +6216,7 @@ function createFollowUpInspection() {
   if (!followUpDate) return;
 
   const confirmed = confirm(
-    'Schedule a follow-up on this same site card? This will not create a separate follow-up card.'
+    'Schedule the next inspection cycle on this same site card? This will not create a duplicate card. The current inspection will remain available in Previous Inspection Archive when the next cycle starts.'
   );
 
   if (!confirmed) return;
@@ -6251,7 +6251,7 @@ function createFollowUpInspection() {
     });
 
   getEl('saveMessage').textContent =
-    `Follow-up scheduled for ${followUpDate}. No duplicate card was created.`;
+  `Next inspection cycle scheduled for ${followUpDate}. No duplicate card was created.`;
 }
 
 async function deleteProject() {
