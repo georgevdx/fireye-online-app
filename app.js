@@ -7006,74 +7006,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 
   html += `</div>`;
 });
-        html += `</div>`;
-      }
-
-      sectionIndex++;
-
-      html += `
-        <div class="section-header" onclick="toggleSection(${sectionIndex})">
-          <span id="arrow_${sectionIndex}">&gt;</span>
-          ${sectionName.toUpperCase()}
-        </div>
-
-        <div class="section-group hidden" id="section_${sectionIndex}">
-      `;
-
-      currentSection = sectionName;
-    }
-
-    const itemId = `check_${index}`;
-    const trackExpiry = isExpiryTrackedChecklistItem(c);
-
-    html += `
-  <div class="checklist-row" data-index="${index}">
-    <div>
-      <strong>${c["Item Number"]}.</strong>
-      ${c["Checklist Item"]}
-    </div>
-
-    <div class="note">
-      Answer type: ${c["Answer Type"]}
-    </div>
-
-    <select
-      class="answer-select"
-      id="${itemId}"
-      onchange="handleAnswerChange(this)"
-    >
-      <option value="">Select answer</option>
-      <option value="Yes">Yes</option>
-      <option value="No">No</option>
-      <option value="N/A">N/A</option>
-    </select>
-
-    <textarea
-      class="note-input"
-      id="note_${index}"
-      placeholder="Add note for this item..."
-      oninput="scheduleAutoSave()"
-    ></textarea>
-
-    ${trackExpiry ? `
-      <div class="expiry-wrapper">
-        <label>Expiry Date</label>
-
-        <input
-          type="date"
-          class="expiry-date"
-          data-index="${index}"
-          onchange="scheduleAutoSave()"
-        >
-      </div>
-    ` : ''}
-
-  </div>
-`;
-  });
-
-  html += `</div>`;
-
+       
   chkDiv.innerHTML = html;
   updateAnswerSummary();
   updateProjectReadinessPanel();
@@ -8503,8 +8436,9 @@ function handleAnswerChange(selectEl, options = {}) {
 
   if (!options.skipAutoSave) {
     scheduleAutoSave();
+    autoCloseSectionIfCompleted(selectEl);
   }
-  autoCloseSectionIfCompleted(selectEl);
+  
 }
 
 function updateAnswerSummary() {
