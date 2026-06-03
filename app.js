@@ -6955,7 +6955,7 @@ html += `
   </div>
 
   <div class="checklist-tab-hint">
-    Slide right for next checklist sections →
+    Slide left for next checklist sections →
   </div>
 `;
 
