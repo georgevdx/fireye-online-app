@@ -1,5 +1,7 @@
 ﻿let currentFilter = 'all';
 let currentProjectPage = 1;
+let activeChecklistSectionIndex = null;
+let activeChecklistQuestionPosition = 0;
 const PROJECTS_PER_PAGE = 10;
 function setFilter(filter) {
   currentFilter =
@@ -856,6 +858,192 @@ function toggleChecklistSection(sectionId) {
   } else {
     section.style.display = 'none';
   }
+}
+
+function getChecklistSectionRows(sectionIndex) {
+  return Array.from(
+    document.querySelectorAll(
+      `.checklist-row[data-section-index="${sectionIndex}"]`
+    )
+  );
+}
+
+function closeChecklistSection(sectionIndex) {
+  const section = document.getElementById(`section_${sectionIndex}`);
+  const arrow = document.getElementById(`arrow_${sectionIndex}`);
+  const nav = document.getElementById(`sectionNav_${sectionIndex}`);
+
+  if (section) {
+    section.classList.add('hidden');
+  }
+
+  if (arrow) {
+    arrow.textContent = '>';
+  }
+
+  if (nav) {
+    nav.style.display = 'none';
+  }
+
+  getChecklistSectionRows(sectionIndex).forEach(row => {
+    row.classList.remove('active-checklist-question');
+    row.classList.remove('question-hidden');
+  });
+
+  if (activeChecklistSectionIndex === sectionIndex) {
+    activeChecklistSectionIndex = null;
+    activeChecklistQuestionPosition = 0;
+  }
+}
+
+function closeAllChecklistSections() {
+  document.querySelectorAll('.section-group').forEach(section => {
+    section.classList.add('hidden');
+  });
+
+  document.querySelectorAll('[id^="arrow_"]').forEach(arrow => {
+    arrow.textContent = '>';
+  });
+
+  document.querySelectorAll('.checklist-question-nav').forEach(nav => {
+    nav.style.display = 'none';
+  });
+
+  document.querySelectorAll('.checklist-row').forEach(row => {
+    row.classList.remove('active-checklist-question');
+    row.classList.remove('question-hidden');
+  });
+
+  activeChecklistSectionIndex = null;
+  activeChecklistQuestionPosition = 0;
+}
+
+function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
+  closeAllChecklistSections();
+
+  const section = document.getElementById(`section_${sectionIndex}`);
+  const arrow = document.getElementById(`arrow_${sectionIndex}`);
+  const nav = document.getElementById(`sectionNav_${sectionIndex}`);
+
+  if (!section) return;
+
+  section.classList.remove('hidden');
+
+  if (arrow) {
+    arrow.textContent = 'v';
+  }
+
+  if (nav) {
+    nav.style.display = 'flex';
+  }
+
+  activeChecklistSectionIndex = sectionIndex;
+  activeChecklistQuestionPosition = 0;
+
+  showChecklistQuestion(sectionIndex, 0, focusFirstQuestion);
+}
+
+function toggleSection(sectionIndex) {
+  const section = document.getElementById(`section_${sectionIndex}`);
+
+  if (!section) return;
+
+  const isClosed = section.classList.contains('hidden');
+
+  if (isClosed) {
+    openChecklistSection(sectionIndex, true);
+  } else {
+    closeChecklistSection(sectionIndex);
+  }
+}
+
+function showChecklistQuestion(sectionIndex, position, shouldScroll = true) {
+  const rows = getChecklistSectionRows(sectionIndex);
+
+  if (rows.length === 0) return;
+
+  const safePosition = Math.max(
+    0,
+    Math.min(position, rows.length - 1)
+  );
+
+  activeChecklistSectionIndex = sectionIndex;
+  activeChecklistQuestionPosition = safePosition;
+
+  rows.forEach((row, index) => {
+    row.classList.toggle('question-hidden', index !== safePosition);
+    row.classList.toggle('active-checklist-question', index === safePosition);
+  });
+
+  const status = document.getElementById(`sectionNavStatus_${sectionIndex}`);
+
+  if (status) {
+    status.textContent =
+      `Question ${safePosition + 1} of ${rows.length}`;
+  }
+
+  if (shouldScroll) {
+    rows[safePosition].scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+}
+
+function nextChecklistQuestion(sectionIndex) {
+  const rows = getChecklistSectionRows(sectionIndex);
+
+  if (rows.length === 0) return;
+
+  if (activeChecklistQuestionPosition >= rows.length - 1) {
+    closeChecklistSection(sectionIndex);
+    setReadinessMessage('Section completed and closed.');
+    return;
+  }
+
+  showChecklistQuestion(
+    sectionIndex,
+    activeChecklistQuestionPosition + 1,
+    true
+  );
+}
+
+function previousChecklistQuestion(sectionIndex) {
+  if (activeChecklistQuestionPosition <= 0) {
+    showChecklistQuestion(sectionIndex, 0, true);
+    return;
+  }
+
+  showChecklistQuestion(
+    sectionIndex,
+    activeChecklistQuestionPosition - 1,
+    true
+  );
+}
+
+function autoCloseSectionIfCompleted(selectEl) {
+  const row = selectEl.closest('.checklist-row');
+
+  if (!row) return;
+
+  const sectionIndex = Number(row.dataset.sectionIndex);
+  const rows = getChecklistSectionRows(sectionIndex);
+
+  if (rows.length === 0) return;
+
+  const lastRow = rows[rows.length - 1];
+
+  if (row !== lastRow) return;
+
+  const allAnswered = rows.every(sectionRow => {
+    const answerField = sectionRow.querySelector('.answer-select');
+    return answerField && answerField.value;
+  });
+
+  if (!allAnswered) return;
+
+  closeChecklistSection(sectionIndex);
+  setReadinessMessage('Section completed and closed.');
 }
 
 function sanitizeFileName(value, fallback = 'Inspection') {
@@ -6682,14 +6870,142 @@ function renderChecklist(selected) {
     return;
   }
 
-  let currentSection = null;
-  let sectionIndex = -1;
+  const groupedSections = new Map();
 
-  selectedChecklist.forEach((c, index) => {
-    const sectionName = c.Section || "GENERAL";
+selectedChecklist.forEach((item, originalIndex) => {
+  const sectionName = item.Section || 'GENERAL';
 
-    if (sectionName !== currentSection) {
-      if (currentSection !== null) {
+  if (!groupedSections.has(sectionName)) {
+    groupedSections.set(sectionName, []);
+  }
+
+  groupedSections.get(sectionName).push({
+    item,
+    originalIndex
+  });
+});
+
+const sectionNames = Array.from(groupedSections.keys());
+
+const orderedSectionNames = [
+  ...sectionNames.filter(name =>
+    String(name).toLowerCase().includes('fire equipment')
+  ),
+  ...sectionNames.filter(name =>
+    !String(name).toLowerCase().includes('fire equipment')
+  )
+];
+
+html += `
+  <div class="checklist-section-tabs">
+    ${orderedSectionNames.map((sectionName, sectionIndex) => `
+      <button
+        type="button"
+        class="checklist-section-tab"
+        onclick="openChecklistSection(${sectionIndex}, true)"
+      >
+        <span>∨</span>
+        ${escapeHtml(sectionName.toUpperCase())}
+      </button>
+    `).join('')}
+  </div>
+`;
+
+orderedSectionNames.forEach((sectionName, sectionIndex) => {
+  const sectionItems = groupedSections.get(sectionName) || [];
+
+  html += `
+    <div class="section-header" onclick="toggleSection(${sectionIndex})">
+      <span id="arrow_${sectionIndex}">&gt;</span>
+      ${escapeHtml(sectionName.toUpperCase())}
+    </div>
+
+    <div
+      class="section-group hidden"
+      id="section_${sectionIndex}"
+      data-section-name="${escapeHtml(sectionName)}"
+    >
+
+      <div
+        id="sectionNav_${sectionIndex}"
+        class="checklist-question-nav"
+        style="display:none;"
+      >
+        <button
+          type="button"
+          onclick="previousChecklistQuestion(${sectionIndex})"
+        >
+          Back
+        </button>
+
+        <span id="sectionNavStatus_${sectionIndex}">
+          Question 1 of ${sectionItems.length}
+        </span>
+
+        <button
+          type="button"
+          onclick="nextChecklistQuestion(${sectionIndex})"
+        >
+          Next
+        </button>
+      </div>
+  `;
+
+  sectionItems.forEach(({ item: c, originalIndex }) => {
+    const itemId = `check_${originalIndex}`;
+    const trackExpiry = isExpiryTrackedChecklistItem(c);
+
+    html += `
+      <div
+        class="checklist-row"
+        data-index="${originalIndex}"
+        data-section-index="${sectionIndex}"
+      >
+        <div>
+          <strong>${c["Item Number"]}.</strong>
+          ${escapeHtml(c["Checklist Item"])}
+        </div>
+
+        <div class="note">
+          Answer type: ${escapeHtml(c["Answer Type"])}
+        </div>
+
+        <select
+          class="answer-select"
+          id="${itemId}"
+          onchange="handleAnswerChange(this)"
+        >
+          <option value="">Select answer</option>
+          <option value="Yes">Yes</option>
+          <option value="No">No</option>
+          <option value="N/A">N/A</option>
+        </select>
+
+        <textarea
+          class="note-input"
+          id="note_${originalIndex}"
+          placeholder="Add note for this item..."
+          oninput="scheduleAutoSave()"
+        ></textarea>
+
+        ${trackExpiry ? `
+          <div class="expiry-wrapper">
+            <label>Expiry Date</label>
+
+            <input
+              type="date"
+              class="expiry-date"
+              data-index="${originalIndex}"
+              onchange="scheduleAutoSave()"
+            >
+          </div>
+        ` : ''}
+      </div>
+    `;
+  });
+
+  html += `</div>`;
+});
         html += `</div>`;
       }
 
@@ -8188,6 +8504,7 @@ function handleAnswerChange(selectEl, options = {}) {
   if (!options.skipAutoSave) {
     scheduleAutoSave();
   }
+  autoCloseSectionIfCompleted(selectEl);
 }
 
 function updateAnswerSummary() {

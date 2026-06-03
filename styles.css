@@ -3517,3 +3517,84 @@ button.readiness-chip:focus {
     min-width: 68px;
   }
 }
+
+.checklist-section-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0 12px;
+  margin-bottom: 8px;
+  scroll-snap-type: x mandatory;
+}
+
+.checklist-section-tab {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  background: #fff3e0;
+  color: #5d2800;
+  border: 1px solid #ffcc80;
+}
+
+.checklist-section-tab:first-child {
+  background: #b71c1c;
+  color: #ffffff;
+  border-color: #b71c1c;
+}
+
+.checklist-question-nav {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 8px;
+  margin: 8px 0 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.checklist-question-nav button {
+  min-width: 72px;
+  padding: 8px 10px;
+}
+
+.checklist-question-nav span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #333;
+}
+
+.checklist-row.question-hidden {
+  display: none;
+}
+
+.checklist-row.active-checklist-question {
+  border: 2px solid #b71c1c;
+  box-shadow: 0 4px 14px rgba(183, 28, 28, 0.16);
+}
+
+@media (max-width: 700px) {
+  .checklist-section-tabs {
+    margin-left: -4px;
+    margin-right: -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+  .checklist-section-tab {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+
+  .checklist-question-nav {
+    top: 6px;
+  }
+}
