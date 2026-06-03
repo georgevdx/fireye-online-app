@@ -3599,3 +3599,112 @@ button.readiness-chip:focus {
     top: 6px;
   }
 }
+
+.checklist-row.active-checklist-question {
+  min-height: 360px;
+  padding: 14px;
+}
+
+.checklist-row.active-checklist-question > div:first-child {
+  font-size: 15px;
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+
+.checklist-row.active-checklist-question .answer-select {
+  min-height: 46px;
+  font-size: 15px;
+}
+
+.checklist-row.active-checklist-question .note-input {
+  min-height: 110px;
+}
+
+@media (max-width: 700px) {
+  .checklist-row.active-checklist-question {
+    min-height: 390px;
+  }
+
+  .checklist-row.active-checklist-question > div:first-child {
+    font-size: 16px;
+  }
+}
+
+.hidden-photo-input {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+.take-photo-btn {
+  display: inline-block;
+  background: #b71c1c;
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.checklist-section-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0 12px;
+  margin-bottom: 4px;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+.checklist-section-tab {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  min-width: 150px;
+  max-width: 240px;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 12px;
+  white-space: normal;
+  text-align: center;
+  background: #fff3e0;
+  color: #5d2800;
+  border: 1px solid #ffcc80;
+}
+
+.checklist-tab-hint {
+  font-size: 11px;
+  color: #777;
+  text-align: right;
+  margin: -2px 2px 10px;
+}
+
+.checklist-section-tab.active-section-tab {
+  background: #b71c1c;
+  color: #ffffff;
+  border-color: #b71c1c;
+  font-weight: 700;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.photo-download {
+  border: none;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: #333333;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.photo-delete {
+  min-width: 34px;
+}

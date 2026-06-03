@@ -6925,10 +6925,14 @@ html += `
         data-section-index="${sectionIndex}"
         onclick="openChecklistSection(${sectionIndex}, true)"
       >
-        <span>∨</span>
+        ${sectionIndex === activeChecklistSectionIndex ? '∨' : '›'}
         ${escapeHtml(sectionName.toUpperCase())}
       </button>
     `).join('')}
+  </div>
+
+  <div class="checklist-tab-hint">
+    Slide right for next checklist sections →
   </div>
 `;
 
@@ -8118,6 +8122,50 @@ async function handlePhotoUpload(event) {
   }
 }
 
+async function downloadPhoto(index) {
+  const photo = currentPhotos[index];
+
+  if (!photo || !photo.src) {
+    alert('Photo is not available for download.');
+    return;
+  }
+
+  try {
+    const response = await fetch(photo.src);
+    const blob = await response.blob();
+
+    const timestamp =
+      photo.timestamp
+        ? new Date(photo.timestamp).toISOString().slice(0, 19).replace(/[:T]/g, '-')
+        : getFileTimestamp();
+
+    const filename = `Fire-S-photo-${timestamp}-${index + 1}.jpg`;
+
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.style.display = 'none';
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    const status = document.getElementById('photoUploadStatus');
+    if (status) {
+      status.textContent = `Photo downloaded: ${filename}`;
+    }
+  } catch (error) {
+    console.error('Photo download failed:', error);
+    alert('Photo download failed. Try opening the photo and saving it manually.');
+  }
+}
+
 function renderPhotos() {
   const container = getEl('photoPreview');
   container.innerHTML = '';
@@ -8137,17 +8185,36 @@ function renderPhotos() {
     const photoTime = new Date(photo.timestamp).toLocaleString();
 
     div.innerHTML = `
-      <img src="${photoSrc}">
-      <small class="photo-timestamp">Captured: ${photoTime}</small>
+  <img src="${photoSrc}">
 
-      <textarea
-        class="photo-note"
-        placeholder="Photo note..."
-        oninput="updatePhotoNote(${index}, this.value)"
-      >${escapeHtml(photo.note || '')}</textarea>
+  <small class="photo-timestamp">
+    Captured: ${photoTime}
+  </small>
 
-      <button class="photo-delete" type="button" onclick="deletePhoto(${index})">Delete</button>
-    `;
+  <textarea
+    class="photo-note"
+    placeholder="Photo note..."
+    oninput="updatePhotoNote(${index}, this.value)"
+  >${escapeHtml(photo.note || '')}</textarea>
+
+  <div class="photo-actions">
+    <button
+      class="photo-download"
+      type="button"
+      onclick="downloadPhoto(${index})"
+    >
+      Download
+    </button>
+
+    <button
+      class="photo-delete"
+      type="button"
+      onclick="deletePhoto(${index})"
+    >
+      Delete
+    </button>
+  </div>
+`;
 
     container.appendChild(div);
   });
@@ -9716,7 +9783,7 @@ window.debugSyncCounts = debugSyncCounts;
 window.addEventListener('offline', () => {
   setSyncStatusMessage('Offline mode active. You can continue working.');
 });
-
+window.downloadPhoto = downloadPhoto;
 window.addEventListener('online', async () => {
   setSyncStatusMessage('Signal restored. Updating GPS addresses...');
 

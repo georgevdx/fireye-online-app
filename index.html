@@ -520,9 +520,23 @@
 
   <section class="card">
   <h2>Photo Evidence</h2>
-  <input type="file" id="photoInput" accept="image/*" capture="environment">
-  <div id="photoUploadStatus" class="note"></div>
-  <div id="photoPreview"></div>
+  <label for="photoInput" class="take-photo-btn">
+  Take Photo
+</label>
+
+<input
+  type="file"
+  id="photoInput"
+  accept="image/*"
+  capture="environment"
+  class="hidden-photo-input"
+>
+
+<div id="photoUploadStatus" class="note">
+  No photos added yet.
+</div>
+
+<div id="photoPreview"></div>
   
   <div class="form-section">
   <h3>Inspector Comments / Conclusion</h3>
