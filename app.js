@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-workflow5';
+const APP_VERSION = 'v90-beta-workflow11';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3414,6 +3414,39 @@ function showProjectList() {
   updateFloatingBackButton();
 }
 
+const INSPECTION_SECTION_FLOW = [
+  {
+    id: 'inspectionQuickActions',
+    label: 'Quick Actions'
+  },
+  {
+    id: 'projectDetailsCard',
+    label: 'Inspection Information'
+  },
+  {
+    id: 'requirementsSection',
+    label: 'Occupancy Requirements'
+  },
+  {
+    id: 'checklistCard',
+    label: 'Q&A Checklist'
+  },
+  {
+    id: 'photoEvidenceCard',
+    label: 'Photo Evidence'
+  },
+  {
+    id: 'inspectorCommentsCard',
+    label: 'Inspector Comments'
+  },
+  {
+    id: 'nextInspectionCard',
+    label: 'Schedule Next Inspection'
+  }
+];
+
+let activeInspectionSectionId = null;
+
 function updateInspectionCommandHeader() {
   const companyEl = document.getElementById('inspectionCommandCompany');
   const siteEl = document.getElementById('inspectionCommandSite');
@@ -3468,11 +3501,117 @@ function openInspectionCommandSection(sectionId) {
   }
 
   closeInspectionCommandMenu();
+  focusInspectionSection(sectionId);
+}
 
-  target.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start'
-  });
+function getInspectionSectionIndex(sectionId) {
+  return INSPECTION_SECTION_FLOW.findIndex(section => section.id === sectionId);
+}
+
+function removeInspectionSectionFocus() {
+  document
+    .querySelectorAll('.inspection-section-focused')
+    .forEach(section => {
+      section.classList.remove('inspection-section-focused');
+    });
+
+  document
+    .querySelectorAll('.inspection-section-focus-toolbar')
+    .forEach(toolbar => {
+      toolbar.remove();
+    });
+
+  activeInspectionSectionId = null;
+}
+
+function focusInspectionSection(sectionId) {
+  const target = document.getElementById(sectionId);
+
+  if (!target) return;
+
+  removeInspectionSectionFocus();
+
+  activeInspectionSectionId = sectionId;
+  target.classList.add('inspection-section-focused');
+
+  const sectionIndex = getInspectionSectionIndex(sectionId);
+  const sectionMeta = INSPECTION_SECTION_FLOW[sectionIndex];
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'inspection-section-focus-toolbar';
+
+  toolbar.innerHTML = `
+    <div class="inspection-section-focus-title">
+      ${escapeHtml(sectionMeta?.label || 'Inspection Section')}
+    </div>
+
+    <div class="inspection-section-focus-actions">
+      <button
+        type="button"
+        onclick="goToPreviousInspectionSection()"
+        ${sectionIndex <= 0 ? 'disabled' : ''}
+      >
+        Previous
+      </button>
+
+      <button
+        type="button"
+        onclick="goToNextInspectionSection()"
+        ${sectionIndex >= INSPECTION_SECTION_FLOW.length - 1 ? 'disabled' : ''}
+      >
+        Next
+      </button>
+
+      <button
+        type="button"
+        onclick="closeInspectionSectionFocus()"
+      >
+        Close
+      </button>
+    </div>
+  `;
+
+  target.prepend(toolbar);
+
+  setTimeout(() => {
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }, 40);
+}
+
+function goToPreviousInspectionSection() {
+  if (!activeInspectionSectionId) return;
+
+  const currentIndex = getInspectionSectionIndex(activeInspectionSectionId);
+
+  if (currentIndex <= 0) return;
+
+  focusInspectionSection(
+    INSPECTION_SECTION_FLOW[currentIndex - 1].id
+  );
+}
+
+function goToNextInspectionSection() {
+  if (!activeInspectionSectionId) return;
+
+  const currentIndex = getInspectionSectionIndex(activeInspectionSectionId);
+
+  if (
+    currentIndex === -1 ||
+    currentIndex >= INSPECTION_SECTION_FLOW.length - 1
+  ) {
+    return;
+  }
+
+  focusInspectionSection(
+    INSPECTION_SECTION_FLOW[currentIndex + 1].id
+  );
+}
+
+function closeInspectionSectionFocus() {
+  removeInspectionSectionFocus();
 }
 
 function showProjectForm() {
@@ -5195,6 +5334,9 @@ window.focusFirstCurrentExpiry = focusFirstCurrentExpiry;
 window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
 window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
 window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
+window.goToPreviousInspectionSection = goToPreviousInspectionSection;
+window.goToNextInspectionSection = goToNextInspectionSection;
+window.closeInspectionSectionFocus = closeInspectionSectionFocus;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
