@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-feedback2';
+const APP_VERSION = 'v90-beta-feedback3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4107,10 +4107,83 @@ async function renderBetaFeedbackList() {
               `
               : ''
           }
+
+          <div class="beta-feedback-admin-actions">
+            <label>
+              Status
+              <select id="betaFeedbackStatus_${escapeHtml(item.id)}">
+                <option value="new" ${item.status === 'new' ? 'selected' : ''}>New</option>
+                <option value="reviewed" ${item.status === 'reviewed' ? 'selected' : ''}>Reviewed</option>
+                <option value="closed" ${item.status === 'closed' ? 'selected' : ''}>Closed</option>
+              </select>
+            </label>
+
+            <label>
+              Follow-up note
+              <textarea
+                id="betaFeedbackNote_${escapeHtml(item.id)}"
+                placeholder="Example: Fixed in v90-beta-feedback3, need screenshot, could not reproduce..."
+              >${escapeHtml(item.followup_note || '')}</textarea>
+            </label>
+
+            <button
+              type="button"
+              onclick="updateBetaFeedbackStatus('${escapeHtml(item.id)}')"
+            >
+              Save Feedback Update
+            </button>
+          </div>
+
         </div>
       `).join('')}
     </div>
   `;
+}
+
+async function updateBetaFeedbackStatus(feedbackId) {
+  if (!canViewServiceRequests()) {
+    alert('Only Fire-S admin can update beta feedback.');
+    return;
+  }
+
+  const statusField =
+    document.getElementById(`betaFeedbackStatus_${feedbackId}`);
+
+  const noteField =
+    document.getElementById(`betaFeedbackNote_${feedbackId}`);
+
+  const status = statusField ? statusField.value : 'new';
+  const followupNote = noteField ? noteField.value.trim() : '';
+
+  try {
+    const { error } = await supabaseClient
+      .from('beta_feedback')
+      .update({
+        status,
+        followup_note: followupNote
+      })
+      .eq('id', feedbackId);
+
+    if (error) {
+      console.error('Beta feedback update failed:', error);
+      alert(`Could not update feedback: ${error.message}`);
+      return;
+    }
+
+    alert('Beta feedback updated.');
+
+    const list = document.getElementById('betaFeedbackList');
+
+    if (list) {
+      list.style.display = 'none';
+    }
+
+    renderBetaFeedbackList();
+
+  } catch (error) {
+    console.error('Beta feedback update crashed:', error);
+    alert(`Feedback update failed: ${error.message}`);
+  }
 }
 
 function openServiceRequestCard(index) {
@@ -5000,6 +5073,7 @@ window.focusFirstCurrentIssue = focusFirstCurrentIssue;
 window.focusFirstCurrentExpiry = focusFirstCurrentExpiry;
 window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
 window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
+window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);

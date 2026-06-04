@@ -3783,3 +3783,31 @@ button.readiness-chip:focus {
   border-radius: 8px;
   font-size: 13px;
 }
+
+.beta-feedback-admin-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eeeeee;
+}
+
+.beta-feedback-admin-actions label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.beta-feedback-admin-actions select,
+.beta-feedback-admin-actions textarea {
+  width: 100%;
+}
+
+.beta-feedback-admin-actions textarea {
+  min-height: 80px;
+}
+
+.beta-feedback-admin-actions button {
+  justify-self: start;
+}
