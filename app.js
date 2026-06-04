@@ -1533,7 +1533,9 @@ async function runBackgroundSync(reason = 'background') {
       return;
     }
 
-    setSyncStatusMessage(`Syncing changes... (${reason})`);
+    if (reason !== 'autosave' && reason !== 'background') {
+      setSyncStatusMessage(`Syncing changes... (${reason})`);
+    }
 
     await uploadPendingInspections();
     await safeDownloadNewerCloudInspections();
@@ -1542,7 +1544,9 @@ async function runBackgroundSync(reason = 'background') {
     renderProjectsList();
     reloadCurrentOpenInspectionAfterSync();
 
-    setSyncStatusMessage('All changes synced.');
+    if (reason !== 'autosave' && reason !== 'background') {
+      setSyncStatusMessage('All changes synced.');
+    }
   } catch (error) {
     console.warn(`Background sync failed (${reason}):`, error);
     setSyncStatusMessage('Saved locally. Cloud sync failed.');
@@ -1566,10 +1570,7 @@ function reloadCurrentOpenInspectionAfterSync() {
 
   const saveMessage = document.getElementById('saveMessage');
 
-  if (saveMessage) {
-    saveMessage.textContent =
-      'Current inspection refreshed from cloud sync.';
-  }
+  
 }
 
 async function refreshSyncData() {
@@ -6291,31 +6292,31 @@ const scheduledLabel =
         </div>
       ` : ''}
 
-      ${expiryCounts.total > 0 ? `
+     ${expiryCounts.total > 0 ? `
   <div class="project-expiry-summary">
     <span class="project-expiry-label">Equipment Maintenance</span>
 
     ${expiryCounts.overdue > 0 ? `
       <span class="project-expiry-chip expiry-chip-overdue">
-        Expired: ${expiryCounts.overdue}
+        Expired
       </span>
     ` : ''}
 
     ${expiryCounts.soon > 0 ? `
       <span class="project-expiry-chip expiry-chip-soon">
-        Due soon: ${expiryCounts.soon}
+        Due soon
       </span>
     ` : ''}
 
     ${expiryCounts.scheduled > 0 ? `
       <span class="project-expiry-chip expiry-chip-scheduled">
-        Valid: ${expiryCounts.scheduled}
+        Valid
       </span>
     ` : ''}
 
     ${expiryCounts.missing > 0 ? `
       <span class="project-expiry-chip expiry-chip-missing">
-        Date to be entered: ${expiryCounts.missing}
+        Date to be entered
       </span>
     ` : ''}
   </div>
@@ -6782,7 +6783,9 @@ async function uploadSingleInspection(project) {
       return;
     }
 
-   if (syncStatus) syncStatus.textContent = 'Uploading saved inspection...';
+   if (syncStatus && project.syncPending === false) {
+      syncStatus.textContent = 'Uploading saved inspection...';
+    }
 
 const cloudMetadata =
   getProjectCloudMetadata(project, userData.user.id);
@@ -6826,7 +6829,9 @@ const { error } = await supabaseClient
 
     markInspectionSynced(project.id);
 
-    if (syncStatus) syncStatus.textContent = 'Saved locally and uploaded to cloud.';
+    if (syncStatus && project.syncPending === false) {
+      syncStatus.textContent = 'Saved locally and uploaded to cloud.';
+    }
   } catch (err) {
     console.error('Single upload failed:', err);
     if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
