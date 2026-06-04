@@ -6032,13 +6032,19 @@ container.innerHTML = `
             ${escapeHtml(project.inspectionNumber || '-')}
           </span>
 
-          <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
-            ${escapeHtml(inspectionStatus.label)}
-          </span>
+          ${
+              isScheduledNew || project.scheduleFreshInspection === true
+                ? ''
+                : `
+                  <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+                    ${escapeHtml(inspectionStatus.label)}
+                  </span>
+                `
+            }
 
-          <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
-            ${escapeHtml(scheduledLabel)}
-          </span>
+            <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+              ${escapeHtml(scheduledLabel)}
+            </span>
 
           <span class="inspection-project-list-address">
             ${escapeHtml(projectAddress)}
@@ -6249,10 +6255,16 @@ const scheduledLabel =
           ${escapeHtml(scheduledLabel)}
         </span>
 
-        <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
-          ${escapeHtml(inspectionStatus.label)}
-          <small>${escapeHtml(inspectionStatus.detail)}</small>
-        </span>
+        ${
+          isScheduledNew || project.scheduleFreshInspection === true
+            ? ''
+            : `
+              <span class="project-inspection-status ${escapeHtml(inspectionStatus.class)}">
+                ${escapeHtml(inspectionStatus.label)}
+                <small>${escapeHtml(inspectionStatus.detail)}</small>
+              </span>
+            `
+        }
       </div>
 
       ${dataQuality.count > 0 ? `
