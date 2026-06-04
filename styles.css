@@ -4298,3 +4298,75 @@ button.readiness-chip:focus {
     overflow-y: auto;
   }
 }
+
+/* Beta 9.4d — viewport-safe bottom sticky bar */
+
+@media (max-width: 640px) {
+  .sticky-action-bar {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 8px !important;
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    transform: none !important;
+
+    z-index: 120;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px;
+    padding: 6px;
+
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid #dddddd;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+  }
+
+  .sticky-action-bar > button,
+  .sticky-action-bar > .action-menu {
+    min-width: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .sticky-action-bar button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 38px;
+    padding: 6px 3px;
+    font-size: 12px;
+    line-height: 1.1;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    white-space: nowrap;
+  }
+
+  .sticky-action-bar .action-menu {
+    grid-column: auto !important;
+  }
+
+  #backBtn,
+  #saveBtn,
+  #finishBtn,
+  #actionMenuBtn {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .action-dropdown {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 62px !important;
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+    box-sizing: border-box !important;
+    z-index: 130;
+  }
+}
