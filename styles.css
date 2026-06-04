@@ -4551,3 +4551,50 @@ button.readiness-chip:focus {
     z-index: 70;
   }
 }
+
+/* Beta 9.5b — compact section focus polish */
+
+@media (max-width: 640px) {
+  .inspection-section-focus-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    padding: 7px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+  }
+
+  .inspection-section-focus-title {
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .inspection-section-focus-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .inspection-section-focus-actions button {
+    min-height: 32px;
+    padding: 5px 4px;
+    font-size: 11px;
+    line-height: 1.1;
+  }
+
+  .inspection-section-focused {
+    scroll-margin-top: 80px;
+    margin-bottom: 80px;
+  }
+  
+  @media (max-width: 640px) {
+  #inspectionQuickActions,
+  #projectDetailsCard,
+  #requirementsSection,
+  #checklistCard,
+  #photoEvidenceCard,
+  #inspectorCommentsCard,
+  #nextInspectionCard {
+    scroll-margin-bottom: 130px;
+  }
+}
+}

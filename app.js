@@ -3473,22 +3473,33 @@ function updateInspectionCommandHeader() {
 
 function toggleInspectionCommandMenu() {
   const menu = document.getElementById('inspectionCommandMenu');
+  const button = document.getElementById('inspectionMenuToggleBtn');
 
   if (!menu) return;
 
-  menu.style.display =
-    menu.style.display === 'none' || menu.style.display === ''
-      ? 'grid'
-      : 'none';
+  const willOpen =
+    menu.style.display === 'none' ||
+    menu.style.display === '';
+
+  menu.style.display = willOpen ? 'grid' : 'none';
+
+  if (button) {
+    button.textContent = willOpen ? 'Close Menu' : 'Menu';
+  }
 
   updateInspectionCommandHeader();
 }
 
 function closeInspectionCommandMenu() {
   const menu = document.getElementById('inspectionCommandMenu');
+  const button = document.getElementById('inspectionMenuToggleBtn');
 
   if (menu) {
     menu.style.display = 'none';
+  }
+
+  if (button) {
+    button.textContent = 'Menu';
   }
 }
 
@@ -3649,7 +3660,7 @@ function ensureInspectionQuickActions() {
   }
 
   panel.innerHTML = `
-    <div class="quick-actions-title">Quick Actions</div>
+    <div class="quick-actions-title">Quick Actions / Readiness</div>
 
     <div class="quick-actions-grid">
       <button type="button" onclick="focusFirstMissingProjectInfo()">
