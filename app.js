@@ -3119,6 +3119,10 @@ function saveScheduledNewInspection() {
     scheduleFreshInspection: false,
     scheduledReason: 'New inspection scheduled',
 
+    completedAt: null,
+    archiveStatus: '',
+    archivedAt: null,
+
     inspectionHistory: [],
 
     syncPending: true,
@@ -7168,6 +7172,10 @@ function createFollowUpInspection() {
     scheduledStatus: 'scheduled',
     scheduleFreshInspection: true,
     scheduledReason: 'follow_up',
+
+    completedAt: null,
+    archiveStatus: '',
+    archivedAt: null,
 
     syncPending: true,
     syncError: false,
