@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-card-restore2';
+const APP_VERSION = 'v90-beta-feedback1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2262,6 +2262,24 @@ function initApp() {
     cancelServiceRequestBtn.addEventListener('click', cancelServiceRequest);
   }
 
+  const openBetaFeedbackBtn = document.getElementById('openBetaFeedbackBtn');
+
+  if (openBetaFeedbackBtn) {
+    openBetaFeedbackBtn.addEventListener('click', openBetaFeedbackForm);
+  }
+
+  const submitBetaFeedbackBtn = document.getElementById('submitBetaFeedbackBtn');
+
+  if (submitBetaFeedbackBtn) {
+    submitBetaFeedbackBtn.addEventListener('click', submitBetaFeedback);
+  }
+
+  const cancelBetaFeedbackBtn = document.getElementById('cancelBetaFeedbackBtn');
+
+  if (cancelBetaFeedbackBtn) {
+    cancelBetaFeedbackBtn.addEventListener('click', cancelBetaFeedback);
+  }
+
   const cloudMenuBtn = document.getElementById('cloudMenuBtn');
   const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -3305,8 +3323,8 @@ function updateOfflineReadinessBanner() {
     <small>
       ${
         ready
-          ? 'This device should be able to open the app and continue saved inspections without signal.'
-          : 'Open the app online and tap Refresh / Sync Data before going to site.'
+      ? 'Ready for field use. Open and sync online before going to site; saved inspections should remain available without signal.'
+      : 'Before site work: login online, tap Sync / Refresh, and confirm Offline Ready.'
       }
     </small>
   `;
@@ -3659,6 +3677,183 @@ async function submitServiceRequest() {
   if (serviceRequestsList && serviceRequestsList.style.display !== 'none') {
     serviceRequestsList.style.display = 'none';
     renderServiceRequestsList();
+  }
+}
+
+function openBetaFeedbackForm() {
+  const form = document.getElementById('betaFeedbackForm');
+  const status = document.getElementById('betaFeedbackStatus');
+
+  if (!form) return;
+
+  if (status) {
+    status.textContent = '';
+  }
+
+  const inspectionField = document.getElementById('betaInspectionNumber');
+
+  if (inspectionField && currentProjectId) {
+    const project = getProjects().find(p => p.id === currentProjectId);
+    inspectionField.value = project?.inspectionNumber || '';
+  }
+
+  const onlineStatus = document.getElementById('betaOnlineStatus');
+
+  if (onlineStatus) {
+    onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
+  }
+
+  form.style.display = 'block';
+
+  form.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function cancelBetaFeedback() {
+  const form = document.getElementById('betaFeedbackForm');
+  const status = document.getElementById('betaFeedbackStatus');
+
+  if (form) {
+    form.style.display = 'none';
+  }
+
+  if (status) {
+    status.textContent = '';
+  }
+}
+
+function clearBetaFeedbackForm() {
+  const ids = [
+    'betaDevice',
+    'betaBrowser',
+    'betaInspectionNumber',
+    'betaWhatHappened',
+    'betaExpectedResult'
+  ];
+
+  ids.forEach(id => {
+    const field = document.getElementById(id);
+
+    if (field) {
+      field.value = '';
+    }
+  });
+
+  const issueType = document.getElementById('betaIssueType');
+
+  if (issueType) {
+    issueType.value = 'Bug';
+  }
+
+  const priority = document.getElementById('betaPriority');
+
+  if (priority) {
+    priority.value = 'Medium';
+  }
+
+  const onlineStatus = document.getElementById('betaOnlineStatus');
+
+  if (onlineStatus) {
+    onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
+  }
+}
+
+async function submitBetaFeedback() {
+  const status = document.getElementById('betaFeedbackStatus');
+
+  const issueType =
+    document.getElementById('betaIssueType')?.value || '';
+
+  const priority =
+    document.getElementById('betaPriority')?.value || '';
+
+  const device =
+    document.getElementById('betaDevice')?.value.trim() || '';
+
+  const browser =
+    document.getElementById('betaBrowser')?.value.trim() || '';
+
+  const onlineStatus =
+    document.getElementById('betaOnlineStatus')?.value || '';
+
+  const inspectionNumber =
+    document.getElementById('betaInspectionNumber')?.value.trim() || '';
+
+  const whatHappened =
+    document.getElementById('betaWhatHappened')?.value.trim() || '';
+
+  const expectedResult =
+    document.getElementById('betaExpectedResult')?.value.trim() || '';
+
+  if (!whatHappened) {
+    if (status) {
+      status.textContent = 'Please describe what happened.';
+    }
+
+    return;
+  }
+
+  if (status) {
+    status.textContent = 'Submitting feedback...';
+  }
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData?.user) {
+      if (status) {
+        status.textContent = 'Please login before submitting beta feedback.';
+      }
+
+      return;
+    }
+
+    const payload = {
+      app_version: APP_VERSION,
+      issue_type: issueType,
+      priority,
+      device,
+      browser,
+      online_status: onlineStatus,
+      inspection_number: inspectionNumber,
+      what_happened: whatHappened,
+      expected_result: expectedResult,
+      reported_by_user_id: userData.user.id,
+      reported_by_email: userData.user.email,
+      status: 'new'
+    };
+
+    const { error } = await supabaseClient
+      .from('beta_feedback')
+      .insert(payload);
+
+    if (error) {
+      console.error('Beta feedback submit failed:', error);
+
+      if (status) {
+        status.textContent =
+          `Feedback could not be submitted: ${error.message}`;
+      }
+
+      return;
+    }
+
+    if (status) {
+      status.textContent = 'Feedback submitted. Thank you.';
+    }
+
+    clearBetaFeedbackForm();
+
+  } catch (error) {
+    console.error('Beta feedback crashed:', error);
+
+    if (status) {
+      status.textContent =
+        `Feedback submit failed: ${error.message}`;
+    }
   }
 }
 
@@ -6727,7 +6922,7 @@ async function deleteProject() {
   }
 
   const confirmed = confirm(
-    'Delete this project permanently from this device? Export a backup first if you are unsure. Continue?'
+    'Delete this inspection from this device and cloud sync? Export a backup first if you are unsure. Continue?'
   );
   if (!confirmed) return;
 

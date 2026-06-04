@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=90-card-restore2">
+ <link rel="stylesheet" href="styles.css?v=90-beta-feedback1">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -19,10 +19,13 @@
       alt="Fire-S logo"
     >
     <div>
-      <h1>Fire-S</h1>
-      <p class="subtitle">Fire Safety App</p>
-      <p id="appVersion" class="brand-version">Version loading...</p>
-    </div>
+     <h1>
+  Fire-S
+  <span class="beta-badge">BETA</span>
+    </h1>
+
+    <p class="subtitle">Fire Safety App</p>
+    <p id="appVersion" class="brand-version">Version loading...</p></div>
   </div>
 
   <div class="cloud-menu">
@@ -35,7 +38,7 @@
       <div class="sync-connected">Cloud Sync: Connected</div>
 
       <button id="refreshSyncBtn" type="button">
-        Refresh / Sync Data
+        Sync / Refresh
       </button>
 
       <button id="showSyncToolsBtn" type="button">
@@ -80,6 +83,7 @@
         <div><strong>Backup Text:</strong> <span id="cloudBackupTextStatus">Loading...</span></div>
         <div><strong>Storage:</strong> Local + Cloud Sync</div>
         <div><strong>Backups:</strong> Export before major changes</div>
+        <div><strong>Beta Note:</strong> Open and sync online before site inspections.</div>
         <div class="cloud-section-title">Admin</div>
         <button id="adminExportBackupBtn" type="button">Export Backup</button>
         <button id="createBackupTextBtn" type="button">Create Backup Text</button>
@@ -164,6 +168,16 @@
       </button>
     </div>
 
+    <div class="service-card beta-feedback-card">
+      <h3>Beta Feedback</h3>
+      <p>
+        Report bugs, sync issues, layout problems or confusing wording during beta testing.
+      </p>
+      <button type="button" id="openBetaFeedbackBtn">
+        Report Beta Issue
+      </button>
+    </div>
+
     <div class="service-card">
       <h3>Report Review</h3>
       <p>
@@ -202,6 +216,7 @@
     <div id="serviceRequestsList" class="service-requests-list" style="display:none;"></div>
   </div>
   <div id="serviceRequestForm" class="service-request-form" style="display:none;">
+  
   
 
   <h3>Request Service</h3>
@@ -246,6 +261,88 @@
 
   <div id="serviceRequestStatus" class="note"></div>
 </div>
+
+<div id="betaFeedbackForm" class="service-request-form" style="display:none;">
+  <h3>Beta Feedback</h3>
+
+  <div class="form-row">
+    <label for="betaIssueType">Issue Type</label>
+    <select id="betaIssueType">
+      <option value="Bug">Bug</option>
+      <option value="Sync Issue">Sync Issue</option>
+      <option value="Photo Issue">Photo Issue</option>
+      <option value="Report/PDF Issue">Report/PDF Issue</option>
+      <option value="Offline Issue">Offline Issue</option>
+      <option value="Layout/UI Issue">Layout/UI Issue</option>
+      <option value="Wording/Checklist Issue">Wording/Checklist Issue</option>
+      <option value="Suggestion">Suggestion</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="betaPriority">Priority</label>
+    <select id="betaPriority">
+      <option value="Low">Low</option>
+      <option value="Medium" selected>Medium</option>
+      <option value="High">High</option>
+      <option value="Critical">Critical</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="betaDevice">Device</label>
+    <input id="betaDevice" type="text" placeholder="Example: Samsung phone / Laptop">
+  </div>
+
+  <div class="form-row">
+    <label for="betaBrowser">Browser</label>
+    <input id="betaBrowser" type="text" placeholder="Example: Chrome / Safari / PWA">
+  </div>
+
+  <div class="form-row">
+    <label for="betaOnlineStatus">Online / Offline</label>
+    <select id="betaOnlineStatus">
+      <option value="Online">Online</option>
+      <option value="Offline">Offline</option>
+      <option value="Intermittent signal">Intermittent signal</option>
+      <option value="Not sure">Not sure</option>
+    </select>
+  </div>
+
+  <div class="form-row">
+    <label for="betaInspectionNumber">Inspection Number</label>
+    <input id="betaInspectionNumber" type="text" placeholder="Example: FIR-2026-0004">
+  </div>
+
+  <div class="form-row">
+    <label for="betaWhatHappened">What happened?</label>
+    <textarea
+      id="betaWhatHappened"
+      placeholder="Describe the issue..."
+    ></textarea>
+  </div>
+
+  <div class="form-row">
+    <label for="betaExpectedResult">What did you expect?</label>
+    <textarea
+      id="betaExpectedResult"
+      placeholder="What should have happened?"
+    ></textarea>
+  </div>
+
+  <div class="button-row">
+    <button id="submitBetaFeedbackBtn" type="button">
+      Submit Feedback
+    </button>
+
+    <button id="cancelBetaFeedbackBtn" type="button" class="secondary-btn">
+      Cancel
+    </button>
+  </div>
+
+  <div id="betaFeedbackStatus" class="note"></div>
+</div>
+
 </section>
 
     <section id="projectListSection" class="card" style="display:none;">
@@ -495,7 +592,7 @@
       <button id="deleteBtn"
               type="button"
               class="secondary-btn">
-        Delete Project
+        Delete Inspection
       </button>
 
     </div>
@@ -576,7 +673,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=90-card-restore2"></script>
+  <script src="app.js?v=90-beta-feedback1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
