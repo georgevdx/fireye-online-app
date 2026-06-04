@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-feedback1';
+const APP_VERSION = 'v90-beta-feedback2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2257,6 +2257,12 @@ function initApp() {
     viewServiceRequestsBtn.addEventListener('click', renderServiceRequestsList);
   }
 
+  const viewBetaFeedbackBtn = document.getElementById('viewBetaFeedbackBtn');
+
+  if (viewBetaFeedbackBtn) {
+    viewBetaFeedbackBtn.addEventListener('click', renderBetaFeedbackList);
+  }
+
   const cancelServiceRequestBtn = document.getElementById('cancelServiceRequestBtn');
   if (cancelServiceRequestBtn) {
     cancelServiceRequestBtn.addEventListener('click', cancelServiceRequest);
@@ -3515,19 +3521,37 @@ function showServices() {
   getEl('projectFormSection').style.display = 'none';
 
   const viewServiceRequestsBtn =
-    document.getElementById('viewServiceRequestsBtn');
+  document.getElementById('viewServiceRequestsBtn');
 
-  const serviceRequestsList =
-    document.getElementById('serviceRequestsList');
+const viewBetaFeedbackBtn =
+  document.getElementById('viewBetaFeedbackBtn');
 
-  if (viewServiceRequestsBtn) {
-    viewServiceRequestsBtn.style.display =
-      canViewServiceRequests() ? 'block' : 'none';
-  }
+const serviceRequestsList =
+  document.getElementById('serviceRequestsList');
 
-  if (serviceRequestsList && !canViewServiceRequests()) {
-    serviceRequestsList.style.display = 'none';
-  }
+const betaFeedbackList =
+  document.getElementById('betaFeedbackList');
+
+const canViewAdminSupport =
+  canViewServiceRequests();
+
+if (viewServiceRequestsBtn) {
+  viewServiceRequestsBtn.style.display =
+    canViewAdminSupport ? 'block' : 'none';
+}
+
+if (viewBetaFeedbackBtn) {
+  viewBetaFeedbackBtn.style.display =
+    canViewAdminSupport ? 'block' : 'none';
+}
+
+if (serviceRequestsList && !canViewAdminSupport) {
+  serviceRequestsList.style.display = 'none';
+}
+
+if (betaFeedbackList && !canViewAdminSupport) {
+  betaFeedbackList.style.display = 'none';
+}
   updateFloatingBackButton();
 }
 
@@ -3957,6 +3981,135 @@ async function renderServiceRequestsList() {
       class="service-request-detail-card"
       style="display:none;"
     ></div>
+  `;
+}
+
+async function renderBetaFeedbackList() {
+  if (!canViewServiceRequests()) {
+    alert('Beta feedback is only available to Fire-S admin.');
+    return;
+  }
+
+  const list = document.getElementById('betaFeedbackList');
+  const serviceRequestsList = document.getElementById('serviceRequestsList');
+
+  if (!list) return;
+
+  if (serviceRequestsList) {
+    serviceRequestsList.style.display = 'none';
+  }
+
+  if (list.style.display === 'block') {
+    list.style.display = 'none';
+    return;
+  }
+
+  list.style.display = 'block';
+  list.innerHTML =
+    '<div class="empty-state">Loading beta feedback...</div>';
+
+  const { data, error } = await supabaseClient
+    .from('beta_feedback')
+    .select(`
+      id,
+      created_at,
+      app_version,
+      issue_type,
+      priority,
+      device,
+      browser,
+      online_status,
+      inspection_number,
+      what_happened,
+      expected_result,
+      reported_by_email,
+      status,
+      followup_note
+    `)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('Beta feedback load failed:', error);
+
+    list.innerHTML =
+      `<div class="empty-state">Could not load beta feedback: ${escapeHtml(error.message)}</div>`;
+
+    return;
+  }
+
+  const feedbackItems = data || [];
+
+  if (feedbackItems.length === 0) {
+    list.innerHTML =
+      '<div class="empty-state">No beta feedback submitted yet.</div>';
+    return;
+  }
+
+  list.innerHTML = `
+    <div class="beta-feedback-list">
+      ${feedbackItems.map(item => `
+        <div class="beta-feedback-item beta-feedback-${escapeHtml(String(item.priority || 'Medium').toLowerCase())}">
+          <div class="beta-feedback-top">
+            <strong>
+              ${escapeHtml(item.issue_type || 'Feedback')}
+            </strong>
+
+            <span class="beta-feedback-priority">
+              ${escapeHtml(item.priority || 'Medium')}
+            </span>
+          </div>
+
+          <div class="beta-feedback-meta">
+            <span>${escapeHtml(item.status || 'new')}</span>
+            <span>${item.created_at ? escapeHtml(new Date(item.created_at).toLocaleString()) : '-'}</span>
+            <span>${escapeHtml(item.app_version || '-')}</span>
+          </div>
+
+          <div class="beta-feedback-line">
+            <strong>Inspection:</strong>
+            ${escapeHtml(item.inspection_number || '-')}
+          </div>
+
+          <div class="beta-feedback-line">
+            <strong>Device:</strong>
+            ${escapeHtml(item.device || '-')}
+            |
+            <strong>Browser:</strong>
+            ${escapeHtml(item.browser || '-')}
+            |
+            <strong>Status:</strong>
+            ${escapeHtml(item.online_status || '-')}
+          </div>
+
+          <div class="beta-feedback-message">
+            <strong>What happened:</strong>
+            <span>${escapeHtml(item.what_happened || '-')}</span>
+          </div>
+
+          <div class="beta-feedback-message">
+            <strong>Expected:</strong>
+            <span>${escapeHtml(item.expected_result || '-')}</span>
+          </div>
+
+          <div class="beta-feedback-line">
+            <strong>Reported by:</strong>
+            ${escapeHtml(item.reported_by_email || '-')}
+          </div>
+
+          ${
+            item.followup_note
+              ? `
+                <div class="beta-feedback-followup">
+                  <strong>Follow-up:</strong>
+                  ${escapeHtml(item.followup_note)}
+                </div>
+              `
+              : ''
+          }
+        </div>
+      `).join('')}
+    </div>
   `;
 }
 
