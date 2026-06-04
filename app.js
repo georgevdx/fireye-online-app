@@ -7079,6 +7079,41 @@ function saveProject() {
 
 function finishInspection() {
   saveProject();
+
+  if (currentProjectId) {
+    const projects = getProjects();
+    const index = projects.findIndex(project => project.id === currentProjectId);
+
+    if (index !== -1) {
+      projects[index] = {
+        ...projects[index],
+
+        scheduledStatus:
+          projects[index].scheduleType === 'new_site'
+            ? 'completed'
+            : projects[index].scheduledStatus,
+
+        scheduleFreshInspection: false,
+        completedAt: new Date().toISOString(),
+
+        syncPending: true,
+        syncError: false,
+        lastSaved: new Date().toISOString()
+      };
+
+      setProjects(projects);
+
+      const completedProject = projects[index];
+
+      if (navigator.onLine) {
+        uploadSingleInspection(completedProject)
+          .catch(error => {
+            console.warn('Completed inspection upload failed:', error);
+          });
+      }
+    }
+  }
+
   showProjectList();
 }
 
