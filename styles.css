@@ -4370,3 +4370,128 @@ button.readiness-chip:focus {
     z-index: 130;
   }
 }
+
+/* Beta 9.4e — final mobile bottom controls alignment */
+
+@media (max-width: 640px) {
+  #projectFormSection {
+    padding-bottom: 118px !important;
+  }
+
+  .sticky-action-bar {
+    position: fixed !important;
+
+    left: 50% !important;
+    right: auto !important;
+    bottom: 8px !important;
+
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+
+    transform: translateX(-50%) !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+
+    z-index: 200 !important;
+
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+
+    padding: 6px !important;
+    border-radius: 14px !important;
+    background: rgba(255, 255, 255, 0.97) !important;
+    border: 1px solid #dddddd !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+  }
+
+  .sticky-action-bar > button,
+  .sticky-action-bar > .action-menu {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    grid-column: auto !important;
+    box-sizing: border-box !important;
+  }
+
+  .sticky-action-bar button {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 38px !important;
+
+    padding: 6px 3px !important;
+    font-size: 12px !important;
+    line-height: 1.1 !important;
+
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    text-align: center !important;
+    white-space: nowrap !important;
+    box-sizing: border-box !important;
+  }
+
+  #backBtn,
+  #saveBtn,
+  #finishBtn,
+  #actionMenuBtn {
+    text-align: center !important;
+    justify-content: center !important;
+  }
+
+  .inspection-command-shell {
+    position: fixed !important;
+
+    left: 50% !important;
+    right: auto !important;
+    bottom: 62px !important;
+
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+
+    transform: translateX(-50%) !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+
+    z-index: 180 !important;
+  }
+
+  .inspection-command-header {
+    padding: 6px 8px !important;
+    grid-template-columns: 1fr auto !important;
+  }
+
+  .inspection-command-brand strong,
+  .inspection-command-brand span {
+    font-size: 10px !important;
+    line-height: 1.05 !important;
+  }
+
+  #inspectionMenuToggleBtn {
+    min-height: 36px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+  }
+
+  .inspection-command-menu {
+    max-height: 48vh !important;
+    overflow-y: auto !important;
+  }
+
+  .action-dropdown {
+    position: fixed !important;
+
+    left: 50% !important;
+    right: auto !important;
+    bottom: 58px !important;
+
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+
+    transform: translateX(-50%) !important;
+    box-sizing: border-box !important;
+
+    z-index: 220 !important;
+  }
+}
