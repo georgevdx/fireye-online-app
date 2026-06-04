@@ -4585,7 +4585,7 @@ button.readiness-chip:focus {
     scroll-margin-top: 80px;
     margin-bottom: 80px;
   }
-  
+
   @media (max-width: 640px) {
   #inspectionQuickActions,
   #projectDetailsCard,
@@ -4597,4 +4597,30 @@ button.readiness-chip:focus {
     scroll-margin-bottom: 130px;
   }
 }
+}
+
+/* Beta 10.1a — report heading polish */
+
+.report-title {
+  font-size: 18px;
+  font-weight: 800;
+  margin-top: 4px;
+  color: #333333;
+}
+
+.report-section-note {
+  margin: 4px 0 10px;
+  font-size: 12px;
+  color: #666666;
+  line-height: 1.35;
+}
+
+.report-block h2,
+#reportContent h2 {
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+
+.appendix-title {
+  letter-spacing: 0.04em;
 }
