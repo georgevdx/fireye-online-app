@@ -5364,27 +5364,14 @@ function renderDashboardMetrics(projectsOverride) {
           <div class="metric-label">Missing Data</div>
         </div>
 
-        <div class="metric-card"
-          data-filter="inspection-progress"
-          onclick="setFilter('inspection-progress')">
-          <div class="metric-number">${inspectionStatusCounts['inspection-progress'] || 0}</div>
-          <div class="metric-label">In Progress</div>
-        </div>
-
+       
         <div class="metric-card"
           data-filter="inspection-complete"
           onclick="setFilter('inspection-complete')">
           <div class="metric-number">${inspectionStatusCounts['inspection-complete'] || 0}</div>
           <div class="metric-label">Completed</div>
         </div>
-
-        <div class="metric-card"
-          data-filter="inspection-draft"
-          onclick="setFilter('inspection-draft')">
-          <div class="metric-number">${inspectionStatusCounts['inspection-draft'] || 0}</div>
-          <div class="metric-label">Draft</div>
-        </div>
-
+        
       </div>
     </div>
 
@@ -6165,7 +6152,7 @@ function openProjectSummaryCard(index, shouldScroll = true) {
 
   if (!project || !detailCard) return;
 
-  const syncStatus = getSyncStatus(project);
+const syncStatus = getSyncStatus(project);
 const followStatus = getFollowUpStatus(project);
 
 const isScheduledNew =
@@ -6236,16 +6223,27 @@ const scheduledLabel =
       <div class="project-card-top">
         <div>
           <h3>${escapeHtml(projectTitle)}</h3>
-          <div class="project-number">
-            ${escapeHtml(project.inspectionNumber || '-')}
-          </div>
+
+        <div class="project-number">
+          ${escapeHtml(project.inspectionNumber || '-')}
+        </div>
+
+        <div class="project-address project-address-compact">
+          ${escapeHtml(projectAddress)}
+        </div>
         </div>
       </div>
 
       <div class="project-badges">
-        <span class="project-sync ${escapeHtml(syncStatus.class)}">
-          ${escapeHtml(syncStatus.label)}
-        </span>
+        ${
+          syncStatus.class !== 'sync-synced'
+            ? `
+              <span class="project-sync ${escapeHtml(syncStatus.class)}">
+                ${escapeHtml(syncStatus.label)}
+              </span>
+            `
+            : ''
+        }
 
         <span class="project-follow ${escapeHtml(followStatus.class)}">
           ${escapeHtml(scheduledLabel)}
@@ -6265,9 +6263,7 @@ const scheduledLabel =
         </div>
       ` : ''}
 
-      <div class="project-address">
-        ${escapeHtml(projectAddress)}
-      </div>
+      
 
       ${highRiskSummary.count > 0 ? `
         <div class="project-risk-summary">
@@ -6284,26 +6280,34 @@ const scheduledLabel =
       ` : ''}
 
       ${expiryCounts.total > 0 ? `
-        <div class="project-expiry-summary">
-          <span class="project-expiry-label">Equipment</span>
+  <div class="project-expiry-summary">
+    <span class="project-expiry-label">Equipment Maintenance</span>
 
-          <span class="project-expiry-chip expiry-chip-overdue">
-            Expired: ${expiryCounts.overdue}
-          </span>
+    ${expiryCounts.overdue > 0 ? `
+      <span class="project-expiry-chip expiry-chip-overdue">
+        Expired: ${expiryCounts.overdue}
+      </span>
+    ` : ''}
 
-          <span class="project-expiry-chip expiry-chip-soon">
-            Due soon: ${expiryCounts.soon}
-          </span>
+    ${expiryCounts.soon > 0 ? `
+      <span class="project-expiry-chip expiry-chip-soon">
+        Due soon: ${expiryCounts.soon}
+      </span>
+    ` : ''}
 
-          <span class="project-expiry-chip expiry-chip-scheduled">
-            Valid: ${expiryCounts.scheduled}
-          </span>
+    ${expiryCounts.scheduled > 0 ? `
+      <span class="project-expiry-chip expiry-chip-scheduled">
+        Valid: ${expiryCounts.scheduled}
+      </span>
+    ` : ''}
 
-          <span class="project-expiry-chip expiry-chip-missing">
-            Date missing: ${expiryCounts.missing}
-          </span>
-        </div>
-      ` : ''}
+    ${expiryCounts.missing > 0 ? `
+      <span class="project-expiry-chip expiry-chip-missing">
+        Date to be entered: ${expiryCounts.missing}
+      </span>
+    ` : ''}
+  </div>
+` : ''}
 
       <div class="project-meta-grid">
         <div>
