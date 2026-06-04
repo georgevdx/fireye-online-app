@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-feedback4';
+const APP_VERSION = 'v90-beta-workflow5';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2300,7 +2300,20 @@ function initApp() {
   }
   const actionMenuBtn =
   document.getElementById('actionMenuBtn');
+  const inspectionMenuToggleBtn =
+  document.getElementById('inspectionMenuToggleBtn');
 
+  if (inspectionMenuToggleBtn) {
+    inspectionMenuToggleBtn.addEventListener('click', toggleInspectionCommandMenu);
+  }
+
+  document
+    .querySelectorAll('[data-section-target]')
+    .forEach(button => {
+      button.addEventListener('click', () => {
+        openInspectionCommandSection(button.dataset.sectionTarget);
+      });
+    });
   const actionDropdown =
     document.getElementById('actionDropdown');
 
@@ -3401,8 +3414,71 @@ function showProjectList() {
   updateFloatingBackButton();
 }
 
+function updateInspectionCommandHeader() {
+  const companyEl = document.getElementById('inspectionCommandCompany');
+  const siteEl = document.getElementById('inspectionCommandSite');
+
+  if (!companyEl || !siteEl) return;
+
+  const projects = getProjects();
+  const project = projects.find(p => p.id === currentProjectId);
+
+  const companyName =
+    project?.companyName ||
+    project?.organisationName ||
+    currentUserProfile?.companyName ||
+    'Company';
+
+  const siteName =
+    project?.siteName ||
+    project?.projectName ||
+    'Site';
+
+  companyEl.textContent = companyName;
+  siteEl.textContent = siteName;
+}
+
+function toggleInspectionCommandMenu() {
+  const menu = document.getElementById('inspectionCommandMenu');
+
+  if (!menu) return;
+
+  menu.style.display =
+    menu.style.display === 'none' || menu.style.display === ''
+      ? 'grid'
+      : 'none';
+
+  updateInspectionCommandHeader();
+}
+
+function closeInspectionCommandMenu() {
+  const menu = document.getElementById('inspectionCommandMenu');
+
+  if (menu) {
+    menu.style.display = 'none';
+  }
+}
+
+function openInspectionCommandSection(sectionId) {
+  const target = document.getElementById(sectionId);
+
+  if (!target) {
+    alert('This inspection section is not available yet.');
+    return;
+  }
+
+  closeInspectionCommandMenu();
+
+  target.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
 function showProjectForm() {
   setCloudMenuVisible(false);
+
+  updateInspectionCommandHeader();
 
   const homeSection = document.getElementById('homeSection');
   const servicesSection = document.getElementById('servicesSection');

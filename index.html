@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=90-beta-feedback4">
+  <link rel="stylesheet" href="styles.css?v=90-beta-workflow5">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -440,12 +440,54 @@
     </section>
 
     <section id="projectFormSection" style="display:none;">
-      <section class="card">
+      <section class="card" id="projectDetailsCard">
         <div class="toolbar">
           <h2>Project Details</h2>
           <button id="topBackBtn" type="button">Back to Projects</button>
         </div>
+        <div id="inspectionCommandShell" class="inspection-command-shell">
+  <div class="inspection-command-header">
+    <div class="inspection-command-brand">
+      <strong>Fire-S</strong>
+      <span id="inspectionCommandCompany">Company</span>
+      <span id="inspectionCommandSite">Site</span>
+    </div>
 
+    <button id="inspectionMenuToggleBtn" type="button">
+      Menu
+    </button>
+  </div>
+
+  <div id="inspectionCommandMenu" class="inspection-command-menu" style="display:none;">
+    <button type="button" data-section-target="inspectionQuickActions">
+      Quick Actions
+    </button>
+
+    <button type="button" data-section-target="projectDetailsCard">
+      Inspection Information
+    </button>
+
+    <button type="button" data-section-target="requirementsSection">
+      Occupancy Requirements
+    </button>
+
+    <button type="button" data-section-target="checklistCard">
+      Q&amp;A
+    </button>
+
+    <button type="button" data-section-target="photoEvidenceCard">
+      Photo Evidence
+    </button>
+
+    <button type="button" data-section-target="inspectorCommentsCard">
+      Inspector Comments
+    </button>
+
+    <button type="button" data-section-target="nextInspectionCard">
+      Schedule Next Inspection
+    </button>
+  </div>
+</div>
         <div class="form-grid">
 
   <div class="form-row">
@@ -617,12 +659,12 @@
 
       </div>
 
-      <section class="card">
+      <section class="card" id="checklistCard">
   <h2>Checklist</h2>
   <div id="checklist"></div>
   </section>
 
-  <section class="card">
+  <section class="card" id="photoEvidenceCard">
   <h2>Photo Evidence</h2>
   <label for="photoInput" class="take-photo-btn">
   Take Photo
@@ -642,7 +684,7 @@
 
 <div id="photoPreview"></div>
   
-  <div class="form-section">
+  <div class="form-section" id="inspectorCommentsCard">
   <h3>Inspector Comments / Conclusion</h3>
   <textarea 
     id="finalComments" 
@@ -652,7 +694,7 @@
 </div>
   </section>
 
-<div class="form-section">
+<div class="form-section" id="nextInspectionCard">
   <h3>Next Inspection Cycle / Re-inspection</h3>
 
   <p class="form-help-text">
@@ -680,7 +722,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=90-beta-feedback4"></script>
+  <script src="app.js?v=90-beta-workflow5"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {

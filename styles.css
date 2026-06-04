@@ -4086,3 +4086,70 @@ button.readiness-chip:focus {
     font-size: 12px;
   }
 }
+
+/* Beta 9.4 — Master inspection command menu shell */
+
+.inspection-command-shell {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin-bottom: 10px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #dddddd;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.inspection-command-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+}
+
+.inspection-command-brand {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.inspection-command-brand strong {
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.inspection-command-brand span {
+  display: block;
+  font-size: 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#inspectionMenuToggleBtn {
+  min-height: 40px;
+  padding: 8px 14px;
+}
+
+.inspection-command-menu {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border-top: 1px solid #eeeeee;
+  background: #fafafa;
+}
+
+.inspection-command-menu button {
+  min-height: 42px;
+  text-align: left;
+  padding: 10px 12px;
+}
+
+@media (min-width: 720px) {
+  .inspection-command-menu {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
