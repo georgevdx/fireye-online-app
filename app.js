@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-report1';
+const APP_VERSION = 'v90-beta-report2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4854,18 +4854,11 @@ function getProjectDataQuality(project) {
 function getActiveScheduledDate(project) {
   if (!project) return '';
 
-  if (
-    project.scheduledStatus === 'scheduled' &&
-    project.scheduledDate &&
-    !project.completedAt
-  ) {
-    return project.scheduledDate;
-  }
+  if (project.completedAt) return '';
 
   if (
-    project.scheduleFreshInspection === true &&
-    project.scheduledDate &&
-    !project.completedAt
+    project.scheduledStatus === 'scheduled' &&
+    project.scheduledDate
   ) {
     return project.scheduledDate;
   }
@@ -5464,7 +5457,7 @@ function renderDashboardMetrics(projectsOverride) {
   p =>
     p.scheduledStatus === 'scheduled' &&
     p.scheduleType === 'new_site' &&
-    !p.completedAt
+    !!getActiveScheduledDate(p)
 );
 
   const clearCompletedInspections = projects.filter(
@@ -6080,7 +6073,7 @@ function renderProjectsList() {
   return (
     project.scheduledStatus === 'scheduled' &&
     project.scheduleType === 'new_site' &&
-    !project.completedAt
+    !!getActiveScheduledDate(project)
   );
 }
 
@@ -7388,16 +7381,23 @@ function finishInspection() {
     const index = projects.findIndex(project => project.id === currentProjectId);
 
     if (index !== -1) {
+      const completedProjectBeforeUpdate = projects[index];
+
       projects[index] = {
-        ...projects[index],
+        ...completedProjectBeforeUpdate,
 
-        scheduledStatus:
-          projects[index].scheduleType === 'new_site'
-            ? 'completed'
-            : projects[index].scheduledStatus,
-
-        scheduleFreshInspection: false,
+        // Finished means the current active schedule has now been dealt with.
         completedAt: new Date().toISOString(),
+
+        // Clear active scheduling fields unless a new schedule is created later.
+        scheduledDate: '',
+        scheduledStatus: 'completed',
+        scheduleFreshInspection: false,
+        scheduledReason: '',
+        scheduleType:
+          completedProjectBeforeUpdate.scheduleType === 'new_site'
+            ? 'new_site'
+            : completedProjectBeforeUpdate.scheduleType || '',
 
         syncPending: true,
         syncError: false,
