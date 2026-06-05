@@ -8077,6 +8077,27 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function getReportPhotosForCurrentInspection(currentProject) {
+  const mergedPhotos = [
+    ...(currentProject?.photos || []),
+    ...(currentPhotos || [])
+  ];
+
+  const seen = new Set();
+
+  return mergedPhotos.filter(photo => {
+    if (!photo || !photo.src) return false;
+
+    const key =
+      photo.storagePath ||
+      `${photo.src}|${photo.timestamp || ''}`;
+
+    if (seen.has(key)) return false;
+
+    seen.add(key);
+    return true;
+  });
+}
 
 function generateReport() {
 
@@ -8092,6 +8113,8 @@ function generateReport() {
  const currentProject = getProjects().find(
     p => p.id === currentProjectId
   );
+const reportPhotos =
+  getReportPhotosForCurrentInspection(currentProject);
 
   const repeatFindings =
     currentProject?.repeatFindings || [];
@@ -8695,11 +8718,11 @@ const executiveSummaryHtml = `
     });
   }
 
-  if (currentPhotos.length > 0) {
+  if (reportPhotos.length > 0) {
   photosHtml = '';
 
-  for (let pageStart = 0; pageStart < currentPhotos.length; pageStart += 4) {
-   const pagePhotos = currentPhotos.slice(pageStart, pageStart + 2);
+  for (let pageStart = 0; pageStart < reportPhotos.length; pageStart += 4) {
+    const pagePhotos = reportPhotos.slice(pageStart, pageStart + 4);
     const isFirstPhotoPage = pageStart === 0;
 
     photosHtml += `
@@ -8730,7 +8753,6 @@ const executiveSummaryHtml = `
 
           photosHtml += `
             <div class="report-photo-card">
-
               <div class="report-photo-header">
                 Photo ${photoNumber}
               </div>
@@ -8749,6 +8771,7 @@ const executiveSummaryHtml = `
                   src="${photo.src}"
                   class="report-photo-img"
                   alt="Inspection photo ${photoNumber}"
+                  crossorigin="anonymous"
                 >
               </div>
 
@@ -8756,7 +8779,6 @@ const executiveSummaryHtml = `
                 <strong>Photo Note:</strong>
                 ${escapeHtml(photo.note || 'No note added.')}
               </div>
-
             </div>
           `;
         }
