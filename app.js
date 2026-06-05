@@ -380,8 +380,37 @@ function formatProjectDate(value) {
   return date.toLocaleString();
 }
 
-  function exportReport() {
+function waitForReportImages(container, timeoutMs = 12000) {
+  const images = Array.from(container.querySelectorAll('img'));
 
+  if (images.length === 0) {
+    return Promise.resolve();
+  }
+
+  const imagePromises = images.map(img => {
+    if (img.complete && img.naturalWidth > 0) {
+      return Promise.resolve();
+    }
+
+    return new Promise(resolve => {
+      const done = () => resolve();
+
+      img.onload = done;
+      img.onerror = done;
+    });
+  });
+
+  const timeoutPromise = new Promise(resolve => {
+    setTimeout(resolve, timeoutMs);
+  });
+
+  return Promise.race([
+    Promise.all(imagePromises),
+    timeoutPromise
+  ]);
+}
+
+async function exportReport() {
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -390,11 +419,28 @@ function formatProjectDate(value) {
   }
 
   if (!archivedReportContext) {
-    generateReport(); // maak seker gewone report is nuut
+    generateReport();
   }
+
   getEl('reportSection').style.display = 'block';
 
   const element = document.getElementById('reportContent');
+
+  if (!element) {
+    alert('Report content was not found.');
+    return;
+  }
+
+  const saveMessage = document.getElementById('saveMessage');
+
+  if (saveMessage) {
+    saveMessage.textContent = 'Preparing PDF photos...';
+  }
+
+  await waitForReportImages(element);
+
+  // Give browser one final paint cycle before html2pdf captures.
+  await new Promise(resolve => setTimeout(resolve, 250));
 
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
@@ -417,29 +463,61 @@ function formatProjectDate(value) {
     sanitizeFileName(projectName);
 
   const opt = {
-  margin: [15, 12, 15, 12],
+    margin: [10, 10, 10, 10],
 
-  filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
+    filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
 
-  image: { type: 'jpeg', quality: 0.98 },
-  html2canvas: {
-  scale: 1,
-  useCORS: true,
-  scrollY: 0,
-  windowWidth: document.getElementById('reportContent').scrollWidth
-  },
-  jsPDF: {
-    unit: 'mm',
-    format: 'a4',
-    orientation: 'portrait'
-  },
-  pagebreak: {
-    mode: ['css', 'legacy']
+    image: {
+      type: 'jpeg',
+      quality: 0.98
+    },
+
+    html2canvas: {
+      scale: 1.5,
+      useCORS: true,
+      allowTaint: true,
+      scrollY: 0,
+      windowWidth: element.scrollWidth
+    },
+
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+
+    pagebreak: {
+      mode: ['css', 'legacy'],
+      avoid: [
+        '.report-photo-card',
+        '.report-photo-image-box',
+        '.report-photo-note'
+      ]
+    }
+  };
+
+  if (saveMessage) {
+    saveMessage.textContent = 'Creating PDF...';
   }
-};
-  setTimeout(() => {
-  html2pdf().set(opt).from(element).save();
-}, 300);
+
+  html2pdf()
+    .set(opt)
+    .from(element)
+    .save()
+    .then(() => {
+      if (saveMessage) {
+        saveMessage.textContent = 'PDF exported.';
+      }
+    })
+    .catch(error => {
+      console.error('PDF export failed:', error);
+
+      if (saveMessage) {
+        saveMessage.textContent = 'PDF export failed. Check console.';
+      }
+
+      alert('PDF export failed. Please try again.');
+    });
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {
