@@ -4885,6 +4885,15 @@ function getProjectDataQuality(project) {
 function getActiveScheduledDate(project) {
   if (!project) return '';
 
+  // Important:
+  // Completed inspections may still have a new future follow-up date.
+  if (
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate
+  ) {
+    return project.followUpDate;
+  }
+
   if (project.completedAt) return '';
 
   if (
@@ -4892,13 +4901,6 @@ function getActiveScheduledDate(project) {
     project.scheduledDate
   ) {
     return project.scheduledDate;
-  }
-
-  if (
-    project.followUpRequired === 'Yes' &&
-    project.followUpDate
-  ) {
-    return project.followUpDate;
   }
 
   return '';
@@ -4913,6 +4915,13 @@ function getActiveScheduleLabel(project) {
 
   if (project.scheduleType === 'new_site') {
     return `Scheduled new inspection: ${activeScheduledDate}`;
+  }
+
+  if (
+    project.scheduledReason === 'follow_up' ||
+    project.followUpRequired === 'Yes'
+  ) {
+    return `Scheduled follow-up: ${activeScheduledDate}`;
   }
 
   if (project.scheduleFreshInspection === true) {
@@ -7446,21 +7455,38 @@ function finishInspection() {
     if (index !== -1) {
       const completedProjectBeforeUpdate = projects[index];
 
+      const hasNextScheduledInspection =
+        completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
+        completedProjectBeforeUpdate.followUpDate;
+
       projects[index] = {
         ...completedProjectBeforeUpdate,
 
-        // Finished means the current active schedule has now been dealt with.
         completedAt: new Date().toISOString(),
 
-        // Clear active scheduling fields unless a new schedule is created later.
-        scheduledDate: '',
-        scheduledStatus: 'completed',
-        scheduleFreshInspection: false,
-        scheduledReason: '',
-        scheduleType:
-          completedProjectBeforeUpdate.scheduleType === 'new_site'
-            ? 'new_site'
-            : completedProjectBeforeUpdate.scheduleType || '',
+        // If a new follow-up / next inspection date was selected,
+        // keep that as the active next schedule.
+        scheduledDate: hasNextScheduledInspection
+          ? completedProjectBeforeUpdate.followUpDate
+          : '',
+
+        scheduledStatus: hasNextScheduledInspection
+          ? 'scheduled'
+          : 'completed',
+
+        scheduleFreshInspection: hasNextScheduledInspection,
+
+        scheduledReason: hasNextScheduledInspection
+          ? 'follow_up'
+          : '',
+
+        scheduledNote: hasNextScheduledInspection
+          ? completedProjectBeforeUpdate.followUpNotes || ''
+          : '',
+
+        scheduleType: hasNextScheduledInspection
+          ? 'Follow-up'
+          : completedProjectBeforeUpdate.scheduleType || '',
 
         syncPending: true,
         syncError: false,
