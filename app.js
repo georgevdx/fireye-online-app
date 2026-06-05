@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-report2';
+const APP_VERSION = 'v90-beta-schedule3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2412,6 +2412,21 @@ if (cancelScheduledInspectionBtn) {
   }
   getEl('shareBtn').addEventListener('click', shareReport);
   getEl('followUpBtn').addEventListener('click', createFollowUpInspection);
+  
+  const saveScheduleNextBtn =
+  document.getElementById('saveScheduleNextBtn');
+
+if (saveScheduleNextBtn) {
+  saveScheduleNextBtn.addEventListener('click', saveNextInspectionSchedule);
+}
+
+const cancelScheduleNextBtn =
+  document.getElementById('cancelScheduleNextBtn');
+
+if (cancelScheduleNextBtn) {
+  cancelScheduleNextBtn.addEventListener('click', cancelNextInspectionSchedule);
+}
+
   getEl('streetNumber').addEventListener('input', scheduleAutoSave);
   getEl('projectAddress').addEventListener('input', scheduleAutoSave);
   getEl('gps').addEventListener('input', () => {
@@ -4836,7 +4851,7 @@ function getProjectDataQuality(project) {
   if (!projectAddress) missing.push('Address');
   if (!project.contactPerson) missing.push('Contact Person');
   if (!project.contactTel && !project.contactEmail) {
-    missing.push('Contact Tel/Email');
+    missing.push('Contact projects[index] = {/Email');
   }
   if (project.inMall === 'Yes' && !project.mallName) {
     missing.push('Mall/Centre Name');
@@ -4865,7 +4880,6 @@ function getActiveScheduledDate(project) {
 
   return '';
 }
-
 function getProjectInspectionStatus(project) {
   if (
   project.scheduledStatus === 'scheduled' &&
@@ -7430,7 +7444,69 @@ function createFollowUpInspection() {
 
   if (!currentProjectId) {
     getEl('saveMessage').textContent =
-      'Open or save an inspection before scheduling a follow-up.';
+      'Open or save an inspection before scheduling the next inspection.';
+    return;
+  }
+
+  const panel = document.getElementById('scheduleNextPanel');
+  const dateField = document.getElementById('scheduleNextDate');
+  const typeField = document.getElementById('scheduleNextType');
+  const noteField = document.getElementById('scheduleNextNote');
+
+  if (!panel || !dateField || !typeField || !noteField) {
+    alert('Schedule next inspection panel was not found.');
+    return;
+  }
+
+  const projects = getProjects();
+  const project = projects.find(p => p.id === currentProjectId);
+
+  if (!project) {
+    getEl('saveMessage').textContent =
+      'Original inspection not found.';
+    return;
+  }
+
+  dateField.value =
+    project.scheduledDate ||
+    project.followUpDate ||
+    new Date().toISOString().slice(0, 10);
+
+  typeField.value =
+    project.scheduledReason === 'follow_up'
+      ? 'Follow-up'
+      : 'Routine Inspection';
+
+  noteField.value =
+    project.followUpNotes ||
+    project.scheduledNote ||
+    '';
+
+  panel.style.display = 'block';
+
+  panel.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  });
+}
+
+function saveNextInspectionSchedule() {
+  if (!currentProjectId) {
+    getEl('saveMessage').textContent =
+      'Open or save an inspection before scheduling the next inspection.';
+    return;
+  }
+
+  const dateField = document.getElementById('scheduleNextDate');
+  const typeField = document.getElementById('scheduleNextType');
+  const noteField = document.getElementById('scheduleNextNote');
+
+  const nextDate = dateField ? dateField.value : '';
+  const scheduleType = typeField ? typeField.value : 'Routine Inspection';
+  const scheduleNote = noteField ? noteField.value.trim() : '';
+
+  if (!nextDate) {
+    alert('Select the next inspection date.');
     return;
   }
 
@@ -7443,34 +7519,23 @@ function createFollowUpInspection() {
     return;
   }
 
-  const original = projects[index];
-
-  const followUpDate = prompt(
-    'Enter follow-up inspection date in YYYY-MM-DD format:',
-    original.followUpDate || new Date().toISOString().slice(0, 10)
-  );
-
-  if (!followUpDate) return;
-
-  const confirmed = confirm(
-    'Schedule the next inspection cycle on this same site card? This will not create a duplicate card. The current inspection will remain available in Previous Inspection Archive when the next cycle starts.'
-  );
-
-  if (!confirmed) return;
-
   projects[index] = {
-    ...original,
+    ...projects[index],
 
     followUpRequired: 'Yes',
-    followUpDate,
+    followUpDate: nextDate,
     followUpNotes:
-      original.followUpNotes ||
-      'Follow-up inspection scheduled.',
+      scheduleNote ||
+      `${scheduleType} scheduled.`,
 
-    scheduledDate: followUpDate,
+    scheduledDate: nextDate,
     scheduledStatus: 'scheduled',
     scheduleFreshInspection: true,
-    scheduledReason: 'follow_up',
+    scheduledReason:
+      scheduleType === 'Follow-up'
+        ? 'follow_up'
+        : scheduleType,
+    scheduledNote: scheduleNote,
 
     completedAt: null,
     archiveStatus: '',
@@ -7482,17 +7547,31 @@ function createFollowUpInspection() {
   };
 
   setProjects(projects);
-  renderProjectsList();
 
   const updatedProject = projects[index];
 
-  uploadSingleInspection(updatedProject)
-    .catch(error => {
-      console.warn('Follow-up schedule upload failed:', error);
-    });
+  if (navigator.onLine) {
+    uploadSingleInspection(updatedProject)
+      .catch(error => {
+        console.warn('Next inspection schedule upload failed:', error);
+      });
+  }
+
+  cancelNextInspectionSchedule();
+
+  renderProjectsList();
+  updateProjectReadinessPanel();
 
   getEl('saveMessage').textContent =
-  `Next inspection cycle scheduled for ${followUpDate}. No duplicate card was created.`;
+    `Next inspection scheduled for ${nextDate}.`;
+}
+
+function cancelNextInspectionSchedule() {
+  const panel = document.getElementById('scheduleNextPanel');
+
+  if (panel) {
+    panel.style.display = 'none';
+  }
 }
 
 async function deleteProject() {

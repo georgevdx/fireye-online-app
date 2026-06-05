@@ -4688,3 +4688,36 @@ button.readiness-chip:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Beta 11.3 — schedule next date picker panel */
+
+.schedule-next-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #dddddd;
+  border-radius: 12px;
+  background: #fafafa;
+}
+
+.schedule-next-panel h4 {
+  margin: 0 0 10px;
+}
+
+.schedule-next-panel label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.schedule-next-panel input,
+.schedule-next-panel select,
+.schedule-next-panel textarea {
+  margin-top: 4px;
+  width: 100%;
+}
+
+.schedule-next-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
