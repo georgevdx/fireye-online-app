@@ -2440,8 +2440,24 @@ if (cancelScheduleNextBtn) {
   });
   getEl('mallName').addEventListener('input', scheduleAutoSave);
   getEl('unitNumber').addEventListener('input', scheduleAutoSave);
-  getEl('followUpRequired').addEventListener('change', scheduleAutoSave);
-  getEl('followUpDate').addEventListener('input', scheduleAutoSave);
+  getEl('followUpRequired').addEventListener('change', () => {
+  if (getEl('followUpRequired').value === 'No') {
+    getEl('followUpDate').value = '';
+    getEl('followUpNotes').value = '';
+  }
+
+  scheduleAutoSave();
+});
+  getEl('followUpDate').addEventListener('input', () => {
+  const followUpDate = getEl('followUpDate').value;
+  const followUpRequired = getEl('followUpRequired');
+
+  if (followUpDate && followUpRequired.value !== 'Yes') {
+    followUpRequired.value = 'Yes';
+  }
+
+  scheduleAutoSave();
+});
   getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', () => {
     currentProjectPage = 1;
@@ -7119,6 +7135,34 @@ function markInspectionSynced(projectId) {
   renderProjectsList();
 }
 
+function syncFollowUpFieldsToScheduleData(project) {
+  if (!project) return project;
+
+  const hasFollowUpDate = !!project.followUpDate;
+
+  if (!hasFollowUpDate) {
+    return {
+      ...project,
+      followUpRequired: 'No',
+      scheduledDate: '',
+      scheduledStatus: project.completedAt ? 'completed' : '',
+      scheduleFreshInspection: false,
+      scheduledReason: '',
+      scheduledNote: ''
+    };
+  }
+
+  return {
+    ...project,
+    followUpRequired: 'Yes',
+    scheduledDate: project.followUpDate,
+    scheduledStatus: 'scheduled',
+    scheduleFreshInspection: true,
+    scheduledReason: 'follow_up',
+    scheduledNote: project.followUpNotes || ''
+  };
+}
+
 function saveProject() {
   
   if (!canEditInspection()) {
@@ -7195,7 +7239,7 @@ function saveProject() {
   const index = projects.findIndex(p => p.id === currentProjectId);
 
   if (index !== -1) {
-    projects[index] = {
+    const updatedProject = {
       ...projects[index],
 
       companyId: accessMetadata.companyId,
@@ -7220,20 +7264,23 @@ function saveProject() {
 
       companyAccessStatus:
         accessMetadata.companyAccessStatus,
+
       siteId:
-      [
-        projectAddress?.toLowerCase().trim(),
-        mallName?.toLowerCase().trim(),
-        unitNumber?.toLowerCase().trim()
-      ]
-      .filter(Boolean)
-      .join('|'),
+        [
+          projectAddress?.toLowerCase().trim(),
+          mallName?.toLowerCase().trim(),
+          unitNumber?.toLowerCase().trim()
+        ]
+        .filter(Boolean)
+        .join('|'),
+
       syncPending: true,
       syncError: false,
 
       inspectionNumber:
         projects[index].inspectionNumber ||
         generateInspectionNumber(),
+
       projectName,
       organisationName,
       siteName,
@@ -7259,6 +7306,9 @@ function saveProject() {
       photos: currentPhotos,
       lastSaved: new Date().toISOString()
     };
+
+    projects[index] =
+      syncFollowUpFieldsToScheduleData(updatedProject);
   }
 } else {
     const newProject = {
