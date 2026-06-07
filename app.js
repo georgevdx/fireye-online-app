@@ -446,7 +446,7 @@ async function exportReport() {
   applyReportPhotoOrientations(element);
 
   // Give browser one final paint cycle before html2pdf captures.
-  await new Promise(resolve => setTimeout(resolve, 250));
+  await new Promise(resolve => setTimeout(resolve, 600));
 
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
