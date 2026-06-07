@@ -5192,8 +5192,8 @@ button.readiness-chip:focus {
 }
 
 .report-photo-portrait .report-photo-image-box {
-  height: 72mm;
-  max-height: 72mm;
+  height: 95mm;
+  max-height: 95mm;
 }
 
 .report-photo-landscape .report-photo-image-box {
