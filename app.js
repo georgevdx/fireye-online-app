@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-report2';
+const APP_VERSION = 'v90-beta-schedule-restore2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -6267,25 +6267,11 @@ container.innerHTML = `
       const followStatus = getFollowUpStatus(project);
       const inspectionStatus = getProjectInspectionStatus(project);
 
-      const isScheduledNew =
-        project.scheduledStatus === 'scheduled' &&
-        project.scheduleType === 'new_site' &&
-        !project.completedAt;
+      const activeScheduleLabel =
+  getActiveScheduleLabel(project);
 
-      const activeScheduledDate = getActiveScheduledDate(project);
-
-      const scheduledLabel =
-        isScheduledNew
-          ? `Scheduled new inspection${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
-          : (
-              project.scheduleFreshInspection === true ||
-              (
-                project.scheduledStatus === 'scheduled' &&
-                !project.completedAt
-              )
-            )
-          ? `Open to start follow-up${activeScheduledDate ? ` (${activeScheduledDate})` : ''}`
-          : followStatus.label;
+const scheduledLabel =
+  activeScheduleLabel || followStatus.label;
       const projectTitle =
         project.projectName ||
         [project.organisationName, project.siteName]
@@ -6313,16 +6299,16 @@ container.innerHTML = `
           </span>
 
           ${
-              isScheduledNew || project.scheduleFreshInspection === true
-                ? ''
-                : `
-                  <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
-                    ${escapeHtml(inspectionStatus.label)}
-                  </span>
-                `
-            }
+            activeScheduleLabel
+              ? ''
+              : `
+                <span class="inspection-project-list-status ${escapeHtml(inspectionStatus.class)}">
+                  ${escapeHtml(inspectionStatus.label)}
+                </span>
+              `
+          }
 
-            <span class="inspection-project-list-follow ${escapeHtml(followStatus.class)}">
+            <span class="inspection-project-list-follow ${escapeHtml(activeScheduleLabel ? 'status-scheduled' : followStatus.class)}">
               ${escapeHtml(scheduledLabel)}
             </span>
 
