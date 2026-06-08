@@ -4974,3 +4974,14 @@ button.readiness-chip:focus {
   font-size: 11px;
   margin-top: 9px;
 }
+
+/* Beta 11.15 — finish summary */
+
+#activeFilterStatus {
+  align-items: center;
+  gap: 8px;
+}
+
+#activeFilterStatus span {
+  line-height: 1.35;
+}

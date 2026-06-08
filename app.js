@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-smart-quicklinks1';
+const APP_VERSION = 'v90-beta-finish-summary1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -7572,6 +7572,37 @@ function saveProject() {
 
 }
 
+function buildFinishSummaryMessage(project) {
+  if (!project) {
+    return 'Inspection finished.';
+  }
+
+  const historyCount =
+    (project.inspectionHistory || []).length;
+
+  const photoCount =
+    (project.photos || []).length;
+
+  const hasFollowUp =
+    project.followUpRequired === 'Yes' &&
+    project.followUpDate;
+
+  const inspectionNumber =
+    project.inspectionNumber || '-';
+
+  const summaryLines = [
+    `Inspection finished successfully: ${inspectionNumber}`,
+    `Archived previous inspection record: ${historyCount > 0 ? 'Yes' : 'No'}`,
+    hasFollowUp
+      ? `Follow-up scheduled: ${project.followUpDate}`
+      : 'Follow-up scheduled: No',
+    `Photos saved: ${photoCount}`,
+    'Report available from the inspection or archive.'
+  ];
+
+  return summaryLines.join(' | ');
+}
+
 function getFinishInspectionWarnings(project) {
   const completion =
     getProjectCompletionCounts(project);
@@ -7736,14 +7767,42 @@ function finishInspection() {
       }
     }
   }
-  const finishMessage =
-    document.getElementById('syncStatus');
+  const finishedProject =
+  getProjects().find(
+    project => project.id === currentProjectId
+  );
 
-  if (finishMessage) {
-    finishMessage.textContent =
-      'Inspection finished and archived. Sync will continue in the background.';
-  }
-  showProjectList();
+const finishSummaryText =
+  buildFinishSummaryMessage(finishedProject);
+
+showProjectList();
+
+const finishMessage =
+  document.getElementById('syncStatus');
+
+if (finishMessage) {
+  finishMessage.textContent =
+    `${finishSummaryText} Sync will continue in the background.`;
+}
+
+const activeFilterStatus =
+  document.getElementById('activeFilterStatus');
+
+if (activeFilterStatus) {
+  activeFilterStatus.style.display = 'flex';
+  activeFilterStatus.innerHTML = `
+    <span>
+      ${escapeHtml(finishSummaryText)}
+    </span>
+
+    <button
+      type="button"
+      onclick="clearProjectSearchAndFilter()"
+    >
+      Clear
+    </button>
+  `;
+}
 }
 
 function createFollowUpInspection() {
