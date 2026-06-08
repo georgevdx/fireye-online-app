@@ -7456,13 +7456,14 @@ function finishInspection() {
 
   if (currentProjectId) {
     const projects = getProjects();
-    const index = projects.findIndex(project => project.id === currentProjectId);
+    const index = projects.findIndex(
+      project => project.id === currentProjectId
+    );
 
     if (index !== -1) {
       const completedProjectBeforeUpdate = projects[index];
 
-      const completedAt =
-        new Date().toISOString();
+      const completedAt = new Date().toISOString();
 
       const hasNextScheduledInspection =
         completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
@@ -7474,10 +7475,7 @@ function finishInspection() {
       };
 
       const inspectionHistory =
-        archiveCurrentInspectionCycle(
-          completedProjectForArchive,
-          'finished'
-        );
+        archiveCurrentInspectionCycle(completedProjectForArchive);
 
       projects[index] = {
         ...completedProjectForArchive,
