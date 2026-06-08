@@ -7603,6 +7603,61 @@ function buildFinishSummaryMessage(project) {
   return summaryLines.join(' | ');
 }
 
+function showFinishSummaryBanner(message) {
+  const listSection =
+    document.getElementById('projectListSection');
+
+  if (!listSection || !message) return;
+
+  const existingBanner =
+    document.getElementById('finishSummaryBanner');
+
+  if (existingBanner) {
+    existingBanner.remove();
+  }
+
+  const banner = document.createElement('div');
+  banner.id = 'finishSummaryBanner';
+  banner.className = 'finish-summary-banner';
+
+  banner.innerHTML = `
+    <div>
+      <strong>Inspection completed</strong>
+      <span>${escapeHtml(message)}</span>
+    </div>
+
+    <button
+      type="button"
+      onclick="closeFinishSummaryBanner()"
+    >
+      Close
+    </button>
+  `;
+
+  const projectsList =
+    document.getElementById('projectsList');
+
+  if (projectsList) {
+    listSection.insertBefore(banner, projectsList);
+  } else {
+    listSection.prepend(banner);
+  }
+
+  banner.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
+function closeFinishSummaryBanner() {
+  const banner =
+    document.getElementById('finishSummaryBanner');
+
+  if (banner) {
+    banner.remove();
+  }
+}
+
 function getFinishInspectionWarnings(project) {
   const completion =
     getProjectCompletionCounts(project);
@@ -7777,31 +7832,24 @@ const finishSummaryText =
 
 showProjectList();
 
+const finishedProject =
+  getProjects().find(
+    project => project.id === currentProjectId
+  );
+
+const finishSummaryText =
+  buildFinishSummaryMessage(finishedProject);
+
+showProjectList();
+
+showFinishSummaryBanner(finishSummaryText);
+
 const finishMessage =
   document.getElementById('syncStatus');
 
 if (finishMessage) {
   finishMessage.textContent =
     `${finishSummaryText} Sync will continue in the background.`;
-}
-
-const activeFilterStatus =
-  document.getElementById('activeFilterStatus');
-
-if (activeFilterStatus) {
-  activeFilterStatus.style.display = 'flex';
-  activeFilterStatus.innerHTML = `
-    <span>
-      ${escapeHtml(finishSummaryText)}
-    </span>
-
-    <button
-      type="button"
-      onclick="clearProjectSearchAndFilter()"
-    >
-      Clear
-    </button>
-  `;
 }
 }
 
@@ -11305,6 +11353,7 @@ window.nextChecklistQuestion = nextChecklistQuestion;
 window.previousChecklistQuestion = previousChecklistQuestion;
 window.handleSmartQuickLink = handleSmartQuickLink;
 window.scrollBackToQuickLinks = scrollBackToQuickLinks;
+window.closeFinishSummaryBanner = closeFinishSummaryBanner;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
