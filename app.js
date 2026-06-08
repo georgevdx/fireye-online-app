@@ -7832,16 +7832,6 @@ const finishSummaryText =
 
 showProjectList();
 
-const finishedProject =
-  getProjects().find(
-    project => project.id === currentProjectId
-  );
-
-const finishSummaryText =
-  buildFinishSummaryMessage(finishedProject);
-
-showProjectList();
-
 showFinishSummaryBanner(finishSummaryText);
 
 const finishMessage =
@@ -11353,7 +11343,7 @@ window.nextChecklistQuestion = nextChecklistQuestion;
 window.previousChecklistQuestion = previousChecklistQuestion;
 window.handleSmartQuickLink = handleSmartQuickLink;
 window.scrollBackToQuickLinks = scrollBackToQuickLinks;
-window.closeFinishSummaryBanner = closeFinishSummaryBanner;
+
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
@@ -11393,6 +11383,7 @@ window.backToServiceRequestList = backToServiceRequestList;
 window.markServiceRequestFollowedUp = markServiceRequestFollowedUp;
 window.openProjectSummaryCard = openProjectSummaryCard;
 window.closeProjectSummaryCard = closeProjectSummaryCard;
+window.closeFinishSummaryBanner = closeFinishSummaryBanner;
 window.downloadArchivedInspectionPhotos = downloadArchivedInspectionPhotos;
 window.runBackgroundSync = runBackgroundSync;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
