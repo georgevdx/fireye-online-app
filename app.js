@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-photo-download1';
+const APP_VERSION = 'v90-beta-photo-download2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -9190,6 +9190,114 @@ async function downloadAllInspectionPhotos() {
   }
 }
 
+async function downloadArchivedInspectionPhotos(projectId, historyIndex) {
+  const projects = getProjects();
+
+  const project =
+    projects.find(p => p.id === projectId);
+
+  if (!project) {
+    alert('Project was not found.');
+    return;
+  }
+
+  const inspection =
+    (project.inspectionHistory || [])[historyIndex];
+
+  if (!inspection) {
+    alert('Archived inspection was not found.');
+    return;
+  }
+
+  const photos = inspection.photos || [];
+
+  if (!photos.length) {
+    alert('No photos found for this archived inspection.');
+    return;
+  }
+
+  const confirmed = confirm(
+    `Download ${photos.length} archived photo${photos.length === 1 ? '' : 's'}?`
+  );
+
+  if (!confirmed) return;
+
+  const saveMessage =
+    document.getElementById('saveMessage') ||
+    document.getElementById('syncStatus');
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      `Preparing ${photos.length} archived photo download${photos.length === 1 ? '' : 's'}...`;
+  }
+
+  let downloaded = 0;
+  let failed = 0;
+
+  for (let index = 0; index < photos.length; index++) {
+    const photo = photos[index];
+
+    if (!photo || !photo.src) {
+      failed++;
+      continue;
+    }
+
+    const filename =
+      getCurrentInspectionPhotoDownloadName(project, photo, index)
+        .replace('_photo_', `_archived_${Number(historyIndex) + 1}_photo_`);
+
+    try {
+      if (String(photo.src).startsWith('data:image/')) {
+        triggerPhotoDownload(photo.src, filename);
+        downloaded++;
+      } else {
+        const response = await fetch(photo.src, {
+          mode: 'cors'
+        });
+
+        if (!response.ok) {
+          throw new Error(`Photo request failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        triggerPhotoDownload(blobUrl, filename);
+
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+        }, 5000);
+
+        downloaded++;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+    } catch (error) {
+      console.warn('Archived photo download failed, using fallback link:', error);
+
+      try {
+        triggerPhotoDownload(photo.src, filename);
+        downloaded++;
+      } catch (fallbackError) {
+        console.error('Archived fallback photo download failed:', fallbackError);
+        failed++;
+      }
+    }
+  }
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      `Archived photo download complete. Downloaded ${downloaded}. Failed ${failed}.`;
+  }
+
+  if (failed > 0) {
+    alert(
+      `${downloaded} archived photo${downloaded === 1 ? '' : 's'} downloaded. ${failed} could not be downloaded. Your browser may have blocked multiple downloads.`
+    );
+  }
+}
+
 function renderPhotos() {
   const container = getEl('photoPreview');
   container.innerHTML = '';
@@ -10489,7 +10597,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.indexOf(inspection)})"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
           >
             View
           </button>
@@ -10497,9 +10605,17 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn primary-small-btn"
-            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.indexOf(inspection)})"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
           >
             Report
+          </button>
+
+          <button
+            type="button"
+            class="small-btn secondary-btn"
+            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+          >
+            Download Photos
           </button>
         </div>
 
@@ -10742,6 +10858,7 @@ window.openProject = openProject;
 window.viewArchivedInspection = viewArchivedInspection;
 window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
 window.generateArchivedInspectionReport = generateArchivedInspectionReport;
+window.downloadArchivedInspectionPhotos = downloadArchivedInspectionPhotos;
 window.consolidateDuplicateSiteCards = consolidateDuplicateSiteCards;
 window.scheduleAutoSave = scheduleAutoSave;
 window.nextProjectPage = nextProjectPage;
@@ -10791,6 +10908,7 @@ window.backToServiceRequestList = backToServiceRequestList;
 window.markServiceRequestFollowedUp = markServiceRequestFollowedUp;
 window.openProjectSummaryCard = openProjectSummaryCard;
 window.closeProjectSummaryCard = closeProjectSummaryCard;
+window.downloadArchivedInspectionPhotos = downloadArchivedInspectionPhotos;
 window.runBackgroundSync = runBackgroundSync;
 window.clearProjectSearchAndFilter = clearProjectSearchAndFilter;
 window.debugSyncCounts = debugSyncCounts;
