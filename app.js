@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-archive-polish1';
+const APP_VERSION = 'v90-beta-smart-quicklinks1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3683,43 +3683,16 @@ function ensureInspectionQuickActions() {
 
   panel.innerHTML = `
     <div class="quick-actions-title">
-      Quick Actions / Inspection Readiness
+      Quick Links / Action Items
     </div>
 
     <div id="quickReadinessSummary" class="quick-readiness-summary">
-      Loading inspection readiness...
-    </div>
-
-    <div class="quick-actions-grid">
-      <button type="button" onclick="focusFirstMissingProjectInfo()">
-        Complete Missing Info
-      </button>
-
-      <button type="button" onclick="focusFirstUnansweredChecklistItem()">
-        Continue Checklist
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentIssue()">
-        Review Findings
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentExpiry('overdue')">
-        Review Expired Equipment
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentExpiry('soon')">
-        Review Due Soon Equipment
-      </button>
-
-      <button type="button" onclick="focusFirstCurrentExpiry('missing')">
-        Enter Missing Expiry Dates
-      </button>
+      Loading quick links...
     </div>
   `;
 
   updateProjectReadinessPanel();
 }
-
 function closeCloudDropdown() {
   const cloudDropdown = document.getElementById('cloudDropdown');
 
@@ -5094,115 +5067,216 @@ function updateProjectReadinessPanel() {
     ? Math.round((completion.answered / completion.total) * 100)
     : 0;
 
-  const missingInfoText =
-    dataQuality.count > 0
-      ? dataQuality.missing.join(', ')
-      : 'None';
+  const quickLinks = [];
+
+  if (dataQuality.count > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'warning',
+      label: 'Complete missing inspection info',
+      count: dataQuality.count,
+      detail: dataQuality.missing.join(', '),
+      action: 'missing-info'
+    });
+  }
+
+  if (completion.unanswered > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'progress',
+      label: 'Continue checklist',
+      count: completion.unanswered,
+      detail: 'Checklist questions still unanswered.',
+      action: 'unanswered'
+    });
+  }
+
+  if (completion.noCount > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'danger',
+      label: 'Review findings / No answers',
+      count: completion.noCount,
+      detail: 'Items answered “No” may need corrective action.',
+      action: 'finding'
+    });
+  }
+
+  if (expiryCounts.overdue > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'danger',
+      label: 'Review expired equipment',
+      count: expiryCounts.overdue,
+      detail: 'Equipment already past expiry date.',
+      action: 'expiry-overdue'
+    });
+  }
+
+  if (expiryCounts.soon > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Review equipment due soon',
+      count: expiryCounts.soon,
+      detail: 'Equipment expiry dates approaching.',
+      action: 'expiry-soon'
+    });
+  }
+
+  if (expiryCounts.missing > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Enter missing equipment expiry dates',
+      count: expiryCounts.missing,
+      detail: 'Expiry dates still need to be entered.',
+      action: 'expiry-missing'
+    });
+  }
+
+  const renderQuickLink = link => `
+    <button
+      type="button"
+      class="quick-link-chip quick-link-${escapeHtml(link.type)}"
+      onclick="handleSmartQuickLink('${escapeHtml(link.action)}')"
+    >
+      <span class="quick-link-main">
+        ${escapeHtml(link.label)}
+      </span>
+
+      <strong>${link.count}</strong>
+
+      <small>${escapeHtml(link.detail)}</small>
+    </button>
+  `;
+
+  const inspectionLinks =
+    quickLinks.filter(link => link.group === 'inspection');
+
+  const equipmentLinks =
+    quickLinks.filter(link => link.group === 'equipment');
 
   const summaryHtml = `
-    <div class="quick-readiness-topline">
-      <strong>Inspection progress:</strong>
+    <div class="quick-progress-line">
+      <strong>Progress:</strong>
       ${completion.answered}/${completion.total} checklist items answered (${percent}%)
     </div>
 
-    <div class="quick-readiness-section-title">
-      Inspection Readiness
-    </div>
+    ${
+      inspectionLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Inspection action items
+          </div>
 
-    <div class="quick-readiness-list">
+          <div class="quick-link-list">
+            ${inspectionLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : `
+          <div class="quick-clear-line">
+            Inspection action items clear.
+          </div>
+        `
+    }
 
-      <button
-        type="button"
-        class="quick-readiness-item ${dataQuality.count > 0 ? 'needs-review' : 'is-clear'}"
-        onclick="focusFirstMissingProjectInfo()"
-      >
-        <span class="quick-readiness-label">
-          Missing inspection information
-        </span>
-        <strong>${dataQuality.count}</strong>
-        <small>${escapeHtml(missingInfoText)}</small>
-      </button>
+    ${
+      equipmentLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Equipment status
+          </div>
 
-      </div>
-
-      <div class="quick-readiness-section-title">
-        Equipment Status
-      </div>
-
-      <div class="quick-readiness-list">
-
-      <button
-        type="button"
-        class="quick-readiness-item ${completion.unanswered > 0 ? 'needs-review' : 'is-clear'}"
-        onclick="focusFirstUnansweredChecklistItem()"
-      >
-        <span class="quick-readiness-label">
-          Checklist items still unanswered
-        </span>
-        <strong>${completion.unanswered}</strong>
-        <small>Tap to continue the Q&A checklist.</small>
-      </button>
-
-      <button
-        type="button"
-        class="quick-readiness-item ${completion.noCount > 0 ? 'needs-danger' : 'is-clear'}"
-        onclick="focusFirstCurrentIssue()"
-      >
-        <span class="quick-readiness-label">
-          Findings / No answers
-        </span>
-        <strong>${completion.noCount}</strong>
-        <small>Items answered “No” may need corrective action.</small>
-      </button>
-
-      <button
-        type="button"
-        class="quick-readiness-item ${expiryCounts.overdue > 0 ? 'needs-danger' : 'is-clear'}"
-        onclick="focusFirstCurrentExpiry('overdue')"
-      >
-        <span class="quick-readiness-label">
-          Expired equipment dates
-        </span>
-        <strong>${expiryCounts.overdue}</strong>
-        <small>Equipment already past expiry date.</small>
-      </button>
-
-      <button
-        type="button"
-        class="quick-readiness-item ${expiryCounts.soon > 0 ? 'needs-review' : 'is-clear'}"
-        onclick="focusFirstCurrentExpiry('soon')"
-      >
-        <span class="quick-readiness-label">
-          Equipment due soon
-        </span>
-        <strong>${expiryCounts.soon}</strong>
-        <small>Equipment expiry dates approaching.</small>
-      </button>
-
-      <button
-        type="button"
-        class="quick-readiness-item ${expiryCounts.missing > 0 ? 'needs-review' : 'is-clear'}"
-        onclick="focusFirstCurrentExpiry('missing')"
-      >
-        <span class="quick-readiness-label">
-          Missing equipment expiry dates
-        </span>
-        <strong>${expiryCounts.missing}</strong>
-        <small>Expiry date must still be entered where applicable.</small>
-      </button>
-
-    </div>
+          <div class="quick-link-list">
+            ${equipmentLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : `
+          <div class="quick-clear-line">
+            Equipment status clear.
+          </div>
+        `
+    }
   `;
 
   if (quickSummary) {
     quickSummary.innerHTML = summaryHtml;
   }
 
-  // Keep the old panel from showing duplicate/confusing readiness tiles.
   if (oldPanel) {
     oldPanel.innerHTML = '';
     oldPanel.style.display = 'none';
   }
+}
+
+function handleSmartQuickLink(action) {
+  if (action === 'missing-info') {
+    focusFirstMissingProjectInfo();
+    setReadinessMessage('Jumped to missing inspection information.');
+    return;
+  }
+
+  if (action === 'unanswered') {
+    focusFirstUnansweredChecklistItem();
+    setReadinessMessage('Jumped to first unanswered checklist item.');
+    return;
+  }
+
+  if (action === 'finding') {
+    focusFirstCurrentIssue();
+    setReadinessMessage('Jumped to first finding / No answer.');
+    return;
+  }
+
+  if (action === 'expiry-overdue') {
+    focusFirstCurrentExpiry('overdue');
+    setReadinessMessage('Jumped to expired equipment item.');
+    return;
+  }
+
+  if (action === 'expiry-soon') {
+    focusFirstCurrentExpiry('soon');
+    setReadinessMessage('Jumped to equipment item due soon.');
+    return;
+  }
+
+  if (action === 'expiry-missing') {
+    focusFirstCurrentExpiry('missing');
+    setReadinessMessage('Jumped to missing equipment expiry date.');
+  }
+}
+
+function showBackToQuickLinksButton(targetElement) {
+  if (!targetElement) return;
+
+  removeBackToQuickLinksButtons();
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'back-to-quick-links-btn';
+  button.textContent = 'Back to Quick Links';
+  button.onclick = scrollBackToQuickLinks;
+
+  targetElement.insertAdjacentElement('afterbegin', button);
+}
+
+function removeBackToQuickLinksButtons() {
+  document
+    .querySelectorAll('.back-to-quick-links-btn')
+    .forEach(button => button.remove());
+}
+
+function scrollBackToQuickLinks() {
+  const quickLinks =
+    document.getElementById('inspectionQuickActions');
+
+  if (!quickLinks) return;
+
+  quickLinks.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
 }
 
 function getChecklistForProject(project) {
@@ -5302,6 +5376,8 @@ function openChecklistRow(row, focusTarget) {
 
   row.classList.add('issue-focus');
 
+  showBackToQuickLinksButton(row);
+
   row.scrollIntoView({
     behavior: 'smooth',
     block: 'center'
@@ -5338,6 +5414,9 @@ function focusInputField(field) {
   if (!field) return;
 
   field.classList.add('field-focus');
+
+  showBackToQuickLinksButton(field.closest('.card') || field.parentElement);
+
   field.scrollIntoView({
     behavior: 'smooth',
     block: 'center'
@@ -5472,6 +5551,7 @@ function focusFirstProjectExpiry(project, expiryStatus) {
   }
 
   row.classList.add('expiry-focus');
+  showBackToQuickLinksButton(row);
 
   row.scrollIntoView({
     behavior: 'smooth',
@@ -11064,6 +11144,8 @@ window.closeChecklistSection = closeChecklistSection;
 window.closeAllChecklistSections = closeAllChecklistSections;
 window.nextChecklistQuestion = nextChecklistQuestion;
 window.previousChecklistQuestion = previousChecklistQuestion;
+window.handleSmartQuickLink = handleSmartQuickLink;
+window.scrollBackToQuickLinks = scrollBackToQuickLinks;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
