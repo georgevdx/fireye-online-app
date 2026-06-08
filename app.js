@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-schedule-restore2';
+const APP_VERSION = 'v90-beta-photo-download1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2396,6 +2396,12 @@ if (cancelScheduledInspectionBtn) {
     floatingBackToProjectsBtn.addEventListener('click', showProjectList);
   }
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
+  const downloadAllPhotosBtn =
+    document.getElementById('downloadAllPhotosBtn');
+
+  if (downloadAllPhotosBtn) {
+    downloadAllPhotosBtn.addEventListener('click', downloadAllInspectionPhotos);
+  }
   getEl('organisationName').addEventListener('input', scheduleAutoSave);
   getEl('siteName').addEventListener('input', scheduleAutoSave);
   getEl('contactPerson').addEventListener('input', scheduleAutoSave);
@@ -9018,6 +9024,171 @@ async function handlePhotoUpload(event) {
   }
 }
 
+function getPhotoFileExtension(photo, fallback = 'jpg') {
+  const src = String(photo?.src || '');
+
+  if (src.startsWith('data:image/png')) return 'png';
+  if (src.startsWith('data:image/webp')) return 'webp';
+  if (src.startsWith('data:image/jpeg')) return 'jpg';
+  if (src.startsWith('data:image/jpg')) return 'jpg';
+
+  const cleanUrl = src.split('?')[0].split('#')[0];
+  const match = cleanUrl.match(/\.(jpg|jpeg|png|webp)$/i);
+
+  if (match) {
+    return match[1].toLowerCase() === 'jpeg'
+      ? 'jpg'
+      : match[1].toLowerCase();
+  }
+
+  return fallback;
+}
+
+function getCurrentInspectionPhotoDownloadName(project, photo, index) {
+  const projectName =
+    project?.projectName ||
+    [project?.organisationName, project?.siteName]
+      .filter(Boolean)
+      .join(' ') ||
+    'Inspection';
+
+  const inspectionNumber =
+    project?.inspectionNumber ||
+    'inspection';
+
+  const photoNumber =
+    String(index + 1).padStart(2, '0');
+
+  const datePart =
+    photo?.timestamp
+      ? new Date(photo.timestamp).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10);
+
+  const extension =
+    getPhotoFileExtension(photo);
+
+  return sanitizeFileName(
+    `${inspectionNumber}_${projectName}_photo_${photoNumber}_${datePart}`,
+    `inspection_photo_${photoNumber}`
+  ) + `.${extension}`;
+}
+
+function triggerPhotoDownload(url, filename) {
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = filename;
+  link.rel = 'noopener';
+  link.style.display = 'none';
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+async function downloadAllInspectionPhotos() {
+  const projects = getProjects();
+
+  const project =
+    projects.find(p => p.id === currentProjectId);
+
+  const photos =
+    currentPhotos && currentPhotos.length > 0
+      ? currentPhotos
+      : project?.photos || [];
+
+  if (!project) {
+    alert('Open an inspection first before downloading photos.');
+    return;
+  }
+
+  if (!photos || photos.length === 0) {
+    alert('No photos found for this inspection.');
+    return;
+  }
+
+  const confirmed = confirm(
+    `Download ${photos.length} photo${photos.length === 1 ? '' : 's'} from this inspection?`
+  );
+
+  if (!confirmed) return;
+
+  const saveMessage =
+    document.getElementById('saveMessage');
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      `Preparing ${photos.length} photo download${photos.length === 1 ? '' : 's'}...`;
+  }
+
+  let downloaded = 0;
+  let failed = 0;
+
+  for (let index = 0; index < photos.length; index++) {
+    const photo = photos[index];
+
+    if (!photo || !photo.src) {
+      failed++;
+      continue;
+    }
+
+    const filename =
+      getCurrentInspectionPhotoDownloadName(project, photo, index);
+
+    try {
+      // Data URLs download directly.
+      if (String(photo.src).startsWith('data:image/')) {
+        triggerPhotoDownload(photo.src, filename);
+        downloaded++;
+      } else {
+        // Try blob download first. This works best for cloud/public URLs.
+        const response = await fetch(photo.src, {
+          mode: 'cors'
+        });
+
+        if (!response.ok) {
+          throw new Error(`Photo request failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        triggerPhotoDownload(blobUrl, filename);
+
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+        }, 5000);
+
+        downloaded++;
+      }
+
+      // Small delay helps browsers handle multiple downloads.
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+    } catch (error) {
+      console.warn('Photo download failed, using fallback link:', error);
+
+      try {
+        triggerPhotoDownload(photo.src, filename);
+        downloaded++;
+      } catch (fallbackError) {
+        console.error('Fallback photo download failed:', fallbackError);
+        failed++;
+      }
+    }
+  }
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      `Photo download complete. Downloaded ${downloaded}. Failed ${failed}.`;
+  }
+
+  if (failed > 0) {
+    alert(
+      `${downloaded} photo${downloaded === 1 ? '' : 's'} downloaded. ${failed} could not be downloaded. Some browsers may block multiple downloads; allow downloads for this site and try again.`
+    );
+  }
+}
 
 function renderPhotos() {
   const container = getEl('photoPreview');
