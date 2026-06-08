@@ -6645,7 +6645,9 @@ function closeProjectSummaryCard() {
   }
 }
 
-function archiveCurrentInspectionCycle(project) {
+function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
+  const existingHistory = project.inspectionHistory || [];
+
   const hasInspectionData =
     (project.answers || []).length > 0 ||
     (project.photos || []).length > 0 ||
@@ -6653,13 +6655,40 @@ function archiveCurrentInspectionCycle(project) {
     project.followUpNotes;
 
   if (!hasInspectionData) {
-    return project.inspectionHistory || [];
+    return existingHistory;
+  }
+
+  const inspectionKey =
+    project.inspectionNumber ||
+    project.id ||
+    '';
+
+  const alreadyArchived =
+    existingHistory.some(item => {
+      const itemKey =
+        item.inspectionNumber ||
+        item.sourceInspectionNumber ||
+        '';
+
+      return (
+        inspectionKey &&
+        itemKey === inspectionKey
+      );
+    });
+
+  if (alreadyArchived) {
+    return existingHistory;
   }
 
   const previousInspectionSnapshot = {
+    archiveReason,
     archivedAt: new Date().toISOString(),
 
+    sourceProjectId: project.id || '',
+    sourceInspectionNumber: project.inspectionNumber || '',
+
     inspectionNumber: project.inspectionNumber || '',
+    completedAt: project.completedAt || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
 
@@ -6694,7 +6723,7 @@ function archiveCurrentInspectionCycle(project) {
   };
 
   return [
-    ...(project.inspectionHistory || []),
+    ...existingHistory,
     previousInspectionSnapshot
   ];
 }
@@ -7432,14 +7461,28 @@ function finishInspection() {
     if (index !== -1) {
       const completedProjectBeforeUpdate = projects[index];
 
+      const completedAt =
+        new Date().toISOString();
+
       const hasNextScheduledInspection =
         completedProjectBeforeUpdate.followUpRequired === 'Yes' &&
         completedProjectBeforeUpdate.followUpDate;
 
-      projects[index] = {
+      const completedProjectForArchive = {
         ...completedProjectBeforeUpdate,
+        completedAt
+      };
 
-        completedAt: new Date().toISOString(),
+      const inspectionHistory =
+        archiveCurrentInspectionCycle(
+          completedProjectForArchive,
+          'finished'
+        );
+
+      projects[index] = {
+        ...completedProjectForArchive,
+
+        inspectionHistory,
 
         scheduledDate: hasNextScheduledInspection
           ? completedProjectBeforeUpdate.followUpDate
