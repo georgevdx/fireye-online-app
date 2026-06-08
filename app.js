@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-archive-finished2';
+const APP_VERSION = 'v90-beta-archive-finished3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -10561,7 +10561,7 @@ function renderInspectionArchive(project) {
     `;
   }
 
-  function buildArchiveCard(inspection, label) {
+  function buildArchiveCard(inspection, label, historyIndex) {
     const businessName =
       inspection.projectName ||
       [inspection.organisationName, inspection.siteName]
@@ -10638,7 +10638,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn"
-            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            onclick="viewArchivedInspection('${escapeHtml(project.id)}', ${historyIndex})"
           >
             View
           </button>
@@ -10646,7 +10646,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn primary-small-btn"
-            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            onclick="generateArchivedInspectionReport('${escapeHtml(project.id)}', ${historyIndex})"
           >
             Report
           </button>
@@ -10654,7 +10654,7 @@ function renderInspectionArchive(project) {
           <button
             type="button"
             class="small-btn secondary-btn"
-            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${history.length - 1 - index})"
+            onclick="downloadArchivedInspectionPhotos('${escapeHtml(project.id)}', ${historyIndex})"
           >
             Download Photos
           </button>
@@ -10676,7 +10676,8 @@ function renderInspectionArchive(project) {
             ${olderInspections.map((inspection, index) =>
               buildArchiveCard(
                 inspection,
-                `Older Previous Inspection ${index + 1}`
+                `Older Previous Inspection ${index + 1}`,
+                history.indexOf(inspection)
               )
             ).join('')}
           </div>
@@ -10691,7 +10692,11 @@ function renderInspectionArchive(project) {
       The latest previous inspection is shown below. Older inspections are available from the dropdown.
     </div>
 
-    ${buildArchiveCard(latestInspection, 'Latest Previous Inspection')}
+    ${buildArchiveCard(
+      latestInspection,
+      'Latest Previous Inspection',
+      history.indexOf(latestInspection)
+    )}
 
     ${olderHtml}
   `;
