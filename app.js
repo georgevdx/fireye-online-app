@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-archive-finished3';
+const APP_VERSION = 'v90-beta-archive-more1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -6836,7 +6836,7 @@ if (shouldStartFreshScheduledInspection) {
   }
 
   showProjectForm();
-  renderInspectionArchive(project);
+  prepareInspectionArchiveButton(project);
 
   if (focusMode === 'issues') {
     setTimeout(() => {
@@ -10490,6 +10490,89 @@ function closeArchivedInspectionDetail() {
   }
 }
 
+function prepareInspectionArchiveButton(project) {
+  const existingLauncher =
+    document.getElementById('inspectionArchiveLauncher');
+
+  if (existingLauncher) {
+    existingLauncher.remove();
+  }
+
+  const existingPanel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (existingPanel) {
+    existingPanel.remove();
+  }
+
+  const history =
+    project?.inspectionHistory || [];
+
+  if (history.length === 0) {
+    return;
+  }
+
+  const quickActions =
+    document.getElementById('inspectionQuickActions');
+
+  const launcher = document.createElement('div');
+  launcher.id = 'inspectionArchiveLauncher';
+  launcher.className = 'inspection-archive-launcher';
+
+  launcher.innerHTML = `
+    <button
+      type="button"
+      class="secondary-btn archive-more-btn"
+      onclick="openInspectionArchiveFromMore()"
+    >
+      More: Previous Inspection Archive (${history.length})
+    </button>
+  `;
+
+  if (quickActions) {
+    quickActions.appendChild(launcher);
+  } else {
+    const form = document.getElementById('projectFormSection');
+
+    if (form) {
+      form.prepend(launcher);
+    }
+  }
+}
+
+function openInspectionArchiveFromMore() {
+  const projects = getProjects();
+  const project = projects.find(
+    p => p.id === currentProjectId
+  );
+
+  if (!project) {
+    alert('Open an inspection first.');
+    return;
+  }
+
+  renderInspectionArchive(project);
+
+  const panel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (panel) {
+    panel.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+}
+
+function closeInspectionArchivePanel() {
+  const panel =
+    document.getElementById('inspectionArchivePanel');
+
+  if (panel) {
+    panel.remove();
+  }
+}
+
 function renderInspectionArchive(project) {
   const existingArchive =
     document.getElementById('inspectionArchivePanel');
@@ -10686,7 +10769,27 @@ function renderInspectionArchive(project) {
       : '';
 
   panel.innerHTML = `
-    <h3>Previous Inspection Archive</h3>
+    <div class="archive-panel-top">
+      <h3>Previous Inspection Archive</h3>
+
+      <div class="archive-panel-actions">
+        <button
+          type="button"
+          class="primary-small-btn archive-back-projects-btn"
+          onclick="showProjectList()"
+        >
+          Back to Projects
+        </button>
+
+        <button
+          type="button"
+          class="small-btn"
+          onclick="closeInspectionArchivePanel()"
+        >
+          Close Archive
+        </button>
+      </div>
+    </div>
 
     <div class="note">
       The latest previous inspection is shown below. Older inspections are available from the dropdown.
@@ -10921,6 +11024,9 @@ window.previousChecklistQuestion = previousChecklistQuestion;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
+
+window.openInspectionArchiveFromMore = openInspectionArchiveFromMore;
+window.closeInspectionArchivePanel = closeInspectionArchivePanel;
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
