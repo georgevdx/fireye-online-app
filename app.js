@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-finish-summary3';
+const APP_VERSION = 'v90-beta-inspection-date1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -215,6 +215,9 @@ function autoSaveProject() {
       .join(' ');
 
   const inspectorName = inspectorNameField.value.trim();
+  const inspectionDate =
+  getEl('inspectionDate').value ||
+  new Date().toISOString().slice(0, 10);
   const occupancy = occupancyField.value;
   const streetNumber = getEl('streetNumber').value.trim();
   const addressLine = projectAddressField.value.trim();
@@ -327,6 +330,7 @@ function autoSaveProject() {
         productType,
         inspectionType,
         inspectorName,
+        inspectionDate,
         occupancy,
         answers,        
         followUpRequired: getEl('followUpRequired').value,
@@ -2408,6 +2412,7 @@ if (cancelScheduledInspectionBtn) {
   getEl('contactTel').addEventListener('input', scheduleAutoSave);
   getEl('contactEmail').addEventListener('input', scheduleAutoSave);
   getEl('inspectorName').addEventListener('input', scheduleAutoSave);
+  getEl('inspectionDate').addEventListener('input', scheduleAutoSave);
   getEl('occupancySelect').addEventListener('change', scheduleAutoSave);
   const exportBtn = document.getElementById('exportBtn');
 
@@ -3250,6 +3255,8 @@ if (existingArchivePanel) {
   clearInputValue('siteName');
   getEl('inspectionType').value = 'General Fire Inspection';
   clearInputValue('inspectorName');
+  getEl('inspectionDate').value =
+  new Date().toISOString().slice(0, 10);
   getEl('occupancySelect').selectedIndex = 0;
   getEl('saveMessage').textContent = '';
   clearInputValue('streetNumber');
@@ -5036,6 +5043,9 @@ function getCurrentFormProjectSnapshot() {
     contactTel: getEl('contactTel').value.trim(),
     contactEmail: getEl('contactEmail').value.trim(),
     inspectorName: getEl('inspectorName').value.trim(),
+    inspectionDate:
+      getEl('inspectionDate').value ||
+      new Date().toISOString().slice(0, 10),
     productType,
     inspectionType,
     occupancy,
@@ -6004,6 +6014,7 @@ function convertProjectToArchivedInspection(project) {
     inspectionNumber: project.inspectionNumber || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
+    inspectionDate: project.inspectionDate || '',
 
     projectName: project.projectName || '',
     organisationName: project.organisationName || '',
@@ -6812,6 +6823,7 @@ function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
     completedAt: project.completedAt || '',
     lastSaved: project.lastSaved || '',
     inspectorName: project.inspectorName || '',
+    inspectionDate: project.inspectionDate || '',
 
     projectName: project.projectName || '',
     organisationName: project.organisationName || '',
@@ -6911,6 +6923,11 @@ if (shouldStartFreshScheduledInspection) {
     inspectionTypeSelect.value = project.inspectionType;
   }
   getEl('inspectorName').value = project.inspectorName || '';
+  getEl('inspectionDate').value =
+    project.inspectionDate ||
+    project.completedAt?.slice(0, 10) ||
+    project.lastSaved?.slice(0, 10) ||
+    new Date().toISOString().slice(0, 10);
   getEl('occupancySelect').value = project.occupancy || occupancies[0]["Occupancy Code"];
   getEl('saveMessage').textContent = '';
   getEl('streetNumber').value = project.streetNumber || '';
@@ -7331,6 +7348,9 @@ function saveProject() {
       .join(' ');
 
   const inspectorName = getEl('inspectorName').value.trim();
+  const inspectionDate =
+    getEl('inspectionDate').value ||
+    new Date().toISOString().slice(0, 10);
   const occupancy = getEl('occupancySelect').value;
   
   const streetNumber = getEl('streetNumber').value.trim();
@@ -7444,6 +7464,7 @@ function saveProject() {
       productType,
       inspectionType,
       inspectorName,
+      inspectionDate,
       occupancy,
       answers,
       followUpRequired,
@@ -7508,6 +7529,7 @@ function saveProject() {
       productType,
       inspectionType,
       inspectorName,
+      inspectionDate,
       occupancy,
       answers,
       photos: currentPhotos,
@@ -7591,8 +7613,15 @@ function buildFinishSummaryMessage(project) {
   const inspectionNumber =
     project.inspectionNumber || '-';
 
+  const inspectionDate =
+    project.inspectionDate ||
+    project.completedAt?.slice(0, 10) ||
+    project.lastSaved?.slice(0, 10) ||
+    '-';
+
   const summaryLines = [
     `Inspection finished successfully: ${inspectionNumber}`,
+    `Inspection date: ${inspectionDate}`,
     `Archived previous inspection record: ${historyCount > 0 ? 'Yes' : 'No'}`,
     hasFollowUp
       ? `Follow-up scheduled: ${project.followUpDate}`
