@@ -29,7 +29,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-post-site-sync1';
+const APP_VERSION = 'v90-beta-feedback-polish1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4489,6 +4489,22 @@ if (onlineStatus) {
     navigator.onLine ? 'Online' : 'Offline';
 }
 
+const currentScreenField =
+  document.getElementById('betaCurrentScreen');
+
+if (currentScreenField) {
+  currentScreenField.value =
+    getCurrentAppScreenName();
+}
+
+const whatHappenedField =
+  document.getElementById('betaWhatHappened');
+
+if (whatHappenedField && !whatHappenedField.value.trim()) {
+  whatHappenedField.placeholder =
+    `Describe what happened on: ${getCurrentAppScreenName()} | Version: ${APP_VERSION}`;
+}
+
   form.style.display = 'block';
 
   form.scrollIntoView({
@@ -4540,7 +4556,8 @@ function clearBetaFeedbackForm() {
   }
 
   const onlineStatus = document.getElementById('betaOnlineStatus');
-
+  const currentScreen =
+  document.getElementById('betaCurrentScreen')?.value || '';
   if (onlineStatus) {
     onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
   }
@@ -4604,6 +4621,7 @@ async function submitBetaFeedback() {
       device,
       browser,
       online_status: onlineStatus,
+      current_screen: currentScreen,
       inspection_number: inspectionNumber,
       what_happened: whatHappened,
       expected_result: expectedResult,
@@ -4628,7 +4646,8 @@ async function submitBetaFeedback() {
     }
 
     if (status) {
-      status.textContent = 'Feedback submitted. Thank you.';
+      status.textContent =
+  'Feedback submitted. Thank you — this helps improve the beta build.';
     }
 
     clearBetaFeedbackForm();
@@ -4781,6 +4800,7 @@ async function renderBetaFeedbackList() {
       device,
       browser,
       online_status,
+      current_screen,
       inspection_number,
       what_happened,
       expected_result,
@@ -4842,6 +4862,11 @@ async function renderBetaFeedbackList() {
             |
             <strong>Status:</strong>
             ${escapeHtml(item.online_status || '-')}
+          </div>
+
+          <div class="beta-feedback-line">
+            <strong>Screen:</strong>
+            ${escapeHtml(item.current_screen || '-')}
           </div>
 
           <div class="beta-feedback-message">
