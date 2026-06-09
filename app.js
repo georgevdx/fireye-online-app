@@ -23,6 +23,7 @@ let inspectionTemplates = {};
 let currentProjectId = null;
 let currentProjectSummaryId = null;
 let siteReadyPreflightOpen = false;
+window.clientReadyReleaseOpen = false;
 let currentPhotos = [];
 let archivedReportContext = null;
 let currentUserProfile = null;
@@ -3646,6 +3647,176 @@ function dismissPostSiteSyncReminder() {
   reminder.className = '';
 }
 
+function getClientReadyReleaseChecks() {
+  const projects =
+    getVisibleProjectsForCurrentUser(getProjects());
+
+  const pendingUploads =
+    projects.filter(project => project.syncPending).length;
+
+  const completedInspections =
+    projects.filter(project => project.completedAt).length;
+
+  const reportsAvailable =
+    typeof generateReport === 'function' &&
+    typeof exportReport === 'function';
+
+  const backupAvailable =
+    typeof exportBackup === 'function';
+
+  const offlineAvailable =
+    'serviceWorker' in navigator;
+
+  const hasProjects =
+    projects.length > 0;
+
+  const hasSyncedData =
+    hasProjects &&
+    pendingUploads === 0;
+
+  return [
+    {
+      label: 'Beta version visible',
+      pass: !!APP_VERSION,
+      detail: APP_VERSION || 'Version not found.'
+    },
+    {
+      label: 'Cloud sync checked',
+      pass: pendingUploads === 0,
+      detail: pendingUploads === 0
+        ? 'No pending uploads.'
+        : `${pendingUploads} pending upload${pendingUploads === 1 ? '' : 's'} still waiting.`
+    },
+    {
+      label: 'Local inspections available',
+      pass: hasProjects,
+      detail: hasProjects
+        ? `${projects.length} inspection${projects.length === 1 ? '' : 's'} visible for this user.`
+        : 'No inspections visible for this user.'
+    },
+    {
+      label: 'Offline readiness available',
+      pass: offlineAvailable,
+      detail: offlineAvailable
+        ? 'Service worker/offline support is available in this browser.'
+        : 'Offline support is not available in this browser.'
+    },
+    {
+      label: 'Report tools available',
+      pass: reportsAvailable,
+      detail: reportsAvailable
+        ? 'Generate Report and PDF export functions are available.'
+        : 'Report or PDF export function missing.'
+    },
+    {
+      label: 'Backup tool available',
+      pass: backupAvailable,
+      detail: backupAvailable
+        ? 'Export Backup is available.'
+        : 'Export Backup function missing.'
+    },
+    {
+      label: 'Completed inspection test data',
+      pass: completedInspections > 0,
+      detail: completedInspections > 0
+        ? `${completedInspections} completed inspection${completedInspections === 1 ? '' : 's'} found.`
+        : 'No completed inspections found yet.'
+    },
+    {
+      label: 'Ready for small beta release',
+      pass:
+        !!APP_VERSION &&
+        hasSyncedData &&
+        offlineAvailable &&
+        reportsAvailable &&
+        backupAvailable,
+      detail:
+        hasSyncedData && offlineAvailable && reportsAvailable && backupAvailable
+          ? 'Build is suitable for controlled beta testing.'
+          : 'Fix warnings before sharing with beta users.'
+    }
+  ];
+}
+
+function updateClientReadyReleaseChecklist() {
+  const panel =
+    document.getElementById('clientReadyReleaseChecklist');
+
+  if (!panel) return;
+
+  if (!currentUserProfile) {
+    panel.innerHTML = '';
+    panel.className = '';
+    return;
+  }
+
+  const checks =
+    getClientReadyReleaseChecks();
+
+  const failedChecks =
+    checks.filter(check => !check.pass);
+
+  const isReady =
+    failedChecks.length === 0;
+
+  panel.className =
+    `client-ready-release-checklist ${
+      isReady
+        ? 'client-ready-pass'
+        : 'client-ready-warning'
+    }`;
+
+  panel.innerHTML = `
+    <div class="client-ready-header">
+      <div>
+        <strong>Client-ready beta checklist</strong>
+        <span>
+          ${
+            isReady
+              ? 'Ready for controlled beta release'
+              : `${failedChecks.length} item${failedChecks.length === 1 ? '' : 's'} need attention`
+          }
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleClientReadyReleaseChecklist()"
+      >
+        ${window.clientReadyReleaseOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.clientReadyReleaseOpen
+        ? `
+          <div class="client-ready-checks">
+            ${checks.map(check => `
+              <div class="client-ready-check ${check.pass ? 'check-pass' : 'check-warning'}">
+                <strong>
+                  ${check.pass ? '✓' : '!'} ${escapeHtml(check.label)}
+                </strong>
+                <span>${escapeHtml(check.detail)}</span>
+              </div>
+            `).join('')}
+
+            <div class="client-ready-note">
+              Use this only as a release confidence check. Final beta approval still depends on a real phone test: login, sync, open inspection, save, photo, report, backup.
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleClientReadyReleaseChecklist() {
+  window.clientReadyReleaseOpen =
+    !window.clientReadyReleaseOpen;
+
+  updateClientReadyReleaseChecklist();
+}
+
 function updateFloatingBackButton() {
   const button =
     document.getElementById('floatingBackToProjectsBtn');
@@ -5848,6 +6019,7 @@ window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
 window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
+window.toggleClientReadyReleaseChecklist = toggleClientReadyReleaseChecklist;
 
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
@@ -6533,6 +6705,7 @@ function renderProjectsList() {
   updateOfflineReadinessBanner();
   updateSiteReadyPreflightChecklist();
   updatePostSiteSyncReminder();
+  updateClientReadyReleaseChecklist();
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
