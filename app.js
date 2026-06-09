@@ -27,7 +27,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-inspection-date1';
+const APP_VERSION = 'v90-beta-inspection-date-display1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -382,6 +382,27 @@ function formatProjectDate(value) {
   if (Number.isNaN(date.getTime())) return '-';
 
   return date.toLocaleString();
+}
+
+function formatInspectionDate(value) {
+  if (!value) return '-';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString();
+}
+
+function getProjectInspectionDate(project) {
+  return (
+    project?.inspectionDate ||
+    project?.completedAt?.slice(0, 10) ||
+    project?.lastSaved?.slice(0, 10) ||
+    ''
+  );
 }
 
   function exportReport() {
@@ -6422,6 +6443,9 @@ const scheduledLabel =
         combineStreetAddress(project.streetNumber, project.addressLine) ||
         'No address captured';
 
+      const inspectionDate =
+        getProjectInspectionDate(project);
+
       return `
         <button
           type="button"
@@ -6434,6 +6458,7 @@ const scheduledLabel =
 
           <span class="inspection-project-list-meta">
             ${escapeHtml(project.inspectionNumber || '-')}
+            ${inspectionDate ? ` | Inspection date: ${escapeHtml(formatInspectionDate(inspectionDate))}` : ''}
           </span>
 
           ${
@@ -6604,6 +6629,9 @@ const scheduledLabel =
 
   const lastSaved = formatProjectDate(project.lastSaved);
 
+  const inspectionDate =
+    getProjectInspectionDate(project);
+
   if (listView) {
     listView.style.display = 'none';
   }
@@ -6734,6 +6762,11 @@ const scheduledLabel =
         <div>
           <span>Inspector</span>
           <strong>${escapeHtml(project.inspectorName || '-')}</strong>
+        </div>
+
+        <div>
+          <span>Inspection Date</span>
+          <strong>${escapeHtml(formatInspectionDate(inspectionDate))}</strong>
         </div>
 
         <div>
@@ -8361,6 +8394,10 @@ function generateReport() {
   
   const inspectionNumber =
   currentProject?.inspectionNumber || '-';
+  const inspectionDate =
+  formatInspectionDate(
+    getProjectInspectionDate(currentProject)
+  );
   const reportContent = getEl('reportContent');
 
   const followUpRequired = getEl('followUpRequired').value;
@@ -9050,13 +9087,18 @@ const executiveSummaryHtml = `
       </div>
 
       <div>
-        <strong>Date:</strong>
-        ${new Date().toLocaleDateString()}
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(inspectionDate)}
       </div>
 
       <div>
         <strong>Inspector:</strong>
         ${escapeHtml(inspectorName || '-')}
+      </div>
+
+      <div>
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(inspectionDate)}
       </div>
 
       <div>
@@ -9116,7 +9158,7 @@ const executiveSummaryHtml = `
       ${inMall === 'Yes' ? `<div class="report-line"><strong>Unit / Shop Number:</strong> ${escapeHtml(unitNumber)}</div>` : ''}
       <div class="report-line"><strong>Inspector Name:</strong> ${escapeHtml(inspectorName)}</div>
       <div class="report-line"><strong>Occupancy Classification:</strong> ${escapeHtml(occupancy)}</div>
-      <div class="report-line"><strong>Inspection Date:</strong> ${new Date().toLocaleDateString()}</div>
+      <div class="report-line"><strong>Inspection Date:</strong> ${escapeHtml(inspectionDate)}</div>
       ${dataQualityHtml}
     </div>
 
@@ -9818,6 +9860,11 @@ async function shareReport() {
   const productType = normalizeProductType(getEl('productType').value) || '-';
   const inspectionType = getEl('inspectionType').value || '-';
 
+  const inspectionDate =
+  formatInspectionDate(
+    getProjectInspectionDate(currentProject)
+  );
+
   const selectedChecklist = getActiveTemplateChecklist() || [];
 
   let yesCount = 0;
@@ -9955,7 +10002,7 @@ ${inMall === 'Yes' ? `Mall/Centre Name: ${mallName}
 Unit / Shop Number: ${unitNumber}
 ` : ''}Inspector Name: ${inspectorName}
 Occupancy: ${occupancy}
-Inspection Date: ${new Date().toLocaleDateString()}
+Inspection Date: ${inspectionDate}
 
 INSPECTION SUMMARY
 Total Items: ${totalItems}
@@ -10409,11 +10456,7 @@ reportContent.innerHTML = `
 
         <div>
           <strong>Inspection Date:</strong>
-          ${
-            inspection.lastSaved
-              ? escapeHtml(new Date(inspection.lastSaved).toLocaleDateString())
-              : '-'
-          }
+          ${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}
         </div>
 
         <div>
@@ -11025,6 +11068,11 @@ function renderInspectionArchive(project) {
         ? new Date(inspection.lastSaved).toLocaleString()
         : '-';
 
+    const inspectionDate =
+      formatInspectionDate(
+        getProjectInspectionDate(inspection)
+      );
+
     const answeredCount = countAnswered(inspection);
     const findingCount = countFindings(inspection);
     const photoCount = (inspection.photos || []).length;
@@ -11046,7 +11094,12 @@ function renderInspectionArchive(project) {
         </div>
 
         <div>
-          <strong>Date:</strong>
+          <strong>Inspection Date:</strong>
+          ${escapeHtml(inspectionDate)}
+        </div>
+
+        <div>
+          <strong>Archived / Last Saved:</strong>
           ${escapeHtml(archivedDate)}
         </div>
 
