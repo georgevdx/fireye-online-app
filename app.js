@@ -5347,6 +5347,55 @@ function getChecklistForProject(project) {
   );
 }
 
+function getReportChecklistRows(project) {
+  const checklist =
+    getChecklistForProject(project);
+
+  const answers =
+    project?.answers || [];
+
+  return answers
+    .map(answer => {
+      const checklistItem =
+        checklist.find((item, index) =>
+          index === answer.itemIndex ||
+          String(item["Item Number"]) === String(answer.itemNumber)
+        );
+
+      if (!checklistItem) {
+        return null;
+      }
+
+      return {
+        answer,
+        checklistItem,
+        itemNumber:
+          answer.itemNumber ||
+          checklistItem["Item Number"] ||
+          String(answer.itemIndex + 1),
+        question:
+          checklistItem["Checklist Item"] ||
+          checklistItem.Requirement ||
+          checklistItem.Question ||
+          'Checklist item',
+        section:
+          checklistItem.Section || '',
+        answerValue:
+          answer.answer || '',
+        note:
+          answer.note || '',
+        expiryDate:
+          answer.expiryDate || ''
+      };
+    })
+    .filter(Boolean)
+    .filter(row =>
+      row.answerValue ||
+      row.note ||
+      row.expiryDate
+    );
+}
+
 function getHighRiskSummary(project) {
   const failedAnswers = (project.answers || []).filter(
     answer => answer.answer === 'No'
