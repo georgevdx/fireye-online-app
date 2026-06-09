@@ -28,7 +28,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-site-ready-preflight2';
+const APP_VERSION = 'v90-beta-post-site-sync1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3587,6 +3587,65 @@ function runSiteReadyPreflight() {
   updateSiteReadyPreflightChecklist();
 }
 
+function getPendingUploadCount() {
+  return getVisibleProjectsForCurrentUser(getProjects())
+    .filter(project => project.syncPending).length;
+}
+
+function updatePostSiteSyncReminder() {
+  const reminder =
+    document.getElementById('postSiteSyncReminder');
+
+  if (!reminder) return;
+
+  const pendingUploads =
+    getPendingUploadCount();
+
+  if (pendingUploads === 0) {
+    reminder.innerHTML = '';
+    reminder.className = '';
+    return;
+  }
+
+  reminder.className = 'post-site-sync-reminder';
+
+  reminder.innerHTML = `
+    <div>
+      <strong>Post-site sync reminder</strong>
+      <span>
+        ${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'}
+        still waiting to upload. Sync before closing the app.
+      </span>
+    </div>
+
+    <div class="post-site-sync-actions">
+      <button
+        type="button"
+        onclick="refreshSyncData()"
+      >
+        Sync / Refresh
+      </button>
+
+      <button
+        type="button"
+        onclick="dismissPostSiteSyncReminder()"
+      >
+        Dismiss
+      </button>
+    </div>
+  `;
+}
+
+function dismissPostSiteSyncReminder() {
+  const reminder =
+    document.getElementById('postSiteSyncReminder');
+
+  if (!reminder) return;
+
+  reminder.innerHTML = '';
+  reminder.className = '';
+}
+
 function updateFloatingBackButton() {
   const button =
     document.getElementById('floatingBackToProjectsBtn');
@@ -6473,6 +6532,7 @@ function renderProjectsList() {
   renderDashboardMetrics(projects);
   updateOfflineReadinessBanner();
   updateSiteReadyPreflightChecklist();
+  updatePostSiteSyncReminder();
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
@@ -7594,8 +7654,10 @@ function markInspectionSynced(projectId) {
   };
 
   setProjects(projects);
-  updateOfflineReadinessBanner();
   renderProjectsList();
+  updateOfflineReadinessBanner();
+  updateSiteReadyPreflightChecklist();
+  updatePostSiteSyncReminder();
 }
 
 function saveProject() {
@@ -11677,7 +11739,8 @@ window.nextChecklistQuestion = nextChecklistQuestion;
 window.previousChecklistQuestion = previousChecklistQuestion;
 window.handleSmartQuickLink = handleSmartQuickLink;
 window.scrollBackToQuickLinks = scrollBackToQuickLinks;
-
+window.dismissPostSiteSyncReminder = dismissPostSiteSyncReminder;
+window.refreshSyncData = refreshSyncData;
 window.addEventListener('online', () => {
   runBackgroundSync('online');
 });
