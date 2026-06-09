@@ -4556,9 +4556,8 @@ function clearBetaFeedbackForm() {
   }
 
   const onlineStatus = document.getElementById('betaOnlineStatus');
-  const currentScreen =
-  document.getElementById('betaCurrentScreen')?.value || '';
-  if (onlineStatus) {
+
+if (onlineStatus) {
     onlineStatus.value = navigator.onLine ? 'Online' : 'Offline';
   }
 }
@@ -4581,6 +4580,9 @@ async function submitBetaFeedback() {
   const onlineStatus =
     document.getElementById('betaOnlineStatus')?.value || '';
 
+  const currentScreen =
+    document.getElementById('betaCurrentScreen')?.value || '';  
+  
   const inspectionNumber =
     document.getElementById('betaInspectionNumber')?.value.trim() || '';
 
