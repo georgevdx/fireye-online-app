@@ -5348,3 +5348,33 @@ button.readiness-chip:focus {
     justify-content: flex-start;
   }
 }
+
+/* Beta 11.23e — beta feedback status filters */
+
+.beta-feedback-filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 14px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.beta-feedback-filter-bar button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.beta-feedback-filter-bar button.active {
+  background: #b71c1c;
+  border-color: #b71c1c;
+  color: #ffffff;
+}
