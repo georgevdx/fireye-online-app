@@ -5220,3 +5220,17 @@ button.readiness-chip:focus {
   font-size: 12px;
   font-weight: 800;
 }
+
+/* Beta 11.23c — beta feedback auto-fill hint */
+
+.beta-autofill-hint {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #60a5fa;
+  color: #1e3a8a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
