@@ -5,6 +5,8 @@ window.betaNotesPanelOpen = false;
 window.betaQuickTestPanelOpen = false;
 window.releaseCandidatePanelOpen = false;
 window.rcTesterInstructionPanelOpen = false;
+let followUpFindingNavIndexes = [];
+let followUpFindingNavPosition = 0;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
@@ -33,7 +35,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-followup-findings3';
+const APP_VERSION = 'v90-beta-followup-findings4';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4603,6 +4605,108 @@ function refreshRcHomePanels() {
   updateRcTesterInstructionPanel();
 }
 
+function getChecklistRowItemIndex(row) {
+  const answerField =
+    row.querySelector('.answer-select');
+
+  return Number(
+    answerField?.id
+      ? answerField.id.replace('check_', '')
+      : row.dataset.index
+  );
+}
+
+function updateFollowUpFindingNavStatus() {
+  const status =
+    document.getElementById('followUpFindingNavStatus');
+
+  if (!status) return;
+
+  status.textContent =
+    `Finding ${followUpFindingNavPosition + 1} of ${followUpFindingNavIndexes.length}`;
+}
+
+function showFollowUpFindingAt(position) {
+  if (followUpFindingNavIndexes.length === 0) return;
+
+  followUpFindingNavPosition =
+    Math.max(
+      0,
+      Math.min(position, followUpFindingNavIndexes.length - 1)
+    );
+
+  const activeIndex =
+    followUpFindingNavIndexes[followUpFindingNavPosition];
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      const isCurrentFinding =
+        itemIndex === activeIndex;
+
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        !isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'active-checklist-question',
+        isCurrentFinding
+      );
+    });
+
+  closeAllChecklistSections();
+
+  const activeRow =
+    Array.from(document.querySelectorAll('.checklist-row'))
+      .find(row => getChecklistRowItemIndex(row) === activeIndex);
+
+  if (activeRow) {
+    const section =
+      activeRow.closest('.section-group');
+
+    if (section) {
+      section.classList.remove('hidden');
+
+      const sectionIndex =
+        section.id.replace('section_', '');
+
+      const arrow =
+        document.getElementById(`arrow_${sectionIndex}`);
+
+      if (arrow) {
+        arrow.textContent = 'v';
+      }
+    }
+
+    activeRow.classList.remove('follow-up-hidden-question');
+    activeRow.classList.add('follow-up-visible-finding');
+
+    activeRow.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+
+  updateFollowUpFindingNavStatus();
+}
+
+function nextFollowUpFinding() {
+  showFollowUpFindingAt(followUpFindingNavPosition + 1);
+}
+
+function previousFollowUpFinding() {
+  showFollowUpFindingAt(followUpFindingNavPosition - 1);
+}
+
 function getFollowUpFindingIndexes(project) {
   return (project?.followUpFindingIndexes || [])
     .map(value => Number(value))
@@ -4617,6 +4721,9 @@ function applyFollowUpFindingMode(project) {
 
   if (findingIndexes.length === 0) return;
 
+  followUpFindingNavIndexes = findingIndexes;
+  followUpFindingNavPosition = 0;
+
   const checklistContainer =
     document.getElementById('checklist');
 
@@ -4630,46 +4737,64 @@ function applyFollowUpFindingMode(project) {
     banner.id = 'followUpFindingModeBanner';
     banner.className = 'follow-up-finding-mode-banner';
 
-    banner.innerHTML = `
-      <strong>Follow-up inspection mode</strong>
-      <span>
-        Only previous findings are shown. Non-finding checklist items are marked N/A and hidden.
-      </span>
-    `;
-
     checklistContainer.prepend(banner);
   }
+
+  banner.innerHTML = `
+    <strong>Follow-up inspection mode</strong>
+    <span>
+      Only previous No findings are shown. All other checklist items are marked N/A and hidden.
+    </span>
+
+    <div class="follow-up-finding-nav">
+      <button
+        type="button"
+        onclick="previousFollowUpFinding()"
+      >
+        Previous Finding
+      </button>
+
+      <span id="followUpFindingNavStatus">
+        Finding 1 of ${findingIndexes.length}
+      </span>
+
+      <button
+        type="button"
+        onclick="nextFollowUpFinding()"
+      >
+        Next Finding
+      </button>
+    </div>
+  `;
 
   document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
       const answerField =
-  row.querySelector('.answer-select');
+        row.querySelector('.answer-select');
 
-const itemIndex =
-  Number(
-    answerField?.id
-      ? answerField.id.replace('check_', '')
-      : row.dataset.index
-  );
+      const itemIndex =
+        getChecklistRowItemIndex(row);
 
-const isFollowUpFinding =
-  findingIndexes.includes(itemIndex);
-
-      row.classList.toggle(
-        'follow-up-hidden-question',
-        !isFollowUpFinding
-      );
-
-      row.classList.toggle(
-        'follow-up-visible-finding',
-        isFollowUpFinding
-      );
+      const isFollowUpFinding =
+        findingIndexes.includes(itemIndex);
 
       if (answerField && !isFollowUpFinding) {
         answerField.value = 'N/A';
       }
+
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        true
+      );
+
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        false
+      );
     });
+
+  showFollowUpFindingAt(0);
 
   updateAnswerSummary();
   updateProjectReadinessPanel();
@@ -6725,7 +6850,8 @@ window.updateRcBackupReminderPanel = updateRcBackupReminderPanel;
 window.updateRcFinalPreflightPanel = updateRcFinalPreflightPanel;
 window.toggleRcTesterInstructionPanel = toggleRcTesterInstructionPanel;
 window.updateRcTesterInstructionPanel = updateRcTesterInstructionPanel;
-
+window.nextFollowUpFinding = nextFollowUpFinding;
+window.previousFollowUpFinding = previousFollowUpFinding;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
