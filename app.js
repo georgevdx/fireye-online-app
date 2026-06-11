@@ -7,6 +7,7 @@ window.releaseCandidatePanelOpen = false;
 window.rcTesterInstructionPanelOpen = false;
 let followUpFindingNavIndexes = [];
 let followUpFindingNavPosition = 0;
+let followUpFindingModeActive = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
@@ -35,7 +36,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-followup-findings5';
+const APP_VERSION = 'v90-beta-followup-findings6';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -954,6 +955,28 @@ function closeAllChecklistSections() {
 }
 
 function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
+  
+    if (followUpFindingModeActive && followUpFindingNavIndexes.length > 0) {
+    const firstFindingRowInSection =
+      Array.from(document.querySelectorAll('.checklist-row'))
+        .find(row =>
+          Number(row.dataset.sectionIndex) === Number(sectionIndex) &&
+          followUpFindingNavIndexes.includes(getChecklistRowItemIndex(row))
+        );
+
+    if (firstFindingRowInSection) {
+      const findingIndex =
+        getChecklistRowItemIndex(firstFindingRowInSection);
+
+      const navPosition =
+        followUpFindingNavIndexes.indexOf(findingIndex);
+
+      showFollowUpFindingAt(navPosition);
+    }
+
+    return;
+  }
+  
   closeAllChecklistSections();
 
   const section = document.getElementById(`section_${sectionIndex}`);
@@ -3292,6 +3315,9 @@ function createNewProject() {
 
   clearTimeout(autoSaveTimer);
   currentProjectId = null;
+  followUpFindingModeActive = false;
+followUpFindingNavIndexes = [];
+followUpFindingNavPosition = 0;
 
   const existingHistoryPanel =
     document.getElementById('siteHistoryPanel');
@@ -4658,16 +4684,23 @@ function applyFollowUpSectionVisibility(activeSectionIndex) {
       );
     });
 
+  const tabHint =
+    document.querySelector('.checklist-tab-hint');
+
+  if (tabHint) {
+    tabHint.style.display = 'none';
+  }
+
   document
     .querySelectorAll('.section-group')
     .forEach(section => {
       const sectionIndex =
         Number(String(section.id || '').replace('section_', ''));
 
-      const shouldShow =
-        sectionIndex === activeSectionIndex;
-
-      section.classList.toggle('hidden', !shouldShow);
+      section.classList.toggle(
+        'hidden',
+        sectionIndex !== activeSectionIndex
+      );
     });
 
   document
@@ -4677,15 +4710,98 @@ function applyFollowUpSectionVisibility(activeSectionIndex) {
     });
 }
 
-function getChecklistRowItemIndex(row) {
-  const answerField =
-    row.querySelector('.answer-select');
+function showFollowUpFindingAt(position) {
+  if (followUpFindingNavIndexes.length === 0) return;
 
-  return Number(
-    answerField?.id
-      ? answerField.id.replace('check_', '')
-      : row.dataset.index
-  );
+  followUpFindingNavPosition =
+    Math.max(
+      0,
+      Math.min(position, followUpFindingNavIndexes.length - 1)
+    );
+
+  const activeIndex =
+    followUpFindingNavIndexes[followUpFindingNavPosition];
+
+  let activeSectionIndex = null;
+  let activeRow = null;
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      const answerField =
+        row.querySelector('.answer-select');
+
+      const isFinding =
+        followUpFindingNavIndexes.includes(itemIndex);
+
+      const isCurrentFinding =
+        itemIndex === activeIndex;
+
+      if (answerField && !isFinding) {
+        answerField.value = 'N/A';
+      }
+
+      row.style.display =
+        isCurrentFinding ? '' : 'none';
+
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        !isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'active-checklist-question',
+        isCurrentFinding
+      );
+
+      row.classList.remove('question-hidden');
+
+      if (isCurrentFinding) {
+        activeRow = row;
+        activeSectionIndex =
+          getChecklistRowSectionIndex(row);
+      }
+    });
+
+  applyFollowUpSectionVisibility(activeSectionIndex);
+
+  if (activeRow) {
+    const section =
+      activeRow.closest('.section-group');
+
+    if (section) {
+      section.classList.remove('hidden');
+
+      const sectionIndex =
+        section.id.replace('section_', '');
+
+      const arrow =
+        document.getElementById(`arrow_${sectionIndex}`);
+
+      if (arrow) {
+        arrow.textContent = 'v';
+      }
+    }
+
+    activeRow.style.display = '';
+    activeRow.classList.remove('follow-up-hidden-question');
+    activeRow.classList.add('follow-up-visible-finding');
+
+    activeRow.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+
+  updateFollowUpFindingNavStatus();
 }
 
 function updateFollowUpFindingNavStatus() {
@@ -4810,8 +4926,9 @@ function applyFollowUpFindingMode(project) {
 
   if (findingIndexes.length === 0) return;
 
-  followUpFindingNavIndexes = findingIndexes;
-  followUpFindingNavPosition = 0;
+  followUpFindingModeActive = true;
+followUpFindingNavIndexes = findingIndexes;
+followUpFindingNavPosition = 0;
 
   const checklistContainer =
     document.getElementById('checklist');
@@ -4887,7 +5004,8 @@ function applyFollowUpFindingMode(project) {
   showFollowUpFindingAt(0);
   updateAnswerSummary();
   updateProjectReadinessPanel();
-}, 50);
+  scheduleAutoSave();
+}, 150);
 }
 
 function updateHomeAccessCards() {
@@ -8297,6 +8415,9 @@ function openProject(projectId, focusMode) {
   if (!project) return;
 
   currentProjectId = project.id;
+  followUpFindingModeActive = false;
+followUpFindingNavIndexes = [];
+followUpFindingNavPosition = 0;
  
   const shouldStartFreshScheduledInspection =
   project.scheduleFreshInspection === true;
