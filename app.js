@@ -32,7 +32,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-rc-checklist1';
+const APP_VERSION = 'v90-beta-rc-safety-lock1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1286,6 +1286,17 @@ function formatBytes(bytes) {
   return `${value.toFixed(unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`;
 }
 
+function confirmRcSafetyLock(actionName, riskText) {
+  const message =
+    `RC Safety Lock\n\n` +
+    `${actionName}\n\n` +
+    `${riskText}\n\n` +
+    `Before continuing, make sure you have exported a backup.\n\n` +
+    `Continue?`;
+
+  return confirm(message);
+}
+
 function exportEmergencyBackup(reason) {
   const projects = getProjects();
   if (projects.length === 0) return;
@@ -1309,11 +1320,12 @@ function importBackupJsonText(backupText, sourceLabel = 'backup') {
       return false;
     }
 
-    const confirmed = confirm(
-      'Import Backup will replace all inspections currently saved on this device. Export a backup first if you are unsure. Continue?'
-    );
+    const confirmed = confirmRcSafetyLock(
+  'Import Backup',
+  'This will replace all inspections currently saved on this device with the imported backup file.'
+);
 
-    if (!confirmed) return false;
+if (!confirmed) return false;
 
     exportEmergencyBackup(`import-${sourceLabel}`);
 
@@ -1735,11 +1747,12 @@ async function downloadSync() {
     return;
   }
 
-  const confirmed = confirm(
-    'Download Sync will replace all inspections currently saved on this device with the cloud version. An emergency backup will be exported first. Continue?'
-  );
+  const confirmed = confirmRcSafetyLock(
+  'Download Sync',
+  'This will replace all inspections currently saved on this device with the cloud version. An emergency backup will be exported first.'
+);
 
-  if (!confirmed) return;
+if (!confirmed) return;
 
   exportEmergencyBackup('cloud-download');
 
@@ -1781,6 +1794,13 @@ async function mergeSync() {
     getEl('syncStatus').textContent = 'Please login before merge sync.';
     return;
   }
+
+  const confirmed = confirmRcSafetyLock(
+  'Merge Sync',
+  'This will merge local and cloud inspections. If old or duplicate data exists, review carefully after the merge.'
+);
+
+if (!confirmed) return;
 
   const localProjects = getProjects();
 
@@ -6818,11 +6838,12 @@ function convertProjectToArchivedInspection(project) {
 }
 
 function consolidateDuplicateSiteCards() {
-  const confirmed = confirm(
-    'This will merge duplicate cards for the same premises into one card and move older inspections into Previous Inspection Archive. Export a backup first. Continue?'
-  );
+  const confirmed = confirmRcSafetyLock(
+  'Consolidate Duplicate Site Cards',
+  'This will merge duplicate cards for the same premises into one card and move older inspections into Previous Inspection Archive.'
+);
 
-  if (!confirmed) return;
+if (!confirmed) return;
 
   const projects = getProjects();
   const groups = new Map();
