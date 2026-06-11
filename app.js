@@ -32,7 +32,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-rc-final-preflight1';
+const APP_VERSION = 'v90-beta-rc-final-preflight2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4140,6 +4140,38 @@ function toggleBetaQuickTestPanel() {
   updateBetaQuickTestPanel();
 }
 
+function isCloudSessionConnectedForRc() {
+  const cloudMenuBtn =
+    document.getElementById('cloudMenuBtn');
+
+  const cloudButtonLooksConnected =
+    cloudMenuBtn &&
+    (
+      cloudMenuBtn.classList.contains('connected') ||
+      String(cloudMenuBtn.textContent || '')
+        .toLowerCase()
+        .includes('cloud connected')
+    );
+
+  return !!currentUserProfile || !!cloudButtonLooksConnected;
+}
+
+function getCloudSessionDetailForRc() {
+  if (currentUserProfile) {
+    return `Logged in as ${
+      currentUserProfile.email ||
+      currentUserProfile.fullName ||
+      'user'
+    }`;
+  }
+
+  if (isCloudSessionConnectedForRc()) {
+    return 'Cloud connected';
+  }
+
+  return 'Not logged in';
+}
+
 function getLastBackupInfo() {
   const lastBackupRaw =
     localStorage.getItem('fireyesaLastBackup');
@@ -4284,12 +4316,10 @@ function updateRcFinalPreflightPanel() {
 
   const checks = [
     {
-      label: 'Cloud login',
-      pass: !!currentUserProfile,
-      detail: currentUserProfile
-        ? 'Logged in'
-        : 'Not logged in'
-    },
+  label: 'Cloud login',
+  pass: isCloudSessionConnectedForRc(),
+  detail: getCloudSessionDetailForRc()
+},
     {
       label: 'Backup',
       pass: backup.hasBackup,
@@ -4389,12 +4419,10 @@ function getReleaseCandidateChecks() {
 
   return [
     {
-      label: 'Cloud access confirmed',
-      pass: !!currentUserProfile,
-      detail: currentUserProfile
-        ? `Logged in as ${currentUserProfile.email || currentUserProfile.fullName || 'user'}`
-        : 'Login before release testing.'
-    },
+  label: 'Cloud access confirmed',
+  pass: isCloudSessionConnectedForRc(),
+  detail: getCloudSessionDetailForRc()
+},
     {
       label: 'Backup exported',
       pass: hasBackup,
