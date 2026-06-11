@@ -32,7 +32,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-rc-safety-lock1';
+const APP_VERSION = 'v90-beta-backup-reminder1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1169,6 +1169,8 @@ function saveBackupSnapshot(backupJson, filename, count, source) {
   );
   localStorage.setItem('fireyesaLastBackupJson', backupJson);
   updateAppInfo();
+  updateRcBackupReminderPanel();
+updateReleaseCandidatePanel();
 }
 
 function createBackupJson(projects) {
@@ -4137,6 +4139,131 @@ function toggleBetaQuickTestPanel() {
   updateBetaQuickTestPanel();
 }
 
+function getLastBackupInfo() {
+  const lastBackupRaw =
+    localStorage.getItem('fireyesaLastBackup');
+
+  if (!lastBackupRaw) {
+    return {
+      hasBackup: false,
+      filename: '',
+      exportedAt: '',
+      ageText: 'No backup exported yet',
+      statusText: 'Backup needed before RC testing'
+    };
+  }
+
+  try {
+    const lastBackup =
+      JSON.parse(lastBackupRaw);
+
+    const exportedAt =
+      lastBackup.exportedAt || '';
+
+    const exportedTime =
+      exportedAt
+        ? new Date(exportedAt).getTime()
+        : 0;
+
+    const now =
+      new Date().getTime();
+
+    const ageHours =
+      exportedTime
+        ? Math.floor((now - exportedTime) / (1000 * 60 * 60))
+        : null;
+
+    let ageText = 'Backup found';
+
+    if (ageHours !== null) {
+      if (ageHours < 1) {
+        ageText = 'Backup exported less than 1 hour ago';
+      } else if (ageHours === 1) {
+        ageText = 'Backup exported 1 hour ago';
+      } else if (ageHours < 24) {
+        ageText = `Backup exported ${ageHours} hours ago`;
+      } else {
+        const ageDays =
+          Math.floor(ageHours / 24);
+
+        ageText =
+          ageDays === 1
+            ? 'Backup exported 1 day ago'
+            : `Backup exported ${ageDays} days ago`;
+      }
+    }
+
+    return {
+      hasBackup: true,
+      filename: lastBackup.filename || 'Backup file',
+      exportedAt,
+      ageText,
+      statusText: 'Backup record found'
+    };
+  } catch (error) {
+    return {
+      hasBackup: true,
+      filename: 'Backup record',
+      exportedAt: '',
+      ageText: 'Backup record found, but date could not be read',
+      statusText: 'Backup record found'
+    };
+  }
+}
+
+function updateRcBackupReminderPanel() {
+  const panel =
+    document.getElementById('rcBackupReminderPanel');
+
+  if (!panel) return;
+
+  const backup =
+    getLastBackupInfo();
+
+  panel.className =
+    `rc-backup-reminder-panel ${
+      backup.hasBackup
+        ? 'rc-backup-reminder-pass'
+        : 'rc-backup-reminder-warning'
+    }`;
+
+  panel.innerHTML = `
+    <div class="rc-backup-reminder-header">
+      <div>
+        <strong>
+          ${backup.hasBackup ? 'Backup Ready' : 'Backup Reminder'}
+        </strong>
+        <span>${escapeHtml(backup.ageText)}</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="exportBackup()"
+      >
+        Export Backup
+      </button>
+    </div>
+
+    <div class="rc-backup-reminder-body">
+      ${
+        backup.hasBackup
+          ? `
+            <div>
+              <strong>Last backup:</strong>
+              ${escapeHtml(backup.filename)}
+            </div>
+          `
+          : `
+            <div>
+              <strong>Important:</strong>
+              Export a backup before release candidate testing.
+            </div>
+          `
+      }
+    </div>
+  `;
+}
+
 function getReleaseCandidateChecks() {
   const projects =
     currentUserProfile
@@ -4303,6 +4430,7 @@ updateHomeAccessCards();
 updateBetaNotesPanel();
 updateBetaQuickTestPanel();
 updateReleaseCandidatePanel();
+updateRcBackupReminderPanel();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
@@ -6319,6 +6447,7 @@ window.toggleBetaNotesPanel = toggleBetaNotesPanel;
 window.toggleBetaQuickTestPanel = toggleBetaQuickTestPanel;
 window.toggleReleaseCandidatePanel = toggleReleaseCandidatePanel;
 window.updateReleaseCandidatePanel = updateReleaseCandidatePanel;
+window.updateRcBackupReminderPanel = updateRcBackupReminderPanel;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;

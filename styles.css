@@ -5554,3 +5554,74 @@ button.readiness-chip:focus {
   justify-self: start;
   margin-top: 4px;
 }
+
+/* Beta 11.28 — RC backup reminder polish */
+
+.rc-backup-reminder-panel {
+  margin: 12px 0 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.rc-backup-reminder-pass {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.rc-backup-reminder-warning {
+  border-color: #fecaca;
+  background: #fff1f2;
+}
+
+.rc-backup-reminder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.rc-backup-reminder-header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.rc-backup-reminder-header span {
+  display: block;
+  margin-top: 2px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rc-backup-reminder-header button {
+  width: auto;
+  max-width: none;
+  border: 0;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rc-backup-reminder-body {
+  padding: 0 12px 12px;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.rc-backup-reminder-body div {
+  padding: 9px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
