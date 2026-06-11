@@ -5378,3 +5378,86 @@ button.readiness-chip:focus {
   border-color: #b71c1c;
   color: #ffffff;
 }
+
+/* Beta 11.25 — beta user quick test checklist */
+
+.beta-quick-test-panel {
+  margin: 12px 0 16px;
+  border-radius: 14px;
+  border: 1px solid #fecaca;
+  background: #fff7ed;
+  overflow: hidden;
+}
+
+.beta-quick-test-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.beta-quick-test-header strong {
+  display: block;
+  color: #7f1d1d;
+  font-size: 14px;
+}
+
+.beta-quick-test-header span {
+  display: block;
+  margin-top: 2px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.beta-quick-test-header button {
+  border: 0;
+  border-radius: 999px;
+  background: #b71c1c;
+  color: #ffffff;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.beta-quick-test-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.beta-quick-test-item {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: start;
+  padding: 9px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #fed7aa;
+}
+
+.beta-quick-test-item strong {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: #b71c1c;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+.beta-quick-test-item span {
+  display: block;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.beta-quick-test-final {
+  border-left: 4px solid #b71c1c;
+}

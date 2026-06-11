@@ -2,6 +2,8 @@
 let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
 window.betaNotesPanelOpen = false;
+window.betaQuickTestPanelOpen = false;
+window.releaseCandidatePanelOpen = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
@@ -4042,6 +4044,79 @@ function toggleBetaNotesPanel() {
   updateBetaNotesPanel();
 }
 
+function updateBetaQuickTestPanel() {
+  const panel =
+    document.getElementById('betaQuickTestPanel');
+
+  if (!panel) return;
+
+  panel.innerHTML = `
+    <div class="beta-quick-test-header">
+      <div>
+        <strong>Beta Quick Test Checklist</strong>
+        <span>Use this when testing a new beta build.</span>
+      </div>
+
+      <button
+        type="button"
+        onclick="toggleBetaQuickTestPanel()"
+      >
+        ${window.betaQuickTestPanelOpen ? 'Hide' : 'Open'}
+      </button>
+    </div>
+
+    ${
+      window.betaQuickTestPanelOpen
+        ? `
+          <div class="beta-quick-test-body">
+            <div class="beta-quick-test-item">
+              <strong>1</strong>
+              <span>Login and confirm Cloud connected.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>2</strong>
+              <span>Tap Sync / Refresh before opening inspections.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>3</strong>
+              <span>Open an inspection and confirm existing data still loads.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>4</strong>
+              <span>Edit one safe field and confirm autosave works.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>5</strong>
+              <span>Add or view a photo and confirm it stays visible after refresh.</span>
+            </div>
+
+            <div class="beta-quick-test-item">
+              <strong>6</strong>
+              <span>Generate a report and confirm inspection date, answers and comments look correct.</span>
+            </div>
+
+            <div class="beta-quick-test-item beta-quick-test-final">
+              <strong>7</strong>
+              <span>Submit Beta Feedback if anything looks wrong, confusing or incomplete.</span>
+            </div>
+          </div>
+        `
+        : ''
+    }
+  `;
+}
+
+function toggleBetaQuickTestPanel() {
+  window.betaQuickTestPanelOpen =
+    !window.betaQuickTestPanelOpen;
+
+  updateBetaQuickTestPanel();
+}
+
 function updateHomeAccessCards() {
   const homeLoginRouteBtn = document.getElementById('homeLoginRouteBtn');
   const homeLogoutBtn = document.getElementById('homeLogoutBtn');
@@ -4068,6 +4143,7 @@ function showHome() {
   setCloudMenuVisible(true);
 updateHomeAccessCards();
 updateBetaNotesPanel();
+updateBetaQuickTestPanel();
 
   if (homeSection) homeSection.style.display = 'block';
   if (servicesSection) servicesSection.style.display = 'none';
@@ -6081,6 +6157,7 @@ window.focusFirstMissingProjectInfo = focusFirstMissingProjectInfo;
 window.updateBetaFeedbackStatus = updateBetaFeedbackStatus;
 window.setBetaFeedbackFilter = setBetaFeedbackFilter;
 window.toggleBetaNotesPanel = toggleBetaNotesPanel;
+window.toggleBetaQuickTestPanel = toggleBetaQuickTestPanel;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
