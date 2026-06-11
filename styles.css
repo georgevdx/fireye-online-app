@@ -5625,3 +5625,96 @@ button.readiness-chip:focus {
   background: #ffffff;
   border: 1px solid #e2e8f0;
 }
+
+/* Beta 11.29 — RC final preflight summary */
+
+.rc-final-preflight-panel {
+  margin: 12px 0 16px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.rc-final-preflight-pass {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.rc-final-preflight-warning {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.rc-final-preflight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+}
+
+.rc-final-preflight-header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.rc-final-preflight-header span {
+  display: block;
+  margin-top: 2px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rc-final-preflight-header button {
+  width: auto;
+  max-width: none;
+  border: 0;
+  border-radius: 999px;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rc-final-preflight-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.rc-final-preflight-chip {
+  padding: 9px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+}
+
+.rc-final-preflight-chip strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #0f172a;
+  font-size: 12px;
+}
+
+.rc-final-preflight-chip span {
+  display: block;
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+.rc-final-preflight-chip.chip-pass {
+  border-left: 4px solid #16a34a;
+}
+
+.rc-final-preflight-chip.chip-warning {
+  border-left: 4px solid #f59e0b;
+}
