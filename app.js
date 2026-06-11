@@ -35,7 +35,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v90-beta-followup-findings4';
+const APP_VERSION = 'v90-beta-followup-findings5';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4605,6 +4605,78 @@ function refreshRcHomePanels() {
   updateRcTesterInstructionPanel();
 }
 
+function getChecklistRowSectionIndex(row) {
+  return Number(row.dataset.sectionIndex);
+}
+
+function getFollowUpFindingSectionIndexes() {
+  const sectionIndexes = [];
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      if (!followUpFindingNavIndexes.includes(itemIndex)) {
+        return;
+      }
+
+      const sectionIndex =
+        getChecklistRowSectionIndex(row);
+
+      if (
+        Number.isFinite(sectionIndex) &&
+        !sectionIndexes.includes(sectionIndex)
+      ) {
+        sectionIndexes.push(sectionIndex);
+      }
+    });
+
+  return sectionIndexes;
+}
+
+function applyFollowUpSectionVisibility(activeSectionIndex) {
+  const findingSectionIndexes =
+    getFollowUpFindingSectionIndexes();
+
+  document
+    .querySelectorAll('.checklist-section-tab')
+    .forEach(tab => {
+      const sectionIndex =
+        Number(tab.dataset.sectionIndex);
+
+      const shouldShow =
+        findingSectionIndexes.includes(sectionIndex);
+
+      tab.style.display =
+        shouldShow ? '' : 'none';
+
+      tab.classList.toggle(
+        'active-section-tab',
+        sectionIndex === activeSectionIndex
+      );
+    });
+
+  document
+    .querySelectorAll('.section-group')
+    .forEach(section => {
+      const sectionIndex =
+        Number(String(section.id || '').replace('section_', ''));
+
+      const shouldShow =
+        sectionIndex === activeSectionIndex;
+
+      section.classList.toggle('hidden', !shouldShow);
+    });
+
+  document
+    .querySelectorAll('.checklist-question-nav')
+    .forEach(nav => {
+      nav.style.display = 'none';
+    });
+}
+
 function getChecklistRowItemIndex(row) {
   const answerField =
     row.querySelector('.answer-select');
@@ -4638,14 +4710,27 @@ function showFollowUpFindingAt(position) {
   const activeIndex =
     followUpFindingNavIndexes[followUpFindingNavPosition];
 
+  let activeSectionIndex = null;
+  let activeRow = null;
+
   document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
       const itemIndex =
         getChecklistRowItemIndex(row);
 
+      const answerField =
+        row.querySelector('.answer-select');
+
+      const isFinding =
+        followUpFindingNavIndexes.includes(itemIndex);
+
       const isCurrentFinding =
         itemIndex === activeIndex;
+
+      if (answerField && !isFinding) {
+        answerField.value = 'N/A';
+      }
 
       row.classList.toggle(
         'follow-up-hidden-question',
@@ -4661,13 +4746,17 @@ function showFollowUpFindingAt(position) {
         'active-checklist-question',
         isCurrentFinding
       );
+
+      row.classList.remove('question-hidden');
+
+      if (isCurrentFinding) {
+        activeRow = row;
+        activeSectionIndex =
+          getChecklistRowSectionIndex(row);
+      }
     });
 
-  closeAllChecklistSections();
-
-  const activeRow =
-    Array.from(document.querySelectorAll('.checklist-row'))
-      .find(row => getChecklistRowItemIndex(row) === activeIndex);
+  applyFollowUpSectionVisibility(activeSectionIndex);
 
   if (activeRow) {
     const section =
@@ -4794,10 +4883,11 @@ function applyFollowUpFindingMode(project) {
       );
     });
 
+  setTimeout(() => {
   showFollowUpFindingAt(0);
-
   updateAnswerSummary();
   updateProjectReadinessPanel();
+}, 50);
 }
 
 function updateHomeAccessCards() {
@@ -8356,10 +8446,13 @@ followUpSourceInspectionNumber:
     });
   }
 
-applyFollowUpFindingMode(project);
+showProjectForm();
 
-  showProjectForm();
-  prepareInspectionArchiveButton(project);
+setTimeout(() => {
+  applyFollowUpFindingMode(project);
+}, 120);
+
+prepareInspectionArchiveButton(project);
 
   if (focusMode === 'issues') {
     setTimeout(() => {
