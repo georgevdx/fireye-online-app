@@ -5907,14 +5907,9 @@ button.readiness-chip:focus {
   line-height: 1.35;
 }
 
-.follow-up-hidden-question {
-  display: none !important;
-}
 
-.follow-up-visible-finding {
-  border-left: 4px solid #b71c1c;
-  background: #fff7ed;
-}
+
+
 
 /* Beta 11.33 — Follow-up findings-only checklist */
 
@@ -5942,14 +5937,6 @@ button.readiness-chip:focus {
   line-height: 1.35;
 }
 
-.follow-up-hidden-question {
-  display: none !important;
-}
-
-.follow-up-visible-finding {
-  border-left: 4px solid #b71c1c;
-  background: #fff7ed;
-}
 
 /* Beta 11.33d — Follow-up finding navigation */
 

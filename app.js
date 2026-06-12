@@ -5030,93 +5030,50 @@ function getFollowUpFindingIndexes(project) {
 }
 
 function applyFollowUpFindingMode(project) {
-  if (!project?.followUpFindingMode) return;
+  // TEMPORARY STABILITY MODE:
+  // Follow-up finding mode is disabled until the workflow is rebuilt cleanly.
+  // This prevents scheduled follow-ups from hiding checklist rows,
+  // breaking Quick Links, or locking the Q&A screen.
 
-  const findingIndexes =
-    getFollowUpFindingIndexes(project);
-
-  if (findingIndexes.length === 0) return;
-
-  followUpFindingModeActive = true;
-followUpFindingNavIndexes = findingIndexes;
-followUpFindingNavPosition = 0;
+  followUpFindingModeActive = false;
+  followUpFindingNavIndexes = [];
+  followUpFindingNavPosition = 0;
 
   const checklistContainer =
     document.getElementById('checklist');
 
-  if (!checklistContainer) return;
-
-  let banner =
-    document.getElementById('followUpFindingModeBanner');
-
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'followUpFindingModeBanner';
-    banner.className = 'follow-up-finding-mode-banner';
-
-    checklistContainer.prepend(banner);
+  if (checklistContainer) {
+    checklistContainer.classList.remove('follow-up-mode-active');
   }
 
-  banner.innerHTML = `
-    <strong>Follow-up inspection mode</strong>
-    <span>
-      Only previous No findings are shown. All other checklist items are marked N/A and hidden.
-    </span>
+  const banner =
+    document.getElementById('followUpFindingModeBanner');
 
-    <div class="follow-up-finding-nav">
-      <button
-        type="button"
-        onclick="previousFollowUpFinding()"
-      >
-        Previous Finding
-      </button>
-
-      <span id="followUpFindingNavStatus">
-        Finding 1 of ${findingIndexes.length}
-      </span>
-
-      <button
-        type="button"
-        onclick="nextFollowUpFinding()"
-      >
-        Next Finding
-      </button>
-    </div>
-  `;
+  if (banner) {
+    banner.remove();
+  }
 
   document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
-      const answerField =
-        row.querySelector('.answer-select');
+      row.style.display = '';
 
-      const itemIndex =
-        getChecklistRowItemIndex(row);
-
-      const isFollowUpFinding =
-        findingIndexes.includes(itemIndex);
-
-      if (answerField && !isFollowUpFinding) {
-        answerField.value = 'N/A';
-      }
-
-      row.classList.toggle(
-        'follow-up-hidden-question',
-        true
-      );
-
-      row.classList.toggle(
-        'follow-up-visible-finding',
-        false
-      );
+      row.classList.remove('follow-up-hidden-question');
+      row.classList.remove('follow-up-visible-finding');
+      row.classList.remove('active-checklist-question');
     });
 
-  setTimeout(() => {
-  showFollowUpFindingAt(0);
-  updateAnswerSummary();
-  updateProjectReadinessPanel();
-  scheduleAutoSave();
-}, 150);
+  document
+    .querySelectorAll('.checklist-section-tab')
+    .forEach(tab => {
+      tab.style.display = '';
+    });
+
+  document
+    .querySelectorAll('.section-group')
+    .forEach(section => {
+      section.classList.add('hidden');
+    });
 }
 
 function updateHomeAccessCards() {
