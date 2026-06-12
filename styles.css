@@ -6014,6 +6014,14 @@ button.readiness-chip:focus {
   z-index: 20;
 }
 
+.follow-up-mode-active .checklist-row {
+  display: none !important;
+}
+
+.follow-up-mode-active .checklist-row.follow-up-visible-finding {
+  display: block !important;
+}
+
 .follow-up-hidden-question {
   display: none !important;
 }
@@ -6021,3 +6029,4 @@ button.readiness-chip:focus {
 .follow-up-visible-finding {
   display: block !important;
 }
+

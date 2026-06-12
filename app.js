@@ -4847,6 +4847,13 @@ function showFollowUpFindingAt(position) {
   let activeRow = null;
   let activeSectionIndex = null;
 
+    const checklistContainer =
+    document.getElementById('checklist');
+
+  if (checklistContainer) {
+    checklistContainer.classList.add('follow-up-mode-active');
+  }
+
   document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
@@ -4969,10 +4976,12 @@ function applyFollowUpFindingMode(project) {
 followUpFindingNavIndexes = findingIndexes;
 followUpFindingNavPosition = 0;
 
-  const checklistContainer =
+    const checklistContainer =
     document.getElementById('checklist');
 
   if (!checklistContainer) return;
+
+  checklistContainer.classList.add('follow-up-mode-active');
 
   let banner =
     document.getElementById('followUpFindingModeBanner');
