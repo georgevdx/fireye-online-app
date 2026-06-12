@@ -1,6 +1,27 @@
 ﻿let currentFilter = 'all';
 let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
+// =====================================================
+// GUIDED INSPECTION WORKFLOW - SAFE FEATURE FLAG
+// =====================================================
+
+// Rollback switch:
+// true  = use new guided workflow wrapper
+// false = use old existing app flow
+const ENABLE_GUIDED_INSPECTION_WORKFLOW = true;
+
+// Make sure currentProject exists globally
+if (typeof currentProject === "undefined") {
+  var currentProject = null;
+}
+
+// Tracks where the user is inside the inspection workflow
+let inspectionWorkflowState = {
+  section: "quickLinks", // quickLinks | projectDetails | qa | photos | nextInspection | summary
+  mode: "normal",        // normal | followup
+  categoryIndex: 0,
+  questionIndex: 0
+};
 window.betaNotesPanelOpen = false;
 window.betaQuickTestPanelOpen = false;
 window.releaseCandidatePanelOpen = false;
@@ -3771,11 +3792,11 @@ function showProjectList() {
 const INSPECTION_SECTION_FLOW = [
   {
     id: 'inspectionQuickActions',
-    label: 'Quick Actions'
+    label: 'Quick Links'
   },
   {
     id: 'projectDetailsCard',
-    label: 'Inspection Information'
+    label: 'Project Details'
   },
   {
     id: 'requirementsSection',
@@ -3783,7 +3804,7 @@ const INSPECTION_SECTION_FLOW = [
   },
   {
     id: 'checklistCard',
-    label: 'Q&A Checklist'
+    label: 'Q&A'
   },
   {
     id: 'photoEvidenceCard',
@@ -3795,7 +3816,7 @@ const INSPECTION_SECTION_FLOW = [
   },
   {
     id: 'nextInspectionCard',
-    label: 'Schedule Next Inspection'
+    label: 'Next Inspection'
   }
 ];
 
@@ -13065,3 +13086,4 @@ window.addEventListener('online', async () => {
 
   runBackgroundSync('signal restored');
 });
+
