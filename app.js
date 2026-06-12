@@ -3396,7 +3396,7 @@ if (existingArchivePanel) {
   }
 
   updateDisplay();
-resetFollowUpFindingModeUI();
+
   showProjectForm();
 }
 
@@ -4821,99 +4821,66 @@ function applyFollowUpSectionVisibility(activeSectionIndex) {
     });
 }
 
-function updateFollowUpFindingNavStatus() {
-  const status =
-    document.getElementById('followUpFindingNavStatus');
-
-  if (!status) return;
-
-  status.textContent =
-    `Finding ${followUpFindingNavPosition + 1} of ${followUpFindingNavIndexes.length}`;
-}
-
 function showFollowUpFindingAt(position) {
-  if (!followUpFindingModeActive) return;
   if (followUpFindingNavIndexes.length === 0) return;
-
-  const checklistContainer =
-    document.getElementById('checklist');
-
-  if (checklistContainer) {
-    checklistContainer.classList.add('follow-up-mode-active');
-  }
-
-  const allRows =
-    Array.from(document.querySelectorAll('.checklist-row'));
-
-  if (allRows.length === 0) return;
-
-  const findingRows =
-    allRows.filter(row => {
-      const rowItemIndex =
-        getChecklistRowItemIndex(row);
-
-      return (
-        followUpFindingNavIndexes.includes(rowItemIndex) ||
-        followUpFindingNavIndexes.includes(rowItemIndex - 1) ||
-        followUpFindingNavIndexes.includes(rowItemIndex + 1)
-      );
-    });
-
-  const navigableRows =
-    findingRows.length > 0
-      ? findingRows
-      : allRows;
 
   followUpFindingNavPosition =
     Math.max(
       0,
-      Math.min(position, navigableRows.length - 1)
+      Math.min(position, followUpFindingNavIndexes.length - 1)
     );
 
-  const activeRow =
-    navigableRows[followUpFindingNavPosition];
+  const activeIndex =
+    followUpFindingNavIndexes[followUpFindingNavPosition];
 
   let activeSectionIndex = null;
+  let activeRow = null;
 
-  allRows.forEach(row => {
-    const answerField =
-      row.querySelector('.answer-select');
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
 
-    const isFollowUpFinding =
-      navigableRows.includes(row);
+      const answerField =
+        row.querySelector('.answer-select');
 
-    const isActiveFinding =
-      row === activeRow;
+      const isFinding =
+        followUpFindingNavIndexes.includes(itemIndex);
 
-    if (answerField && !isFollowUpFinding) {
-      answerField.value = 'N/A';
-    }
+      const isCurrentFinding =
+        itemIndex === activeIndex;
 
-    row.style.display =
-      isActiveFinding ? '' : 'none';
+      if (answerField && !isFinding) {
+        answerField.value = 'N/A';
+      }
 
-    row.classList.toggle(
-      'follow-up-hidden-question',
-      !isActiveFinding
-    );
+      row.style.display =
+        isCurrentFinding ? '' : 'none';
 
-    row.classList.toggle(
-      'follow-up-visible-finding',
-      isActiveFinding
-    );
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        !isCurrentFinding
+      );
 
-    row.classList.toggle(
-      'active-checklist-question',
-      isActiveFinding
-    );
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        isCurrentFinding
+      );
 
-    row.classList.remove('question-hidden');
+      row.classList.toggle(
+        'active-checklist-question',
+        isCurrentFinding
+      );
 
-    if (isActiveFinding) {
-      activeSectionIndex =
-        getChecklistRowSectionIndex(row);
-    }
-  });
+      row.classList.remove('question-hidden');
+
+      if (isCurrentFinding) {
+        activeRow = row;
+        activeSectionIndex =
+          getChecklistRowSectionIndex(row);
+      }
+    });
 
   applyFollowUpSectionVisibility(activeSectionIndex);
 
@@ -4948,6 +4915,106 @@ function showFollowUpFindingAt(position) {
   updateFollowUpFindingNavStatus();
 }
 
+function updateFollowUpFindingNavStatus() {
+  const status =
+    document.getElementById('followUpFindingNavStatus');
+
+  if (!status) return;
+
+  status.textContent =
+    `Finding ${followUpFindingNavPosition + 1} of ${followUpFindingNavIndexes.length}`;
+}
+
+function showFollowUpFindingAt(position) {
+  if (followUpFindingNavIndexes.length === 0) return;
+
+  followUpFindingNavPosition =
+    Math.max(
+      0,
+      Math.min(position, followUpFindingNavIndexes.length - 1)
+    );
+
+  const activeIndex =
+    followUpFindingNavIndexes[followUpFindingNavPosition];
+
+  let activeSectionIndex = null;
+  let activeRow = null;
+
+  document
+    .querySelectorAll('.checklist-row')
+    .forEach(row => {
+      const itemIndex =
+        getChecklistRowItemIndex(row);
+
+      const answerField =
+        row.querySelector('.answer-select');
+
+      const isFinding =
+        followUpFindingNavIndexes.includes(itemIndex);
+
+      const isCurrentFinding =
+        itemIndex === activeIndex;
+
+      if (answerField && !isFinding) {
+        answerField.value = 'N/A';
+      }
+
+      row.classList.toggle(
+        'follow-up-hidden-question',
+        !isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'follow-up-visible-finding',
+        isCurrentFinding
+      );
+
+      row.classList.toggle(
+        'active-checklist-question',
+        isCurrentFinding
+      );
+
+      row.classList.remove('question-hidden');
+
+      if (isCurrentFinding) {
+        activeRow = row;
+        activeSectionIndex =
+          getChecklistRowSectionIndex(row);
+      }
+    });
+
+  applyFollowUpSectionVisibility(activeSectionIndex);
+
+  if (activeRow) {
+    const section =
+      activeRow.closest('.section-group');
+
+    if (section) {
+      section.classList.remove('hidden');
+
+      const sectionIndex =
+        section.id.replace('section_', '');
+
+      const arrow =
+        document.getElementById(`arrow_${sectionIndex}`);
+
+      if (arrow) {
+        arrow.textContent = 'v';
+      }
+    }
+
+    activeRow.classList.remove('follow-up-hidden-question');
+    activeRow.classList.add('follow-up-visible-finding');
+
+    activeRow.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+  }
+
+  updateFollowUpFindingNavStatus();
+}
+
 function nextFollowUpFinding() {
   showFollowUpFindingAt(followUpFindingNavPosition + 1);
 }
@@ -4957,95 +5024,27 @@ function previousFollowUpFinding() {
 }
 
 function getFollowUpFindingIndexes(project) {
-  const savedIndexes =
-    (project?.followUpFindingIndexes || [])
-      .map(value => Number(value))
-      .filter(value => Number.isFinite(value));
-
-  if (savedIndexes.length > 0) {
-    return savedIndexes;
-  }
-
-  // Fallback:
-  // If this is already an in-progress follow-up cycle, the original NO
-  // findings are the checklist answers that were left blank for review.
-  return (project?.answers || [])
-    .filter(answer =>
-      String(answer.answer || '').trim() === ''
-    )
-    .map(answer => Number(answer.itemIndex))
+  return (project?.followUpFindingIndexes || [])
+    .map(value => Number(value))
     .filter(value => Number.isFinite(value));
 }
 
-function resetFollowUpFindingModeUI() {
-  followUpFindingModeActive = false;
-  followUpFindingNavIndexes = [];
-  followUpFindingNavPosition = 0;
-
-  const checklistContainer =
-    document.getElementById('checklist');
-
-  if (checklistContainer) {
-    checklistContainer.classList.remove('follow-up-mode-active');
-  }
-
-  const banner =
-    document.getElementById('followUpFindingModeBanner');
-
-  if (banner) {
-    banner.remove();
-  }
-
-  document
-    .querySelectorAll('.checklist-row')
-    .forEach(row => {
-      row.style.display = '';
-
-      row.classList.remove('follow-up-hidden-question');
-      row.classList.remove('follow-up-visible-finding');
-      row.classList.remove('active-checklist-question');
-      row.classList.remove('question-hidden');
-    });
-
-  document
-    .querySelectorAll('.checklist-section-tab')
-    .forEach(tab => {
-      tab.style.display = '';
-      tab.classList.remove('active-section-tab');
-    });
-
-  document
-    .querySelectorAll('.checklist-question-nav')
-    .forEach(nav => {
-      nav.style.display = '';
-    });
-}
-
 function applyFollowUpFindingMode(project) {
+  if (!project?.followUpFindingMode) return;
+
   const findingIndexes =
     getFollowUpFindingIndexes(project);
 
-  const isFollowUpInspection =
-    project?.followUpFindingMode === true ||
-    project?.scheduledReason === 'follow_up' ||
-    project?.scheduleType === 'Follow-up' ||
-    project?.followUpSourceInspectionNumber;
-
-  if (!isFollowUpInspection || findingIndexes.length === 0) {
-    resetFollowUpFindingModeUI();
-    return;
-  }
+  if (findingIndexes.length === 0) return;
 
   followUpFindingModeActive = true;
 followUpFindingNavIndexes = findingIndexes;
 followUpFindingNavPosition = 0;
 
-    const checklistContainer =
+  const checklistContainer =
     document.getElementById('checklist');
 
   if (!checklistContainer) return;
-
-  checklistContainer.classList.add('follow-up-mode-active');
 
   let banner =
     document.getElementById('followUpFindingModeBanner');
@@ -5085,7 +5084,7 @@ followUpFindingNavPosition = 0;
     </div>
   `;
 
-    document
+  document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
       const answerField =
@@ -5101,10 +5100,6 @@ followUpFindingNavPosition = 0;
         answerField.value = 'N/A';
       }
 
-      // Start with all checklist rows hidden.
-      // showFollowUpFindingAt(0) will reveal only the first NO finding.
-      row.style.display = 'none';
-
       row.classList.toggle(
         'follow-up-hidden-question',
         true
@@ -5114,9 +5109,6 @@ followUpFindingNavPosition = 0;
         'follow-up-visible-finding',
         false
       );
-
-      row.classList.remove('active-checklist-question');
-      row.classList.remove('question-hidden');
     });
 
   setTimeout(() => {

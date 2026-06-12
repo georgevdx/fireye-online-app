@@ -6013,20 +6013,3 @@ button.readiness-chip:focus {
   top: 0;
   z-index: 20;
 }
-
-.follow-up-mode-active .checklist-row {
-  display: none !important;
-}
-
-.follow-up-mode-active .checklist-row.follow-up-visible-finding {
-  display: block !important;
-}
-
-.follow-up-hidden-question {
-  display: none !important;
-}
-
-.follow-up-visible-finding {
-  display: block !important;
-}
-
