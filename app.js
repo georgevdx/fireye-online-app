@@ -3897,7 +3897,37 @@ function getInspectionSectionIndex(sectionId) {
 function getAvailableInspectionSections() {
   return INSPECTION_SECTION_FLOW.filter(sectionMeta => {
     const section = document.getElementById(sectionMeta.id);
-    return !!section;
+
+    if (!section) return false;
+
+    // Skip sections that the app itself has hidden.
+    // This does not count our temporary inspection-section-hidden class.
+    if (section.style.display === 'none') return false;
+
+    // Skip Occupancy Requirements when there are no actual requirements.
+    if (sectionMeta.id === 'requirementsSection') {
+      const requirementsContent = document.getElementById('requirements');
+
+      if (
+        !requirementsContent ||
+        !requirementsContent.textContent.trim()
+      ) {
+        return false;
+      }
+    }
+
+    // Skip sections that are basically empty.
+    const clonedSection = section.cloneNode(true);
+
+    clonedSection
+      .querySelectorAll('.inspection-section-focus-toolbar')
+      .forEach(toolbar => toolbar.remove());
+
+    const sectionText = clonedSection.textContent.trim();
+
+    if (!sectionText) return false;
+
+    return true;
   });
 }
 
