@@ -3894,6 +3894,13 @@ function getInspectionSectionIndex(sectionId) {
   return INSPECTION_SECTION_FLOW.findIndex(section => section.id === sectionId);
 }
 
+function getAvailableInspectionSections() {
+  return INSPECTION_SECTION_FLOW.filter(sectionMeta => {
+    const section = document.getElementById(sectionMeta.id);
+    return !!section;
+  });
+}
+
 function removeInspectionSectionFocus() {
   const formSection = document.getElementById('projectFormSection');
 
@@ -3945,8 +3952,9 @@ INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
   section.classList.toggle('inspection-section-focused', isActiveSection);
 });
 
-  const sectionIndex = getInspectionSectionIndex(sectionId);
-  const sectionMeta = INSPECTION_SECTION_FLOW[sectionIndex];
+ const availableSections = getAvailableInspectionSections();
+const sectionIndex = availableSections.findIndex(section => section.id === sectionId);
+const sectionMeta = availableSections[sectionIndex];
 
   const toolbar = document.createElement('div');
   toolbar.className = 'inspection-section-focus-toolbar';
@@ -3968,7 +3976,7 @@ INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
       <button
         type="button"
         onclick="goToNextInspectionSection()"
-        ${sectionIndex >= INSPECTION_SECTION_FLOW.length - 1 ? 'disabled' : ''}
+        ${sectionIndex >= availableSections.length - 1 ? 'disabled' : ''}
       >
         Next
       </button>
@@ -3995,29 +4003,35 @@ INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
 function goToPreviousInspectionSection() {
   if (!activeInspectionSectionId) return;
 
-  const currentIndex = getInspectionSectionIndex(activeInspectionSectionId);
+  const availableSections = getAvailableInspectionSections();
+  const currentIndex = availableSections.findIndex(
+    section => section.id === activeInspectionSectionId
+  );
 
   if (currentIndex <= 0) return;
 
   focusInspectionSection(
-    INSPECTION_SECTION_FLOW[currentIndex - 1].id
+    availableSections[currentIndex - 1].id
   );
 }
 
 function goToNextInspectionSection() {
   if (!activeInspectionSectionId) return;
 
-  const currentIndex = getInspectionSectionIndex(activeInspectionSectionId);
+  const availableSections = getAvailableInspectionSections();
+  const currentIndex = availableSections.findIndex(
+    section => section.id === activeInspectionSectionId
+  );
 
   if (
     currentIndex === -1 ||
-    currentIndex >= INSPECTION_SECTION_FLOW.length - 1
+    currentIndex >= availableSections.length - 1
   ) {
     return;
   }
 
   focusInspectionSection(
-    INSPECTION_SECTION_FLOW[currentIndex + 1].id
+    availableSections[currentIndex + 1].id
   );
 }
 
