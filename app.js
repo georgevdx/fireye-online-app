@@ -3806,13 +3806,9 @@ const INSPECTION_SECTION_FLOW = [
     id: 'checklistCard',
     label: 'Q&A'
   },
-  {
+    {
     id: 'photoEvidenceCard',
     label: 'Photo Evidence'
-  },
-  {
-    id: 'inspectorCommentsCard',
-    label: 'Inspector Comments'
   },
   {
     id: 'nextInspectionCard',
@@ -3896,13 +3892,12 @@ function getInspectionSectionIndex(sectionId) {
 
 function getAvailableInspectionSections() {
   const alwaysAvailableSectionIds = [
-    'inspectionQuickActions',
-    'projectDetailsCard',
-    'checklistCard',
-    'photoEvidenceCard',
-    'inspectorCommentsCard',
-    'nextInspectionCard'
-  ];
+  'inspectionQuickActions',
+  'projectDetailsCard',
+  'checklistCard',
+  'photoEvidenceCard',
+  'nextInspectionCard'
+];
 
   return INSPECTION_SECTION_FLOW.filter(sectionMeta => {
     const section = document.getElementById(sectionMeta.id);
@@ -4086,8 +4081,32 @@ function showProjectForm() {
   getEl('projectFormSection').style.display = 'block';
 
   ensureInspectionQuickActions();
-  updateProjectReadinessPanel();
-  updateFloatingBackButton();
+ensureNextInspectionCardId();
+updateProjectReadinessPanel();
+updateFloatingBackButton();
+}
+
+function ensureNextInspectionCardId() {
+  const existingNextInspectionCard =
+    document.getElementById('nextInspectionCard');
+
+  if (existingNextInspectionCard) return;
+
+  const followUpField =
+    document.getElementById('followUpRequired') ||
+    document.getElementById('followUpDate') ||
+    document.getElementById('followUpNotes');
+
+  if (!followUpField) return;
+
+  const card =
+    followUpField.closest('.card') ||
+    followUpField.closest('section') ||
+    followUpField.parentElement;
+
+  if (!card) return;
+
+  card.id = 'nextInspectionCard';
 }
 
 function ensureInspectionQuickActions() {
