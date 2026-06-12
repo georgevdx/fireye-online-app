@@ -5993,3 +5993,23 @@ button.readiness-chip:focus {
     min-width: 0;
   }
 }
+
+/* Focused inspection section mode */
+.inspection-section-hidden {
+  display: none !important;
+}
+
+.inspection-section-mode {
+  min-height: auto;
+}
+
+.inspection-section-focused {
+  display: block;
+  margin-bottom: 0 !important;
+}
+
+.inspection-section-focus-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}

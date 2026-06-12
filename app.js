@@ -3895,11 +3895,20 @@ function getInspectionSectionIndex(sectionId) {
 }
 
 function removeInspectionSectionFocus() {
-  document
-    .querySelectorAll('.inspection-section-focused')
-    .forEach(section => {
-      section.classList.remove('inspection-section-focused');
-    });
+  const formSection = document.getElementById('projectFormSection');
+
+  if (formSection) {
+    formSection.classList.remove('inspection-section-mode');
+  }
+
+  INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
+    const section = document.getElementById(sectionMeta.id);
+
+    if (!section) return;
+
+    section.classList.remove('inspection-section-focused');
+    section.classList.remove('inspection-section-hidden');
+  });
 
   document
     .querySelectorAll('.inspection-section-focus-toolbar')
@@ -3919,6 +3928,22 @@ function focusInspectionSection(sectionId) {
 
   activeInspectionSectionId = sectionId;
   target.classList.add('inspection-section-focused');
+  const formSection = document.getElementById('projectFormSection');
+
+if (formSection) {
+  formSection.classList.add('inspection-section-mode');
+}
+
+INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
+  const section = document.getElementById(sectionMeta.id);
+
+  if (!section) return;
+
+  const isActiveSection = sectionMeta.id === sectionId;
+
+  section.classList.toggle('inspection-section-hidden', !isActiveSection);
+  section.classList.toggle('inspection-section-focused', isActiveSection);
+});
 
   const sectionIndex = getInspectionSectionIndex(sectionId);
   const sectionMeta = INSPECTION_SECTION_FLOW[sectionIndex];
