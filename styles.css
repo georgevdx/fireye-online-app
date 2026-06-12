@@ -6013,3 +6013,11 @@ button.readiness-chip:focus {
   top: 0;
   z-index: 20;
 }
+
+.follow-up-hidden-question {
+  display: none !important;
+}
+
+.follow-up-visible-finding {
+  display: block !important;
+}

@@ -4821,7 +4821,18 @@ function applyFollowUpSectionVisibility(activeSectionIndex) {
     });
 }
 
+function updateFollowUpFindingNavStatus() {
+  const status =
+    document.getElementById('followUpFindingNavStatus');
+
+  if (!status) return;
+
+  status.textContent =
+    `Finding ${followUpFindingNavPosition + 1} of ${followUpFindingNavIndexes.length}`;
+}
+
 function showFollowUpFindingAt(position) {
+  if (!followUpFindingModeActive) return;
   if (followUpFindingNavIndexes.length === 0) return;
 
   followUpFindingNavPosition =
@@ -4830,63 +4841,59 @@ function showFollowUpFindingAt(position) {
       Math.min(position, followUpFindingNavIndexes.length - 1)
     );
 
-  const activeIndex =
+  const activeItemIndex =
     followUpFindingNavIndexes[followUpFindingNavPosition];
 
-  let activeSectionIndex = null;
   let activeRow = null;
+  let activeSectionIndex = null;
 
   document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
-      const itemIndex =
-        getChecklistRowItemIndex(row);
+      const itemIndex = getChecklistRowItemIndex(row);
+      const answerField = row.querySelector('.answer-select');
 
-      const answerField =
-        row.querySelector('.answer-select');
-
-      const isFinding =
+      const isFollowUpFinding =
         followUpFindingNavIndexes.includes(itemIndex);
 
-      const isCurrentFinding =
-        itemIndex === activeIndex;
+      const isActiveFinding =
+        itemIndex === activeItemIndex;
 
-      if (answerField && !isFinding) {
+      // Anything that was not a previous NO finding must stay N/A.
+      if (answerField && !isFollowUpFinding) {
         answerField.value = 'N/A';
       }
 
-      row.style.display =
-        isCurrentFinding ? '' : 'none';
+      // Hard hide everything except the current active finding.
+      row.style.display = isActiveFinding ? '' : 'none';
 
       row.classList.toggle(
         'follow-up-hidden-question',
-        !isCurrentFinding
+        !isActiveFinding
       );
 
       row.classList.toggle(
         'follow-up-visible-finding',
-        isCurrentFinding
+        isActiveFinding
       );
 
       row.classList.toggle(
         'active-checklist-question',
-        isCurrentFinding
+        isActiveFinding
       );
 
       row.classList.remove('question-hidden');
 
-      if (isCurrentFinding) {
+      if (isActiveFinding) {
         activeRow = row;
-        activeSectionIndex =
-          getChecklistRowSectionIndex(row);
+        activeSectionIndex = getChecklistRowSectionIndex(row);
       }
     });
 
   applyFollowUpSectionVisibility(activeSectionIndex);
 
   if (activeRow) {
-    const section =
-      activeRow.closest('.section-group');
+    const section = activeRow.closest('.section-group');
 
     if (section) {
       section.classList.remove('hidden');
@@ -4903,106 +4910,6 @@ function showFollowUpFindingAt(position) {
     }
 
     activeRow.style.display = '';
-    activeRow.classList.remove('follow-up-hidden-question');
-    activeRow.classList.add('follow-up-visible-finding');
-
-    activeRow.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    });
-  }
-
-  updateFollowUpFindingNavStatus();
-}
-
-function updateFollowUpFindingNavStatus() {
-  const status =
-    document.getElementById('followUpFindingNavStatus');
-
-  if (!status) return;
-
-  status.textContent =
-    `Finding ${followUpFindingNavPosition + 1} of ${followUpFindingNavIndexes.length}`;
-}
-
-function showFollowUpFindingAt(position) {
-  if (followUpFindingNavIndexes.length === 0) return;
-
-  followUpFindingNavPosition =
-    Math.max(
-      0,
-      Math.min(position, followUpFindingNavIndexes.length - 1)
-    );
-
-  const activeIndex =
-    followUpFindingNavIndexes[followUpFindingNavPosition];
-
-  let activeSectionIndex = null;
-  let activeRow = null;
-
-  document
-    .querySelectorAll('.checklist-row')
-    .forEach(row => {
-      const itemIndex =
-        getChecklistRowItemIndex(row);
-
-      const answerField =
-        row.querySelector('.answer-select');
-
-      const isFinding =
-        followUpFindingNavIndexes.includes(itemIndex);
-
-      const isCurrentFinding =
-        itemIndex === activeIndex;
-
-      if (answerField && !isFinding) {
-        answerField.value = 'N/A';
-      }
-
-      row.classList.toggle(
-        'follow-up-hidden-question',
-        !isCurrentFinding
-      );
-
-      row.classList.toggle(
-        'follow-up-visible-finding',
-        isCurrentFinding
-      );
-
-      row.classList.toggle(
-        'active-checklist-question',
-        isCurrentFinding
-      );
-
-      row.classList.remove('question-hidden');
-
-      if (isCurrentFinding) {
-        activeRow = row;
-        activeSectionIndex =
-          getChecklistRowSectionIndex(row);
-      }
-    });
-
-  applyFollowUpSectionVisibility(activeSectionIndex);
-
-  if (activeRow) {
-    const section =
-      activeRow.closest('.section-group');
-
-    if (section) {
-      section.classList.remove('hidden');
-
-      const sectionIndex =
-        section.id.replace('section_', '');
-
-      const arrow =
-        document.getElementById(`arrow_${sectionIndex}`);
-
-      if (arrow) {
-        arrow.textContent = 'v';
-      }
-    }
-
     activeRow.classList.remove('follow-up-hidden-question');
     activeRow.classList.add('follow-up-visible-finding');
 
@@ -5084,7 +4991,7 @@ followUpFindingNavPosition = 0;
     </div>
   `;
 
-  document
+    document
     .querySelectorAll('.checklist-row')
     .forEach(row => {
       const answerField =
@@ -5100,6 +5007,10 @@ followUpFindingNavPosition = 0;
         answerField.value = 'N/A';
       }
 
+      // Start with all checklist rows hidden.
+      // showFollowUpFindingAt(0) will reveal only the first NO finding.
+      row.style.display = 'none';
+
       row.classList.toggle(
         'follow-up-hidden-question',
         true
@@ -5109,6 +5020,9 @@ followUpFindingNavPosition = 0;
         'follow-up-visible-finding',
         false
       );
+
+      row.classList.remove('active-checklist-question');
+      row.classList.remove('question-hidden');
     });
 
   setTimeout(() => {
