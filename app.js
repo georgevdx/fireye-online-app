@@ -537,17 +537,17 @@ centerPdfCloneContent(pdfClone);
     }
   }
 
-  pdfClone
-    .querySelectorAll('.report-photo-page')
-    .forEach(page => {
-      page.style.breakBefore = 'page';
-      page.style.pageBreakBefore = 'always';
-      page.style.breakAfter = 'auto';
-      page.style.pageBreakAfter = 'auto';
-      page.style.minHeight = 'auto';
-      page.style.margin = '0';
-      page.style.padding = '0';
-    });
+ pdfClone
+  .querySelectorAll('.report-photo-page')
+  .forEach(page => {
+    page.style.breakBefore = 'auto';
+    page.style.pageBreakBefore = 'auto';
+    page.style.breakAfter = 'auto';
+    page.style.pageBreakAfter = 'auto';
+    page.style.minHeight = 'auto';
+    page.style.margin = '0';
+    page.style.padding = '0';
+  });
 
   pdfClone
     .querySelectorAll('.report-photo-card, .report-photo-item')
@@ -719,17 +719,7 @@ pdfClone
     },
 
     pagebreak: {
-  mode: ['css', 'legacy'],
-  before: [
-    '.pdf-annexure-start',
-    '.report-photo-page'
-  ],
-  avoid: [
-    '.pdf-photo-card',
-    '.report-photo-card',
-    '.summary-stat-card',
-    '.executive-summary-card'
-  ]
+  mode: ['legacy']
 }
   };
 

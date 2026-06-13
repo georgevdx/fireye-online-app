@@ -6446,3 +6446,17 @@ button.readiness-chip:focus {
 .pdf-export-mode .archive-export-actions {
   display: none !important;
 }
+
+/* TEMP PDF TEST - DISABLE ALL FORCED PAGE BREAKS */
+
+.pdf-export-mode .report-page-break,
+.pdf-export-mode .page-break,
+.pdf-export-mode .pdf-page-break,
+.pdf-export-mode .pdf-page-break-before,
+.pdf-export-mode .pdf-annexure-start,
+.pdf-export-mode .report-photo-page {
+  break-before: auto !important;
+  page-break-before: auto !important;
+  break-after: auto !important;
+  page-break-after: auto !important;
+}
