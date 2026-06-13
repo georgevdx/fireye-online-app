@@ -719,15 +719,7 @@ pdfClone
     },
 
     pagebreak: {
-  mode: ['css', 'legacy'],
-  before: [
-    '.pdf-appendix-break'
-  ],
-  avoid: [
-    '.pdf-photo-card',
-    '.report-photo-card',
-    '.report-photo-item'
-  ]
+  mode: ['legacy']
 }
   };
 
