@@ -6006,3 +6006,32 @@ button.readiness-chip:focus {
   font-weight: 900;
   text-transform: uppercase;
 }
+
+.pdf-export-mode {
+  box-sizing: border-box !important;
+  background: #ffffff !important;
+  color: #222222 !important;
+  overflow: visible !important;
+}
+
+.pdf-export-mode * {
+  box-sizing: border-box !important;
+}
+
+.pdf-export-mode table,
+.pdf-export-mode .report-block,
+.pdf-export-mode .report-answer-row,
+.pdf-export-mode .report-photo-grid,
+.pdf-export-mode .executive-summary-grid {
+  max-width: 100% !important;
+}
+
+.pdf-export-mode img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.pdf-export-mode .report-photo-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}

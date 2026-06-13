@@ -435,8 +435,7 @@ function getProjectInspectionDate(project) {
   );
 }
 
-  function exportReport() {
-
+function exportReport() {
   if (!canViewReports()) {
     alert(
       'Your company access does not allow exporting reports. Please contact your company admin or Fire-S support.'
@@ -445,11 +444,47 @@ function getProjectInspectionDate(project) {
   }
 
   if (!archivedReportContext) {
-    generateReport(); // maak seker gewone report is nuut
+    generateReport();
   }
-  getEl('reportSection').style.display = 'block';
 
-  const element = document.getElementById('reportContent');
+  const reportSection =
+    getEl('reportSection');
+
+  const element =
+    document.getElementById('reportContent');
+
+  if (!element) {
+    alert('Report content was not found.');
+    return;
+  }
+
+  reportSection.style.display = 'block';
+
+  const previousSectionDisplay =
+    reportSection.style.display;
+
+  const previousElementWidth =
+    element.style.width;
+
+  const previousElementMaxWidth =
+    element.style.maxWidth;
+
+  const previousElementMargin =
+    element.style.margin;
+
+  const previousElementTransform =
+    element.style.transform;
+
+  const previousElementOverflow =
+    element.style.overflow;
+
+  element.classList.add('pdf-export-mode');
+
+  element.style.width = '794px';
+  element.style.maxWidth = '794px';
+  element.style.margin = '0 auto';
+  element.style.transform = 'none';
+  element.style.overflow = 'visible';
 
   const currentProject = getProjects().find(
     p => p.id === currentProjectId
@@ -472,29 +507,68 @@ function getProjectInspectionDate(project) {
     sanitizeFileName(projectName);
 
   const opt = {
-  margin: [15, 12, 15, 12],
+    margin: [10, 10, 10, 10],
 
-  filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
+    filename: `${reportPrefix}_${safeProjectName}_${reportDate}.pdf`,
 
-  image: { type: 'jpeg', quality: 0.98 },
-  html2canvas: {
-  scale: 1,
-  useCORS: true,
-  scrollY: 0,
-  windowWidth: document.getElementById('reportContent').scrollWidth
-  },
-  jsPDF: {
-    unit: 'mm',
-    format: 'a4',
-    orientation: 'portrait'
-  },
-  pagebreak: {
-    mode: ['css', 'legacy']
-  }
-};
+    image: {
+      type: 'jpeg',
+      quality: 0.98
+    },
+
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      scrollX: 0,
+      scrollY: 0,
+      windowWidth: 794,
+      width: 794
+    },
+
+    jsPDF: {
+      unit: 'mm',
+      format: 'a4',
+      orientation: 'portrait'
+    },
+
+    pagebreak: {
+      mode: ['css', 'legacy'],
+      avoid: [
+        '.report-block',
+        '.report-answer-row',
+        '.report-photo-item',
+        '.executive-summary-card'
+      ]
+    }
+  };
+
   setTimeout(() => {
-  html2pdf().set(opt).from(element).save();
-}, 300);
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .finally(() => {
+        element.classList.remove('pdf-export-mode');
+
+        element.style.width =
+          previousElementWidth;
+
+        element.style.maxWidth =
+          previousElementMaxWidth;
+
+        element.style.margin =
+          previousElementMargin;
+
+        element.style.transform =
+          previousElementTransform;
+
+        element.style.overflow =
+          previousElementOverflow;
+
+        reportSection.style.display =
+          previousSectionDisplay;
+      });
+  }, 300);
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {
