@@ -438,8 +438,6 @@ function getProjectInspectionDate(project) {
 function preparePdfCloneForExport(pdfClone) {
   if (!pdfClone) return;
 
-  // Force the cloned PDF content to a stable A4-friendly layout.
-  // This prevents left clipping caused by inherited screen layout.
   pdfClone.style.display = 'block';
   pdfClone.style.width = '760px';
   pdfClone.style.maxWidth = '760px';
@@ -461,14 +459,12 @@ function preparePdfCloneForExport(pdfClone) {
       element.style.maxWidth = '100%';
     });
 
-  // Remove export/action buttons from the PDF clone.
   pdfClone
     .querySelectorAll('button, .no-pdf, .report-export-actions, .archive-export-actions')
     .forEach(element => {
       element.remove();
     });
 
-  // Remove old artificial blank-break elements, but do NOT remove report-photo-page.
   pdfClone
     .querySelectorAll('.report-page-break, .page-break, .pdf-page-break')
     .forEach(element => {
@@ -484,7 +480,6 @@ function preparePdfCloneForExport(pdfClone) {
       element.style.pageBreakAfter = 'auto';
     });
 
-  // Let normal report content flow. Do not force every report block to stay together.
   pdfClone
     .querySelectorAll('.report-block')
     .forEach(block => {
@@ -492,45 +487,54 @@ function preparePdfCloneForExport(pdfClone) {
       block.style.pageBreakInside = 'auto';
     });
 
-  // Find the photo annexure area and force it to start on a new page.
-  const existingPhotoPage =
-    pdfClone.querySelector('.report-photo-page');
+  const allElements =
+    Array.from(pdfClone.querySelectorAll('*'));
 
-  if (existingPhotoPage) {
-    existingPhotoPage.classList.add('pdf-annexure-start');
-  } else {
-    const allElements =
-      Array.from(pdfClone.querySelectorAll('*'));
+  const annexureHeading =
+    allElements.find(element => {
+      const text =
+        String(element.textContent || '')
+          .trim()
+          .toLowerCase();
 
-    const annexureHeading =
-      allElements.find(element => {
-        const text =
-          String(element.textContent || '')
-            .trim()
-            .toLowerCase();
+      return (
+        text.includes('appendix') ||
+        text.includes('annexure') ||
+        text.includes('photo evidence') ||
+        text.includes('photographic evidence')
+      );
+    });
 
-        return (
-          text.includes('annexure') ||
-          text.includes('photo evidence') ||
-          text.includes('photographic evidence') ||
-          text.includes('figure 1')
-        );
-      });
+  if (annexureHeading) {
+    const annexureWrapper =
+      document.createElement('div');
 
-    if (annexureHeading) {
-      const annexureBlock =
-        annexureHeading.closest('.report-photo-section') ||
-        annexureHeading.closest('.photo-evidence-section') ||
-        annexureHeading.closest('.report-block') ||
-        annexureHeading.parentElement;
+    annexureWrapper.className =
+      'report-photo-page pdf-annexure-start';
 
-      if (annexureBlock) {
-        annexureBlock.classList.add('pdf-annexure-start');
+    const startNode =
+      annexureHeading.closest('.report-block') ||
+      annexureHeading;
+
+    const parent =
+      startNode.parentElement;
+
+    if (parent) {
+      parent.insertBefore(annexureWrapper, startNode);
+
+      let node = startNode;
+
+      while (node) {
+        const next =
+          node.nextSibling;
+
+        annexureWrapper.appendChild(node);
+
+        node = next;
       }
     }
   }
 
-  // Photo pages must start on new pages, but must not force blank pages after.
   pdfClone
     .querySelectorAll('.report-photo-page')
     .forEach(page => {
@@ -543,7 +547,6 @@ function preparePdfCloneForExport(pdfClone) {
       page.style.padding = '0';
     });
 
-  // Photo cards should stay whole.
   pdfClone
     .querySelectorAll('.report-photo-card, .report-photo-item')
     .forEach(card => {
@@ -552,7 +555,6 @@ function preparePdfCloneForExport(pdfClone) {
       card.style.pageBreakInside = 'avoid';
     });
 
-  // Remove empty trailing elements that can create blank pages.
   let lastChild =
     pdfClone.lastElementChild;
 
