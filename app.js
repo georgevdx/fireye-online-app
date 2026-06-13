@@ -489,53 +489,7 @@ centerPdfCloneContent(pdfClone);
       block.style.pageBreakInside = 'auto';
     });
 
-    const possibleAnnexureHeadings =
-    Array.from(
-      pdfClone.querySelectorAll(
-        'h1, h2, h3, h4, .appendix-title, .report-section-heading'
-      )
-    );
-
-  const annexureHeading =
-    possibleAnnexureHeadings.find(element => {
-      const text =
-        String(element.textContent || '')
-          .trim()
-          .toLowerCase();
-
-      return (
-        text.includes('appendix a') ||
-        text.includes('appendix') ||
-        text.includes('annexure') ||
-        text.includes('photo evidence') ||
-        text.includes('photographic evidence')
-      );
-    });
-
-  if (annexureHeading) {
-    const appendixStart =
-      annexureHeading.closest('.report-block') ||
-      annexureHeading.closest('.report-photo-page') ||
-      annexureHeading;
-
-    if (appendixStart && appendixStart.parentElement) {
-      const existingBreak =
-        pdfClone.querySelector('.pdf-appendix-break');
-
-      if (!existingBreak) {
-        const pageBreak =
-          document.createElement('div');
-
-        pageBreak.className =
-          'pdf-appendix-break';
-
-        appendixStart.parentElement.insertBefore(
-          pageBreak,
-          appendixStart
-        );
-      }
-    }
-  }
+   
 
  pdfClone
   .querySelectorAll('.report-photo-page')
@@ -591,6 +545,38 @@ function centerPdfCloneContent(pdfClone) {
   }
 
   pdfClone.appendChild(inner);
+}
+
+function waitForPdfImages(container) {
+  const images =
+    Array.from(container.querySelectorAll('img'));
+
+  if (images.length === 0) {
+    return Promise.resolve();
+  }
+
+  return Promise.all(
+    images.map(img => {
+      if (img.complete && img.naturalWidth > 0) {
+        return Promise.resolve();
+      }
+
+      return new Promise(resolve => {
+        const timeout =
+          setTimeout(resolve, 4000);
+
+        img.onload = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+
+        img.onerror = () => {
+          clearTimeout(timeout);
+          resolve();
+        };
+      });
+    })
+  );
 }
 
 function exportReport() {
@@ -719,20 +705,28 @@ pdfClone
     },
 
     pagebreak: {
-  mode: ['legacy']
+  mode: ['legacy'],
+  avoid: [
+    '.pdf-photo-card',
+    '.report-photo-card',
+    '.report-photo-item'
+  ]
 }
   };
 
 
   setTimeout(() => {
-    html2pdf()
-      .set(opt)
-      .from(pdfClone)
-      .save()
-      .finally(() => {
-        pdfSandbox.remove();
-      });
-  }, 300);
+  waitForPdfImages(pdfClone)
+    .then(() => {
+      return html2pdf()
+        .set(opt)
+        .from(pdfClone)
+        .save();
+    })
+    .finally(() => {
+      pdfSandbox.remove();
+    });
+}, 800);
 }
 
 async function reverseLookupAddress(lat, lon, zoom = 19) {

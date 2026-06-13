@@ -6508,3 +6508,57 @@ button.readiness-chip:focus {
   break-before: page !important;
   page-break-before: always !important;
 }
+
+/* PDF PHOTO CARD STABILITY - NO FORCED APPENDIX PAGE BREAK */
+
+.pdf-export-mode .pdf-appendix-break {
+  display: none !important;
+}
+
+.pdf-export-mode .report-photo-page {
+  break-before: auto !important;
+  page-break-before: auto !important;
+  break-after: auto !important;
+  page-break-after: auto !important;
+  min-height: auto !important;
+}
+
+.pdf-export-mode .report-photo-card,
+.pdf-export-mode .report-photo-item,
+.pdf-export-mode .pdf-photo-card {
+  display: block !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  margin-bottom: 12px !important;
+  overflow: visible !important;
+}
+
+.pdf-export-mode .report-photo-header,
+.pdf-export-mode .report-photo-time,
+.pdf-export-mode .report-photo-image-box,
+.pdf-export-mode .report-photo-note {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
+.pdf-export-mode .report-photo-image-box {
+  min-height: 120px !important;
+  background: #f7f7f7 !important;
+}
+
+.pdf-export-mode .report-photo-img,
+.pdf-export-mode .report-photo-card img,
+.pdf-export-mode .report-photo-item img {
+  display: block !important;
+  max-width: 100% !important;
+  max-height: 62mm !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  margin: 0 auto !important;
+}
+
+.pdf-export-mode .report-photo-note {
+  max-height: none !important;
+  overflow: visible !important;
+}
