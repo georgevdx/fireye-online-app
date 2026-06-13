@@ -518,8 +518,8 @@ function exportReport() {
   useCORS: true,
   scrollX: 0,
   scrollY: 0,
-  windowWidth: 940,
-  width: 940
+  windowWidth: 794,
+  width: 794
 },
 
     jsPDF: {
@@ -543,7 +543,7 @@ function exportReport() {
   setTimeout(() => {
     html2pdf()
       .set(opt)
-      .from(pdfSandbox)
+      .from(pdfClone)
       .save()
       .finally(() => {
         pdfSandbox.remove();
