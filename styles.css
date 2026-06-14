@@ -6837,11 +6837,6 @@ button.readiness-chip:focus {
   overflow: hidden !important;
 }
 
-.pdf-export-mode .report-photo-page-first {
-  break-before: auto !important;
-  page-break-before: auto !important;
-}
-
 .pdf-export-mode .appendix-title {
   margin: 0 0 8mm 0 !important;
   color: #b71c1c !important;

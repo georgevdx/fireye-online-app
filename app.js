@@ -10390,6 +10390,88 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
+function buildPdfPhotoAppendix(photos = [], emptyMessage = 'No photo evidence was added to this inspection.') {
+  const safePhotos =
+    Array.isArray(photos)
+      ? photos
+      : [];
+
+  if (safePhotos.length === 0) {
+    return `
+      <div class="report-photo-page first-photo-page">
+        <h2 class="appendix-title">
+          APPENDIX A - PHOTO EVIDENCE
+        </h2>
+
+        <div class="note">
+          ${escapeHtml(emptyMessage)}
+        </div>
+      </div>
+    `;
+  }
+
+  return safePhotos.map((photo, index) => {
+    const photoNumber =
+      index + 1;
+
+    const pageClass =
+      index === 0
+        ? 'first-photo-page'
+        : 'next-photo-page';
+
+    return `
+      <div class="report-photo-page ${pageClass}">
+        ${
+          index === 0
+            ? `
+              <h2 class="appendix-title">
+                APPENDIX A - PHOTO EVIDENCE
+              </h2>
+            `
+            : ''
+        }
+
+        <div class="report-photo-card single-photo-card">
+          <div class="report-photo-header">
+            Photo ${photoNumber}
+          </div>
+
+          <div class="report-photo-time">
+            Captured:
+            ${
+              photo.timestamp
+                ? new Date(photo.timestamp).toLocaleString()
+                : 'Not recorded'
+            }
+          </div>
+
+          <div class="report-photo-image-box">
+            ${
+              photo.src
+                ? `
+                  <img
+                    src="${escapeHtml(photo.src)}"
+                    class="report-photo-img"
+                    alt="Inspection photo ${photoNumber}"
+                  >
+                `
+                : `
+                  <div class="report-photo-missing">
+                    Photo source missing. Sync / refresh may be required.
+                  </div>
+                `
+            }
+          </div>
+
+          <div class="report-photo-note">
+            <strong>Photo Note:</strong>
+            ${escapeHtml(photo.note || 'No note added.')}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
 
 function generateReport() {
 
@@ -10455,21 +10537,7 @@ function generateReport() {
   let reportAnswers = [];
   let photosHtml = '';
 
-  if (currentPhotos.length > 0) {
-
-    photosHtml += `
-      <div class="report-page-break"></div>
-
-      <div class="report-block">
-        <h2 class="appendix-title">
-          APPENDIX A - PHOTO EVIDENCE
-        </h2>
-      </div>
-
-      <div class="report-photos report-photo-grid">
-    `;
-  }
-
+  
   let yesCount = 0;
   let noCount = 0;
   let naCount = 0;
@@ -11012,67 +11080,11 @@ const executiveSummaryHtml = `
     });
   }
 
-  if (currentPhotos.length > 0) {
-  photosHtml = currentPhotos.map((photo, index) => {
-    const photoNumber = index + 1;
-
-    return `
-      <div class="report-photo-page ${index === 0 ? 'report-photo-page-first' : ''}">
-        ${
-          index === 0
-            ? `
-              <h2 class="appendix-title">
-                APPENDIX A - PHOTO EVIDENCE
-              </h2>
-            `
-            : ''
-        }
-
-        <div class="report-photo-card single-photo-card">
-
-          <div class="report-photo-header">
-            Photo ${photoNumber}
-          </div>
-
-          <div class="report-photo-time">
-            Captured:
-            ${
-              photo.timestamp
-                ? new Date(photo.timestamp).toLocaleString()
-                : 'Not recorded'
-            }
-          </div>
-
-          <div class="report-photo-image-box">
-            <img
-              src="${photo.src}"
-              class="report-photo-img"
-              alt="Inspection photo ${photoNumber}"
-            >
-          </div>
-
-          <div class="report-photo-note">
-            <strong>Photo Note:</strong>
-            ${escapeHtml(photo.note || 'No note added.')}
-          </div>
-
-        </div>
-      </div>
-    `;
-  }).join('');
-} else {
-  photosHtml = `
-    <div class="report-photo-page report-photo-page-first">
-      <h2 class="appendix-title">
-        APPENDIX A - PHOTO EVIDENCE
-      </h2>
-
-      <div class="note">
-        No photo evidence was added to this inspection.
-      </div>
-    </div>
-  `;
-}
+  photosHtml =
+  buildPdfPhotoAppendix(
+    currentPhotos,
+    'No photo evidence was added to this inspection.'
+  );
 
  reportContent.innerHTML = `
   <div class="report-header report-client-header">
@@ -12378,57 +12390,10 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   }
 
   const photosHtml =
-    (inspection.photos || []).length > 0
-      ? `
-        <div class="report-photo-page">
-          <h2 class="appendix-title">
-            APPENDIX A - PHOTO EVIDENCE
-          </h2>
-
-          <div class="report-photo-grid">
-            ${(inspection.photos || []).map((photo, index) => `
-              <div class="report-photo-card">
-                <div class="report-photo-header">
-                  Photo ${index + 1}
-                </div>
-
-                <div class="report-photo-time">
-                  Captured:
-                  ${
-                    photo.timestamp
-                      ? escapeHtml(new Date(photo.timestamp).toLocaleString())
-                      : 'Not recorded'
-                  }
-                </div>
-
-                <div class="report-photo-image-box">
-                  <img
-                    src="${photo.src || ''}"
-                    class="report-photo-img"
-                    alt="Archived inspection photo ${index + 1}"
-                  >
-                </div>
-
-                <div class="report-photo-note">
-                  <strong>Photo Note:</strong>
-                  ${escapeHtml(photo.note || 'No note added.')}
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `
-      : `
-        <div class="report-photo-page">
-          <h2 class="appendix-title">
-            APPENDIX A - PHOTO EVIDENCE
-          </h2>
-
-          <div class="note">
-            No photo evidence was added to this archived inspection.
-          </div>
-        </div>
-      `;
+  buildPdfPhotoAppendix(
+    inspection.photos || [],
+    'No photo evidence was added to this archived inspection.'
+  );
 
   const reportContent = getEl('reportContent');
 
