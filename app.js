@@ -10310,8 +10310,10 @@ function finishInspection() {
           : '',
 
         scheduleType: hasNextScheduledInspection
-          ? 'Follow-up'
-          : completedProjectBeforeUpdate.scheduleType || '',
+  ? 'follow_up'
+  : completedProjectBeforeUpdate.scheduleType || '',
+
+scheduleCompletedAt: completedAt,
 
         syncPending: true,
         syncError: false,
