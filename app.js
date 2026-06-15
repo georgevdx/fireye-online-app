@@ -9670,6 +9670,7 @@ followUpSourceInspectionNumber:
   getEl('followUpRequired').value = project.followUpRequired || 'No';
   getEl('followUpDate').value = project.followUpDate || '';
   getEl('followUpNotes').value = project.followUpNotes || '';
+
   getEl('recurringCycleEnabled').value =
   project.recurringCycleEnabled === true ? 'Yes' : 'No';
 
@@ -9683,6 +9684,7 @@ getEl('recurringCycleNotes').value =
   project.recurringCycleNotes || '';
 
 updateRecurringCyclePreview();
+
   getEl('finalComments').value = project.finalComments || '';
   toggleMallFields();
 
