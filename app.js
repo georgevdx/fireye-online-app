@@ -4933,6 +4933,14 @@ function ensureNextInspectionCardId() {
   card.id = 'nextInspectionCard';
 }
 
+function openScheduleNewSiteFromInspection() {
+  showProjectList();
+
+  setTimeout(() => {
+    scheduleNewInspection();
+  }, 100);
+}
+
 function ensureInspectionQuickActions() {
   const formSection = document.getElementById('projectFormSection');
 
@@ -4949,14 +4957,49 @@ function ensureInspectionQuickActions() {
   }
 
   panel.innerHTML = `
-    <div class="quick-actions-title">
-      Quick Links / Action Items
+  <div class="quick-actions-title">
+    Inspection Command Centre
+  </div>
+
+  <div class="scheduling-centre">
+    <div class="scheduling-centre-title">
+      Scheduling Centre
     </div>
 
-    <div id="quickReadinessSummary" class="quick-readiness-summary">
-      Loading quick links...
+    <div class="scheduling-centre-grid">
+      <button
+        type="button"
+        class="scheduling-action-btn"
+        onclick="openScheduleNewSiteFromInspection()"
+      >
+        <strong>Schedule Inspection for New Site</strong>
+        <span>Future inspection for a new site not yet inspected.</span>
+      </button>
+
+      <button
+        type="button"
+        class="scheduling-action-btn"
+        onclick="focusInspectionSection('nextInspectionCard')"
+      >
+        <strong>Schedule Corrective Follow-up</strong>
+        <span>Use for NO findings or corrective actions that must be checked again.</span>
+      </button>
+
+      <button
+        type="button"
+        class="scheduling-action-btn scheduling-action-disabled"
+        disabled
+      >
+        <strong>Set Recurring Inspection Cycle</strong>
+        <span>Routine repeat inspections, e.g. every 6 months or yearly. Coming next.</span>
+      </button>
     </div>
-  `;
+  </div>
+
+  <div id="quickReadinessSummary" class="quick-readiness-summary">
+    Loading quick links...
+  </div>
+`;
 
   updateProjectReadinessPanel();
 }
@@ -7987,6 +8030,7 @@ window.previousFollowUpFinding = previousFollowUpFinding;
 window.goToPreviousInspectionSection = goToPreviousInspectionSection;
 window.goToNextInspectionSection = goToNextInspectionSection;
 window.closeInspectionSectionFocus = closeInspectionSectionFocus;
+window.openScheduleNewSiteFromInspection = openScheduleNewSiteFromInspection;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
 window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
 
