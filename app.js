@@ -453,11 +453,38 @@ function getProjectScheduleDate(project) {
 function getProjectScheduleType(project) {
   if (!project) return '';
 
-  if (project.scheduleType) {
-    return project.scheduleType;
+  const rawType =
+    String(project.scheduleType || '').trim().toLowerCase();
+
+  if (
+    rawType === 'follow_up' ||
+    rawType === 'follow-up' ||
+    rawType === 'follow up'
+  ) {
+    return 'follow_up';
   }
 
-  if (project.scheduleFreshInspection === true) {
+  if (
+    rawType === 'new_inspection' ||
+    rawType === 'new_site' ||
+    rawType === 'new site' ||
+    rawType === 'scheduled_new'
+  ) {
+    return 'new_inspection';
+  }
+
+  if (
+    rawType === 'recurring_cycle' ||
+    rawType === 'cycle' ||
+    rawType === 'recurring'
+  ) {
+    return 'recurring_cycle';
+  }
+
+  if (
+    project.scheduleFreshInspection === true ||
+    project.scheduledReason === 'follow_up'
+  ) {
     return 'follow_up';
   }
 
