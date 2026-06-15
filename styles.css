@@ -7747,3 +7747,32 @@ button.readiness-chip:focus {
     grid-template-columns: 1fr;
   }
 }
+
+.recurring-cycle-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.recurring-cycle-preview {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.recurring-cycle-preview-ready {
+  background: #f1f8f4;
+  color: #2e7d32;
+  border-color: #81c784;
+}
+
+.recurring-cycle-preview-warning {
+  background: #fff8ed;
+  color: #ef6c00;
+  border-color: #ffb74d;
+}

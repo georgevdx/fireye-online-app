@@ -364,9 +364,22 @@ function autoSaveProject() {
         occupancy,
         answers,        
         followUpRequired: getEl('followUpRequired').value,
-        followUpDate: getEl('followUpDate').value,
-        followUpNotes: getEl('followUpNotes').value.trim(),
-        finalComments,
+followUpDate: getEl('followUpDate').value,
+followUpNotes: getEl('followUpNotes').value.trim(),
+
+recurringCycleEnabled:
+  getEl('recurringCycleEnabled').value === 'Yes',
+
+recurringCycleNumber:
+  getEl('recurringCycleNumber').value,
+
+recurringCycleUnit:
+  getEl('recurringCycleUnit').value,
+
+recurringCycleNotes:
+  getEl('recurringCycleNotes').value.trim(),
+
+finalComments,
         photos: currentPhotos,
         lastSaved: new Date().toISOString()
       };
@@ -639,6 +652,51 @@ function getNextRecurringCycleDate(project, completedAt) {
     cycleNumber,
     cycleUnit
   );
+}
+
+function updateRecurringCyclePreview() {
+  const preview = document.getElementById('recurringCyclePreview');
+
+  if (!preview) return;
+
+  const enabled =
+    document.getElementById('recurringCycleEnabled')?.value === 'Yes';
+
+  const cycleNumber =
+    document.getElementById('recurringCycleNumber')?.value || '';
+
+  const cycleUnit =
+    document.getElementById('recurringCycleUnit')?.value || '';
+
+  if (!enabled) {
+    preview.textContent = 'Recurring cycle not active.';
+    preview.className = 'recurring-cycle-preview';
+    return;
+  }
+
+  if (!cycleNumber || !cycleUnit) {
+    preview.textContent =
+      'Recurring cycle active. Enter repeat number and unit to calculate the next cycle.';
+    preview.className = 'recurring-cycle-preview recurring-cycle-preview-warning';
+    return;
+  }
+
+  const nextDate =
+    addRecurringCycleToDate(
+      new Date().toISOString(),
+      cycleNumber,
+      cycleUnit
+    );
+
+  preview.textContent =
+    nextDate
+      ? `Next routine cycle preview: ${nextDate}`
+      : 'Could not calculate next cycle date. Check repeat number and unit.';
+
+  preview.className =
+    nextDate
+      ? 'recurring-cycle-preview recurring-cycle-preview-ready'
+      : 'recurring-cycle-preview recurring-cycle-preview-warning';
 }
 
 function getProjectInspectionDate(project) {
@@ -3364,6 +3422,22 @@ if (cancelScheduledInspectionBtn) {
   scheduleAutoSave();
 });
   getEl('followUpNotes').addEventListener('input', scheduleAutoSave);
+  getEl('recurringCycleEnabled').addEventListener('change', () => {
+  updateRecurringCyclePreview();
+  scheduleAutoSave();
+});
+
+getEl('recurringCycleNumber').addEventListener('input', () => {
+  updateRecurringCyclePreview();
+  scheduleAutoSave();
+});
+
+getEl('recurringCycleUnit').addEventListener('change', () => {
+  updateRecurringCyclePreview();
+  scheduleAutoSave();
+});
+
+getEl('recurringCycleNotes').addEventListener('input', scheduleAutoSave);
   getEl('projectSearch').addEventListener('input', () => {
     currentProjectPage = 1;
     renderProjectsList();
@@ -4203,9 +4277,16 @@ if (existingArchivePanel) {
   clearInputValue('contactTel');
   clearInputValue('contactEmail');  
   getEl('followUpRequired').value = 'No';
-  clearInputValue('followUpDate');
-  clearInputValue('followUpNotes');
-  clearInputValue('finalComments');
+clearInputValue('followUpDate');
+clearInputValue('followUpNotes');
+
+getEl('recurringCycleEnabled').value = 'No';
+clearInputValue('recurringCycleNumber');
+getEl('recurringCycleUnit').value = '';
+clearInputValue('recurringCycleNotes');
+updateRecurringCyclePreview();
+
+clearInputValue('finalComments');
   toggleMallFields();
 
   

@@ -775,9 +775,40 @@
         for example every 6 months or yearly.
       </p>
 
-      <div class="recurring-coming-soon">
-        Recurring cycle fields coming next.
-      </div>
+      <div class="recurring-cycle-fields">
+  <label for="recurringCycleEnabled">Recurring Cycle Active?</label>
+  <select id="recurringCycleEnabled">
+    <option value="No">No</option>
+    <option value="Yes">Yes</option>
+  </select>
+
+  <label for="recurringCycleNumber">Repeat Every</label>
+  <input
+    id="recurringCycleNumber"
+    type="number"
+    min="1"
+    placeholder="Example: 6"
+  >
+
+  <label for="recurringCycleUnit">Cycle Unit</label>
+  <select id="recurringCycleUnit">
+    <option value="">Select cycle unit</option>
+    <option value="days">Days</option>
+    <option value="weeks">Weeks</option>
+    <option value="months">Months</option>
+    <option value="years">Years</option>
+  </select>
+
+  <label for="recurringCycleNotes">Cycle Notes</label>
+  <textarea
+    id="recurringCycleNotes"
+    placeholder="Example: Routine 6-monthly fire safety inspection."
+  ></textarea>
+
+  <div id="recurringCyclePreview" class="recurring-cycle-preview">
+    Recurring cycle not active.
+  </div>
+</div>
     </div>
   </div>
 </div>
