@@ -9668,24 +9668,44 @@ followUpSourceInspectionNumber:
   getEl('contactTel').value = project.contactTel || '';
   getEl('contactEmail').value = project.contactEmail || '';
   getEl('followUpRequired').value = project.followUpRequired || 'No';
-  getEl('followUpDate').value = project.followUpDate || '';
-  getEl('followUpNotes').value = project.followUpNotes || '';
+getEl('followUpDate').value = project.followUpDate || '';
+getEl('followUpNotes').value = project.followUpNotes || '';
 
-  getEl('recurringCycleEnabled').value =
-  project.recurringCycleEnabled === true ? 'Yes' : 'No';
+const recurringCycleEnabledField =
+  document.getElementById('recurringCycleEnabled');
 
-getEl('recurringCycleNumber').value =
-  project.recurringCycleNumber || '';
+const recurringCycleNumberField =
+  document.getElementById('recurringCycleNumber');
 
-getEl('recurringCycleUnit').value =
-  project.recurringCycleUnit || '';
+const recurringCycleUnitField =
+  document.getElementById('recurringCycleUnit');
 
-getEl('recurringCycleNotes').value =
-  project.recurringCycleNotes || '';
+const recurringCycleNotesField =
+  document.getElementById('recurringCycleNotes');
+
+if (recurringCycleEnabledField) {
+  recurringCycleEnabledField.value =
+    project.recurringCycleEnabled === true ? 'Yes' : 'No';
+}
+
+if (recurringCycleNumberField) {
+  recurringCycleNumberField.value =
+    project.recurringCycleNumber || '';
+}
+
+if (recurringCycleUnitField) {
+  recurringCycleUnitField.value =
+    project.recurringCycleUnit || '';
+}
+
+if (recurringCycleNotesField) {
+  recurringCycleNotesField.value =
+    project.recurringCycleNotes || '';
+}
 
 updateRecurringCyclePreview();
 
-  getEl('finalComments').value = project.finalComments || '';
+getEl('finalComments').value = project.finalComments || '';
   toggleMallFields();
 
   currentPhotos = project.photos || [];
