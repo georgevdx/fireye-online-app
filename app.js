@@ -10538,9 +10538,8 @@ function createFollowUpInspection() {
   if (!followUpDate) return;
 
   const confirmed = confirm(
-    'Schedule the next inspection cycle on this same site card? This will not create a duplicate card. The current inspection will remain available in Previous Inspection Archive when the next cycle starts.'
-  );
-
+  'Schedule a corrective follow-up for this same site? Use this only when NO findings or corrective actions must be checked again. This will not create a duplicate card.'
+);
   if (!confirmed) return;
 
   projects[index] = {
@@ -10553,9 +10552,11 @@ function createFollowUpInspection() {
       'Follow-up inspection scheduled.',
 
     scheduledDate: followUpDate,
-    scheduledStatus: 'scheduled',
-    scheduleFreshInspection: true,
-    scheduledReason: 'follow_up',
+scheduledStatus: 'scheduled',
+scheduleFreshInspection: true,
+scheduledReason: 'follow_up',
+scheduleType: 'follow_up',
+scheduledNote: 'Corrective follow-up for NO findings / action items.',
 
     completedAt: null,
     archiveStatus: '',
@@ -10577,7 +10578,7 @@ function createFollowUpInspection() {
     });
 
   getEl('saveMessage').textContent =
-  `Next inspection cycle scheduled for ${followUpDate}. No duplicate card was created.`;
+  `Corrective follow-up scheduled for ${followUpDate}. No duplicate card was created.`;
 }
 
 async function deleteProject() {
