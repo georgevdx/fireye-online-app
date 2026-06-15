@@ -7246,3 +7246,9 @@ button.readiness-chip:focus {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+@media (min-width: 760px) {
+  .scheduling-card-grid-two {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

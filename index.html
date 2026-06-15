@@ -732,38 +732,23 @@
     <div>
       <h3>Scheduling Centre</h3>
       <p>
-        Keep scheduling dates separate so there is no confusion between a new-site inspection,
-        a corrective follow-up, and a recurring inspection cycle.
+        Scheduling for this existing site only. Use corrective follow-up for NO findings,
+        or recurring cycle for routine repeat inspections.
       </p>
     </div>
 
     <span class="scheduling-card-badge">
-      Site Scheduling
+      Existing Site
     </span>
   </div>
 
-  <div class="scheduling-card-grid">
-    <div class="schedule-option-card schedule-option-new-site">
-      <div class="schedule-option-label">New Site</div>
-      <h4>Schedule Inspection for New Site</h4>
-      <p>
-        Use this from the Projects screen to add a future inspection for a site that has not been inspected yet.
-      </p>
-      <button
-        type="button"
-        class="secondary-btn"
-        onclick="openScheduleNewSiteFromInspection()"
-      >
-        Open New Site Scheduler
-      </button>
-    </div>
-
+  <div class="scheduling-card-grid scheduling-card-grid-two">
     <div class="schedule-option-card schedule-option-followup">
       <div class="schedule-option-label">Corrective</div>
       <h4>Schedule Corrective Follow-up</h4>
       <p>
         Use only when NO findings or corrective actions must be checked again.
-        This is a once-off follow-up date.
+        This is a once-off follow-up date for this same site.
       </p>
 
       <label for="followUpRequired">Corrective Follow-up Required?</label>
@@ -786,8 +771,8 @@
       <div class="schedule-option-label">Routine</div>
       <h4>Set Recurring Inspection Cycle</h4>
       <p>
-        Use for routine repeat inspections, for example every 6 months or yearly.
-        This is not for NO findings.
+        Use for routine repeat inspections for this same site,
+        for example every 6 months or yearly.
       </p>
 
       <div class="recurring-coming-soon">
@@ -796,7 +781,6 @@
     </div>
   </div>
 </div>
-
     <section class="card" id="reportSection" style="display:none;">
       <h2>Inspection Report</h2>
       <div id="reportContent"></div>

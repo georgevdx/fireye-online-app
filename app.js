@@ -4967,14 +4967,7 @@ function ensureInspectionQuickActions() {
     </div>
 
     <div class="scheduling-centre-grid">
-      <button
-        type="button"
-        class="scheduling-action-btn"
-        onclick="openScheduleNewSiteFromInspection()"
-      >
-        <strong>Schedule Inspection for New Site</strong>
-        <span>Future inspection for a new site not yet inspected.</span>
-      </button>
+      
 
       <button
         type="button"
