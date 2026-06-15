@@ -7110,3 +7110,139 @@ button.readiness-chip:focus {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+.scheduling-card {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #dbe3ea;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.scheduling-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.scheduling-card-header h3 {
+  margin: 0 0 6px;
+  color: #111827;
+}
+
+.scheduling-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.scheduling-card-badge {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.scheduling-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.schedule-option-card {
+  padding: 14px;
+  border: 1px solid #dbe3ea;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.schedule-option-card h4 {
+  margin: 4px 0 6px;
+  color: #111827;
+}
+
+.schedule-option-card p {
+  margin: 0 0 12px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.schedule-option-label {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.schedule-option-new-site {
+  border-left: 5px solid #1565c0;
+}
+
+.schedule-option-new-site .schedule-option-label {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.schedule-option-followup {
+  border-left: 5px solid #b71c1c;
+}
+
+.schedule-option-followup .schedule-option-label {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.schedule-option-recurring {
+  border-left: 5px solid #2e7d32;
+}
+
+.schedule-option-recurring .schedule-option-label {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.schedule-option-card label {
+  margin-top: 10px;
+}
+
+.schedule-option-card input,
+.schedule-option-card select,
+.schedule-option-card textarea {
+  width: 100%;
+  max-width: none;
+}
+
+.schedule-option-card textarea {
+  min-height: 90px;
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.recurring-coming-soon {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f8f4;
+  color: #2e7d32;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (min-width: 760px) {
+  .scheduling-card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

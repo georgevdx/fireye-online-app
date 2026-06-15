@@ -727,24 +727,74 @@
 </div>
   </section>
 
-<div class="form-section" id="nextInspectionCard">
-  <h3>Next Inspection Cycle / Re-inspection</h3>
+<div class="form-section scheduling-card" id="nextInspectionCard">
+  <div class="scheduling-card-header">
+    <div>
+      <h3>Scheduling Centre</h3>
+      <p>
+        Keep scheduling dates separate so there is no confusion between a new-site inspection,
+        a corrective follow-up, and a recurring inspection cycle.
+      </p>
+    </div>
 
-  <p class="form-help-text">
-    Use this section to record the recommended next inspection cycle for this premises, such as a follow-up, annual re-inspection, or planned future review.
-  </p>
+    <span class="scheduling-card-badge">
+      Site Scheduling
+    </span>
+  </div>
 
-  <label>Follow-up Required?</label>
-  <select id="followUpRequired">
-    <option value="No">No</option>
-    <option value="Yes">Yes</option>
-  </select>
+  <div class="scheduling-card-grid">
+    <div class="schedule-option-card schedule-option-new-site">
+      <div class="schedule-option-label">New Site</div>
+      <h4>Schedule Inspection for New Site</h4>
+      <p>
+        Use this from the Projects screen to add a future inspection for a site that has not been inspected yet.
+      </p>
+      <button
+        type="button"
+        class="secondary-btn"
+        onclick="openScheduleNewSiteFromInspection()"
+      >
+        Open New Site Scheduler
+      </button>
+    </div>
 
-  <label>Follow-up Date</label>
-  <input type="date" id="followUpDate">
+    <div class="schedule-option-card schedule-option-followup">
+      <div class="schedule-option-label">Corrective</div>
+      <h4>Schedule Corrective Follow-up</h4>
+      <p>
+        Use only when NO findings or corrective actions must be checked again.
+        This is a once-off follow-up date.
+      </p>
 
-  <label>Follow-up Notes</label>
-  <textarea id="followUpNotes" placeholder="Reason for follow-up..."></textarea>
+      <label for="followUpRequired">Corrective Follow-up Required?</label>
+      <select id="followUpRequired">
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </select>
+
+      <label for="followUpDate">Corrective Follow-up Date</label>
+      <input type="date" id="followUpDate">
+
+      <label for="followUpNotes">Corrective Follow-up Notes</label>
+      <textarea
+        id="followUpNotes"
+        placeholder="Example: Check that NO findings / corrective actions have been closed."
+      ></textarea>
+    </div>
+
+    <div class="schedule-option-card schedule-option-recurring">
+      <div class="schedule-option-label">Routine</div>
+      <h4>Set Recurring Inspection Cycle</h4>
+      <p>
+        Use for routine repeat inspections, for example every 6 months or yearly.
+        This is not for NO findings.
+      </p>
+
+      <div class="recurring-coming-soon">
+        Recurring cycle fields coming next.
+      </div>
+    </div>
+  </div>
 </div>
 
     <section class="card" id="reportSection" style="display:none;">
