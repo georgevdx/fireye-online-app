@@ -7835,13 +7835,13 @@ button.readiness-chip:focus {
 }
 
 .sticky-action-bar .action-dropdown {
-  position: fixed;
-  right: 12px;
-  bottom: 82px;
+  position: absolute;
+  right: 10px;
+  bottom: 76px;
   z-index: 10000;
 
-  width: min(300px, calc(100vw - 24px));
-  max-height: min(70vh, 420px);
+  width: min(300px, calc(100vw - 32px));
+  max-height: 65vh;
   overflow-y: auto;
 
   border-radius: 16px;
@@ -7864,12 +7864,10 @@ button.readiness-chip:focus {
 
 @media (max-width: 560px) {
   .sticky-action-bar .action-dropdown {
-    left: 12px;
-    right: 12px;
-    bottom: 78px;
-
-    width: auto;
-    max-height: 65vh;
+    right: 0;
+    bottom: 72px;
+    width: min(300px, calc(100vw - 24px));
+    max-height: 60vh;
     overflow-y: auto;
   }
 }
