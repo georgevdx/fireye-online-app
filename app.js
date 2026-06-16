@@ -4971,6 +4971,20 @@ function closeInspectionSectionFocus() {
   removeInspectionSectionFocus();
 }
 
+function ensureGlobalInspectionActionBar() {
+  const projectFormSection =
+    document.getElementById('projectFormSection');
+
+  const actionBar =
+    document.querySelector('.sticky-action-bar');
+
+  if (!projectFormSection || !actionBar) return;
+
+  if (actionBar.parentElement !== projectFormSection) {
+    projectFormSection.appendChild(actionBar);
+  }
+}
+
 function showProjectForm() {
   setCloudMenuVisible(false);
 
@@ -4987,6 +5001,7 @@ function showProjectForm() {
 
   ensureInspectionQuickActions();
 ensureNextInspectionCardId();
+ensureGlobalInspectionActionBar();
 updateProjectReadinessPanel();
 updateFloatingBackButton();
 }
