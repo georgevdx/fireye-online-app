@@ -7807,6 +7807,8 @@ button.readiness-chip:focus {
   border: 1px solid rgba(148, 163, 184, 0.55);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
   backdrop-filter: blur(10px);
+
+  overflow: visible;
 }
 
 .sticky-action-bar button {
@@ -7853,6 +7855,7 @@ button.readiness-chip:focus {
 .sticky-action-bar .action-dropdown button {
   width: 100%;
   margin-bottom: 8px;
+ 
 }
 
 .sticky-action-bar .action-dropdown button:last-child {
