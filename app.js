@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v93-beta8';
+const APP_VERSION = 'v93-beta9';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -8262,6 +8262,11 @@ window.openScheduleNewSiteFromInspection = openScheduleNewSiteFromInspection;
 window.runSiteReadyPreflight = runSiteReadyPreflight;
 window.toggleSiteReadyPreflight = toggleSiteReadyPreflight;
 window.closeMobilePhotoExportTray = closeMobilePhotoExportTray;
+window.openProjectAndReviewFindings = openProjectAndReviewFindings;
+window.openProjectAndViewPhotos = openProjectAndViewPhotos;
+window.openProjectAndGoToSchedule = openProjectAndGoToSchedule;
+window.openProjectAndGenerateReport = openProjectAndGenerateReport;
+window.toggleInspectionCardMore = toggleInspectionCardMore;
 function focusFirstProjectExpiry(project, expiryStatus) {
   const firstExpiry = getProjectExpiryAnswer(project, expiryStatus);
 
@@ -9237,6 +9242,8 @@ const scheduleHtml =
 
         ${scheduleHtml}
 
+        ${getInspectionCardActionHtml(project, index)}
+
         </button>
       `;
     }).join('')}
@@ -9379,6 +9386,145 @@ function getInspectionCardAttentionSummary(project) {
   }
 
   return parts.join(' · ');
+}
+
+function getInspectionCardActionHtml(project, index) {
+  const completion =
+    getProjectCompletionCounts(project);
+
+  const photoCount =
+    Array.isArray(project.photos)
+      ? project.photos.length
+      : 0;
+
+  const hasFindings =
+    completion.noCount > 0;
+
+  const hasPhotos =
+    photoCount > 0;
+
+  return `
+    <div class="inspection-card-action-row">
+      <button
+        type="button"
+        class="inspection-card-action primary"
+        onclick="openProject(${index})"
+      >
+        Open Inspection
+      </button>
+
+      ${
+        hasFindings
+          ? `
+            <button
+              type="button"
+              class="inspection-card-action danger"
+              onclick="openProjectAndReviewFindings(${index})"
+            >
+              Review Findings
+            </button>
+          `
+          : ''
+      }
+
+      ${
+        hasPhotos
+          ? `
+            <button
+              type="button"
+              class="inspection-card-action secondary"
+              onclick="openProjectAndViewPhotos(${index})"
+            >
+              Photos (${photoCount})
+            </button>
+          `
+          : ''
+      }
+
+      <button
+        type="button"
+        class="inspection-card-action muted"
+        onclick="toggleInspectionCardMore(${index})"
+      >
+        More
+      </button>
+    </div>
+
+    <div
+      id="inspectionCardMore_${index}"
+      class="inspection-card-more-panel"
+      style="display:none;"
+    >
+      <button
+        type="button"
+        onclick="openProject(${index})"
+      >
+        Edit / Continue
+      </button>
+
+      <button
+        type="button"
+        onclick="openProjectAndGoToSchedule(${index})"
+      >
+        Schedule / Cycle
+      </button>
+
+      <button
+        type="button"
+        onclick="openProjectAndGenerateReport(${index})"
+      >
+        Report
+      </button>
+    </div>
+  `;
+}
+
+function openProjectAndReviewFindings(index) {
+  openProject(index);
+
+  setTimeout(() => {
+    focusInspectionSection('checklistCard');
+
+    setTimeout(() => {
+      focusFirstCurrentIssue();
+    }, 160);
+  }, 250);
+}
+
+function openProjectAndViewPhotos(index) {
+  openProject(index);
+
+  setTimeout(() => {
+    focusInspectionSection('photoEvidenceCard');
+  }, 250);
+}
+
+function openProjectAndGoToSchedule(index) {
+  openProject(index);
+
+  setTimeout(() => {
+    focusInspectionSection('nextInspectionCard');
+  }, 250);
+}
+
+function openProjectAndGenerateReport(index) {
+  openProject(index);
+
+  setTimeout(() => {
+    generateReport();
+  }, 300);
+}
+
+function toggleInspectionCardMore(index) {
+  const panel =
+    document.getElementById(`inspectionCardMore_${index}`);
+
+  if (!panel) return;
+
+  panel.style.display =
+    panel.style.display === 'none' || panel.style.display === ''
+      ? 'grid'
+      : 'none';
 }
 
 function getProjectPrimaryAction(project) {

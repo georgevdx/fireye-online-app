@@ -8192,3 +8192,73 @@ body > #actionDropdown.action-dropdown button:last-child {
   color: #1565c0;
   border-color: #64b5f6;
 }
+
+.inspection-card-action-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.inspection-card-action {
+  min-height: 42px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.inspection-card-action.primary {
+  background: #1565c0;
+  border-color: #1565c0;
+  color: #ffffff;
+}
+
+.inspection-card-action.danger {
+  background: #b71c1c;
+  border-color: #b71c1c;
+  color: #ffffff;
+}
+
+.inspection-card-action.secondary {
+  background: #eef6ff;
+  border-color: #64b5f6;
+  color: #1565c0;
+}
+
+.inspection-card-action.muted {
+  background: #f8fafc;
+  color: #475569;
+}
+
+.inspection-card-more-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+}
+
+.inspection-card-more-panel button {
+  min-height: 40px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 900;
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+@media (max-width: 640px) {
+  .inspection-card-action-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .inspection-card-action {
+    width: 100%;
+  }
+}
