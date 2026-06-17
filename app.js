@@ -12200,8 +12200,9 @@ function createLocalPhotoFallback(file) {
 }
 
 async function handlePhotoUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+  const files = Array.from(event.target.files || []);
+
+  if (files.length === 0) return;
 
   const saveMessage = document.getElementById('saveMessage');
 
@@ -12222,15 +12223,6 @@ async function handlePhotoUpload(event) {
   window.photoUploadInProgress = true;
 
   try {
-    if (currentPhotos.length >= MAX_PHOTOS_PER_INSPECTION) {
-      setPhotoStatus(
-        `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`
-      );
-
-      event.target.value = '';
-      return;
-    }
-
     if (!currentProjectId) {
       setPhotoStatus('Saving inspection first...');
       saveProject();
@@ -12245,98 +12237,132 @@ async function handlePhotoUpload(event) {
       }
     }
 
-    setPhotoStatus('Preparing photo...');
+    const remainingSlots =
+      MAX_PHOTOS_PER_INSPECTION - currentPhotos.length;
 
-    const localPhoto = await createLocalPhotoFallback(file);
+    if (remainingSlots <= 0) {
+      setPhotoStatus(
+        `Photo limit reached (${MAX_PHOTOS_PER_INSPECTION} photos). Delete a photo before adding another.`
+      );
 
-    currentPhotos.push(localPhoto);
-
-    const localPhotoId = localPhoto.id;
-
-    renderPhotos();
-    saveCurrentPhotosToOpenProject();
-
-    const localProjectForUpload = getProjects().find(
-      project => project.id === currentProjectId
-    );
-
-    if (localProjectForUpload) {
-      uploadSingleInspection(localProjectForUpload)
-        .catch(error => {
-          console.warn('Photo local save upload failed:', error);
-        });
+      event.target.value = '';
+      return;
     }
 
-    setPhotoStatus('Photo added locally. Uploading to cloud...');
+    const filesToProcess =
+      files.slice(0, remainingSlots);
 
-    try {
-      const uploadedPhoto =
-        await withPhotoTimeout(
-          uploadPhotoToStorage(file, currentProjectId),
-          30000
-        );
+    if (files.length > remainingSlots) {
+      setPhotoStatus(
+        `Only ${remainingSlots} photo${remainingSlots === 1 ? '' : 's'} can be added. Extra photo${files.length - remainingSlots === 1 ? '' : 's'} skipped.`
+      );
+    }
 
-      const photoIndex = currentPhotos.findIndex(
-        photo => photo.id === localPhotoId
+    for (let fileIndex = 0; fileIndex < filesToProcess.length; fileIndex++) {
+      const file = filesToProcess[fileIndex];
+
+      setPhotoStatus(
+        `Preparing photo ${fileIndex + 1} of ${filesToProcess.length}...`
       );
 
-      if (photoIndex !== -1) {
-        const existingNote =
-          currentPhotos[photoIndex].note || '';
+      const localPhoto = await createLocalPhotoFallback(file);
 
-        currentPhotos[photoIndex] = {
-          ...uploadedPhoto,
-          id: localPhotoId,
-          note: existingNote,
-          uploadFallback: false,
-          uploadPending: false
-        };
+      currentPhotos.push(localPhoto);
 
-        renderPhotos();
-        saveCurrentPhotosToOpenProject();
+      const localPhotoId = localPhoto.id;
 
-        const uploadedProjectForUpload = getProjects().find(
-          project => project.id === currentProjectId
-        );
+      renderPhotos();
+      saveCurrentPhotosToOpenProject();
 
-        if (uploadedProjectForUpload) {
-          uploadSingleInspection(uploadedProjectForUpload)
-            .catch(error => {
-              console.warn('Photo storage URL upload failed:', error);
-            });
-        }
-
-        scheduleAutoSave();
-
-        setPhotoStatus('Photo uploaded and added.');
-      }
-
-    } catch (uploadError) {
-      console.error('Cloud photo upload failed. Local photo kept:', uploadError);
-
-      const photoIndex = currentPhotos.findIndex(
-        photo => photo.id === localPhotoId
+      const localProjectForUpload = getProjects().find(
+        project => project.id === currentProjectId
       );
 
-      if (photoIndex !== -1) {
-        currentPhotos[photoIndex] = {
-          ...currentPhotos[photoIndex],
-          uploadFallback: true,
-          uploadPending: false,
-          uploadError:
-            uploadError?.message ||
-            'Cloud upload failed'
-        };
-
-        renderPhotos();
-        saveCurrentPhotosToOpenProject();
-        scheduleAutoSave();
+      if (localProjectForUpload) {
+        uploadSingleInspection(localProjectForUpload)
+          .catch(error => {
+            console.warn('Photo local save upload failed:', error);
+          });
       }
 
       setPhotoStatus(
-        `Photo kept locally. Cloud upload failed: ${uploadError?.message || 'Unknown error'}`
+        `Photo ${fileIndex + 1} added locally. Uploading to cloud...`
       );
+
+      try {
+        const uploadedPhoto =
+          await withPhotoTimeout(
+            uploadPhotoToStorage(file, currentProjectId),
+            30000
+          );
+
+        const photoIndex = currentPhotos.findIndex(
+          photo => photo.id === localPhotoId
+        );
+
+        if (photoIndex !== -1) {
+          const existingNote =
+            currentPhotos[photoIndex].note || '';
+
+          currentPhotos[photoIndex] = {
+            ...uploadedPhoto,
+            id: localPhotoId,
+            note: existingNote,
+            uploadFallback: false,
+            uploadPending: false
+          };
+
+          renderPhotos();
+          saveCurrentPhotosToOpenProject();
+
+          const uploadedProjectForUpload = getProjects().find(
+            project => project.id === currentProjectId
+          );
+
+          if (uploadedProjectForUpload) {
+            uploadSingleInspection(uploadedProjectForUpload)
+              .catch(error => {
+                console.warn('Photo storage URL upload failed:', error);
+              });
+          }
+
+          setPhotoStatus(
+            `Photo ${fileIndex + 1} of ${filesToProcess.length} uploaded and added.`
+          );
+        }
+
+      } catch (uploadError) {
+        console.error('Cloud photo upload failed. Local photo kept:', uploadError);
+
+        const photoIndex = currentPhotos.findIndex(
+          photo => photo.id === localPhotoId
+        );
+
+        if (photoIndex !== -1) {
+          currentPhotos[photoIndex] = {
+            ...currentPhotos[photoIndex],
+            uploadFallback: true,
+            uploadPending: false,
+            uploadError:
+              uploadError?.message ||
+              'Cloud upload failed'
+          };
+
+          renderPhotos();
+          saveCurrentPhotosToOpenProject();
+        }
+
+        setPhotoStatus(
+          `Photo ${fileIndex + 1} kept locally. Cloud upload failed: ${uploadError?.message || 'Unknown error'}`
+        );
+      }
     }
+
+    scheduleAutoSave();
+
+    setPhotoStatus(
+      `${filesToProcess.length} photo${filesToProcess.length === 1 ? '' : 's'} added.`
+    );
 
   } catch (error) {
     console.error('Photo could not be added:', error);
