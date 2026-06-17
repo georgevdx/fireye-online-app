@@ -12477,7 +12477,10 @@ function dataUrlToBlob(dataUrl) {
 }
 
 async function getPhotoBlob(photo) {
-  const src = photo?.src || '';
+  const src =
+    typeof photo === 'string'
+      ? photo
+      : photo?.src || '';
 
   if (!src) {
     throw new Error('Photo source missing.');
@@ -12487,9 +12490,32 @@ async function getPhotoBlob(photo) {
     return dataUrlToBlob(src);
   }
 
-  const response = await fetch(src, {
-    mode: 'cors'
-  });
+  if (
+    photo?.storagePath &&
+    typeof supabaseClient !== 'undefined'
+  ) {
+    const { data, error } =
+      await supabaseClient
+        .storage
+        .from('inspection-photos')
+        .download(photo.storagePath);
+
+    if (!error && data) {
+      return data;
+    }
+
+    console.warn(
+      'Supabase storage download failed, trying URL fetch:',
+      error
+    );
+  }
+
+  const response =
+    await fetch(src, {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store'
+    });
 
   if (!response.ok) {
     throw new Error(`Photo request failed: ${response.status}`);
@@ -12497,7 +12523,6 @@ async function getPhotoBlob(photo) {
 
   return response.blob();
 }
-
 async function downloadPhotosAsZip(project, photos, archiveLabel = '') {
   if (typeof JSZip === 'undefined') {
     alert('ZIP download library is not loaded. Check your internet connection and refresh.');
@@ -12524,8 +12549,8 @@ async function downloadPhotosAsZip(project, photos, archiveLabel = '') {
         getCurrentInspectionPhotoDownloadName(project, photo, index)
           .replace(/\.[^.]+$/, '');
 
-      const extension =
-        getPhotoFileExtension(photo.src);
+     const extension =
+  getPhotoFileExtension(photo);
 
       const fileName =
         archiveLabel
