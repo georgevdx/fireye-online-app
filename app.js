@@ -12439,6 +12439,160 @@ function triggerPhotoDownload(url, filename) {
   document.body.removeChild(link);
 }
 
+function isMobilePhotoDownloadDevice() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
+function getPhotoFileExtension(src = '') {
+  const value = String(src || '').toLowerCase();
+
+  if (value.startsWith('data:image/png')) return 'png';
+  if (value.startsWith('data:image/webp')) return 'webp';
+  if (value.startsWith('data:image/gif')) return 'gif';
+
+  if (value.includes('.png')) return 'png';
+  if (value.includes('.webp')) return 'webp';
+  if (value.includes('.gif')) return 'gif';
+
+  return 'jpg';
+}
+
+function dataUrlToBlob(dataUrl) {
+  const parts = String(dataUrl).split(',');
+  const header = parts[0] || '';
+  const base64 = parts[1] || '';
+
+  const mimeMatch = header.match(/data:(.*?);base64/);
+  const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+
+  const binary = atob(base64);
+  const length = binary.length;
+  const bytes = new Uint8Array(length);
+
+  for (let index = 0; index < length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return new Blob([bytes], { type: mimeType });
+}
+
+async function getPhotoBlob(photo) {
+  const src = photo?.src || '';
+
+  if (!src) {
+    throw new Error('Photo source missing.');
+  }
+
+  if (String(src).startsWith('data:image/')) {
+    return dataUrlToBlob(src);
+  }
+
+  const response = await fetch(src, {
+    mode: 'cors'
+  });
+
+  if (!response.ok) {
+    throw new Error(`Photo request failed: ${response.status}`);
+  }
+
+  return response.blob();
+}
+
+async function downloadPhotosAsZip(project, photos, archiveLabel = '') {
+  if (typeof JSZip === 'undefined') {
+    alert('ZIP download library is not loaded. Check your internet connection and refresh.');
+    return false;
+  }
+
+  const saveMessage =
+    document.getElementById('saveMessage') ||
+    document.getElementById('syncStatus');
+
+  const zip = new JSZip();
+
+  let added = 0;
+  let failed = 0;
+
+  for (let index = 0; index < photos.length; index++) {
+    const photo = photos[index];
+
+    try {
+      const blob =
+        await getPhotoBlob(photo);
+
+      const baseName =
+        getCurrentInspectionPhotoDownloadName(project, photo, index)
+          .replace(/\.[^.]+$/, '');
+
+      const extension =
+        getPhotoFileExtension(photo.src);
+
+      const fileName =
+        archiveLabel
+          ? `${baseName}_${archiveLabel}.${extension}`
+          : `${baseName}.${extension}`;
+
+      zip.file(fileName, blob);
+      added++;
+
+      if (saveMessage) {
+        saveMessage.textContent =
+          `Preparing ZIP: ${added}/${photos.length} photo${photos.length === 1 ? '' : 's'} added...`;
+      }
+
+    } catch (error) {
+      console.warn('Could not add photo to ZIP:', error);
+      failed++;
+    }
+  }
+
+  if (added === 0) {
+    alert('No photos could be added to the ZIP file.');
+    return false;
+  }
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      'Creating photo ZIP file...';
+  }
+
+  const zipBlob =
+    await zip.generateAsync({
+      type: 'blob'
+    });
+
+  const projectName =
+    sanitizeFileName(
+      project.projectName ||
+      [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
+      'inspection',
+      'inspection'
+    );
+
+  const zipUrl =
+    URL.createObjectURL(zipBlob);
+
+  triggerPhotoDownload(
+    zipUrl,
+    `${projectName}_photos.zip`
+  );
+
+  setTimeout(() => {
+    URL.revokeObjectURL(zipUrl);
+  }, 8000);
+
+  if (saveMessage) {
+    saveMessage.textContent =
+      `Photo ZIP ready. Added ${added}. Failed ${failed}.`;
+  }
+
+  if (failed > 0) {
+    alert(`${added} photos added to ZIP. ${failed} photos could not be added.`);
+  }
+
+  return true;
+}
+
 async function downloadAllInspectionPhotos() {
   const projects = getProjects();
 
@@ -12465,6 +12619,11 @@ async function downloadAllInspectionPhotos() {
   );
 
   if (!confirmed) return;
+
+  if (isMobilePhotoDownloadDevice()) {
+  await downloadPhotosAsZip(project, photos);
+  return;
+}
 
   const saveMessage =
     document.getElementById('saveMessage');
