@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v93-beta3';
+const APP_VERSION = 'v93-beta6';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3173,6 +3173,79 @@ function updateAppInfo() {
   }
 }
 
+function positionGlobalActionDropdown() {
+  const button =
+    document.getElementById('actionMenuBtn');
+
+  const dropdown =
+    document.getElementById('actionDropdown');
+
+  if (!button || !dropdown) return;
+
+  const rect =
+    button.getBoundingClientRect();
+
+  const gap = 10;
+  const sideGap = 12;
+  const menuWidth =
+    Math.min(300, window.innerWidth - sideGap * 2);
+
+  const left =
+    Math.max(
+      sideGap,
+      Math.min(
+        window.innerWidth - menuWidth - sideGap,
+        rect.right - menuWidth
+      )
+    );
+
+  dropdown.style.position = 'fixed';
+  dropdown.style.left = `${left}px`;
+  dropdown.style.right = 'auto';
+  dropdown.style.bottom = `${window.innerHeight - rect.top + gap}px`;
+  dropdown.style.width = `${menuWidth}px`;
+  dropdown.style.maxHeight = `${Math.max(180, rect.top - 24)}px`;
+  dropdown.style.overflowY = 'auto';
+  dropdown.style.zIndex = '20000';
+}
+
+function openGlobalActionDropdown() {
+  const dropdown =
+    document.getElementById('actionDropdown');
+
+  if (!dropdown) return;
+
+  if (dropdown.parentElement !== document.body) {
+    document.body.appendChild(dropdown);
+  }
+
+  dropdown.style.display = 'block';
+  positionGlobalActionDropdown();
+}
+
+function closeGlobalActionDropdown() {
+  const dropdown =
+    document.getElementById('actionDropdown');
+
+  if (!dropdown) return;
+
+  dropdown.style.display = 'none';
+}
+
+function toggleGlobalActionDropdown() {
+  const dropdown =
+    document.getElementById('actionDropdown');
+
+  if (!dropdown) return;
+
+  if (dropdown.style.display === 'block') {
+    closeGlobalActionDropdown();
+    return;
+  }
+
+  openGlobalActionDropdown();
+}
+
 function initApp() {
   updateAppInfo();
 
@@ -3289,16 +3362,33 @@ function initApp() {
     document.getElementById('actionDropdown');
 
   if (actionMenuBtn && actionDropdown) {
+  actionMenuBtn.addEventListener('click', event => {
+    event.stopPropagation();
+    toggleGlobalActionDropdown();
+  });
 
-    actionMenuBtn.addEventListener('click', () => {
+  actionDropdown.addEventListener('click', event => {
+    event.stopPropagation();
+  });
 
-      actionDropdown.style.display =
+  document.addEventListener('click', () => {
+    closeGlobalActionDropdown();
+  });
 
-        actionDropdown.style.display === 'none'
-          ? 'block'
-          : 'none';
-    });
-  }
+  window.addEventListener('resize', () => {
+    closeGlobalActionDropdown();
+  });
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (actionDropdown.style.display === 'block') {
+        positionGlobalActionDropdown();
+      }
+    },
+    true
+  );
+}
   populateOccupancies();
   populateProductTypes();
   getEl('syncMergeBtn').addEventListener('click', mergeSync);
