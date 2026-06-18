@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=94-command-centre1">
+  <link rel="stylesheet" href="styles.css?v=94-command-centre-home">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -130,6 +130,70 @@
   <div id="rcBackupReminderPanel" class="rc-backup-reminder-panel"></div>
   <div id="rcFinalPreflightPanel" class="rc-final-preflight-panel"></div>
   <div id="rcTesterInstructionPanel" class="rc-tester-instruction-panel"></div>
+  <section id="mainCommandCentre" class="main-command-centre">
+    <div class="main-command-top">
+      <div>
+        <div class="main-command-kicker">Command Centre</div>
+        <h3>Today’s Fire-S Workspace</h3>
+        <p id="mainCommandSubtitle">Open your dashboard, inspections, schedules, reports or company tools from one place.</p>
+      </div>
+      <div class="main-command-status" id="mainCommandAccessStatus">Checking access...</div>
+    </div>
+
+    <div class="main-command-stats" aria-label="Fire-S dashboard summary">
+      <button type="button" class="main-stat-card" id="cmdDashboardBtn">
+        <span class="stat-number" id="cmdTotalInspections">0</span>
+        <span class="stat-label">Inspections</span>
+      </button>
+      <button type="button" class="main-stat-card attention" id="cmdFindingsBtn">
+        <span class="stat-number" id="cmdOpenFindings">0</span>
+        <span class="stat-label">NO Findings</span>
+      </button>
+      <button type="button" class="main-stat-card warning" id="cmdOverdueBtn">
+        <span class="stat-number" id="cmdOverdueItems">0</span>
+        <span class="stat-label">Overdue</span>
+      </button>
+      <button type="button" class="main-stat-card">
+        <span class="stat-number" id="cmdPhotoCount">0</span>
+        <span class="stat-label">Photos</span>
+      </button>
+    </div>
+
+    <div class="main-command-grid">
+      <button type="button" class="main-command-card primary" id="cmdInspectionsBtn">
+        <span class="command-icon">📋</span>
+        <span class="command-title">Inspection Gateway</span>
+        <span class="command-copy">Open, continue, search and manage inspections.</span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdScheduleBtn">
+        <span class="command-icon">📅</span>
+        <span class="command-title">Schedule</span>
+        <span class="command-copy">Create new-site bookings and review follow-ups.</span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdReportsBtn">
+        <span class="command-icon">📄</span>
+        <span class="command-title">Reports</span>
+        <span class="command-copy">Find completed inspections and export reports.</span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdCompanyBtn">
+        <span class="command-icon">🏢</span>
+        <span class="command-title">Company</span>
+        <span class="command-copy">Account, subscription, cloud sync and admin tools.</span>
+      </button>
+
+      <button type="button" class="main-command-card" id="cmdServicesBtn">
+        <span class="command-icon">🛠️</span>
+        <span class="command-title">Services / Support</span>
+        <span class="command-copy">Request support, report beta issues or ask for review.</span>
+      </button>
+    </div>
+
+    <div id="mainCommandMessage" class="main-command-message" style="display:none;"></div>
+  </section>
+
   <div class="startup-route-grid">
     <button id="homeLoginRouteBtn" type="button" class="startup-route-card">
       <span class="route-title">Login / Register</span>
@@ -820,7 +884,7 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="app.js?v=94-command-centre1"></script>
+  <script src="app.js?v=94-command-centre-home"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
