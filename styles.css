@@ -9474,3 +9474,21 @@ body > #actionDropdown.action-dropdown button:last-child {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+/* Fire-S v1.6 - remove inspection movement navigation dock */
+#inspectionMovementDock,
+.inspection-movement-dock,
+.inspection-section-focus-toolbar {
+  display: none !important;
+}
+
+/* Fire-S v1.6 - section cards scroll only; never hide other inspection sections */
+#projectFormSection .inspection-section-hidden {
+  display: block !important;
+}
+
+#projectFormSection .inspection-section-focused {
+  scroll-margin-top: 90px;
+  margin-bottom: 18px !important;
+}

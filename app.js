@@ -5401,62 +5401,13 @@ function removeInspectionMovementDock() {
   }
 }
 
-function showInspectionMovementDock(sectionIndex, availableSections, sectionMeta) {
+function showInspectionMovementDock() {
+  // Fire-S v1.6:
+  // The Back / Next / Menu / Full View movement dock was removed because it
+  // covered the real Save / Finish / More action bar during inspections.
+  // Section cards now scroll to the relevant area without hiding the rest of
+  // the inspection form.
   removeInspectionMovementDock();
-
-  const dock =
-    document.createElement('div');
-
-  dock.id = 'inspectionMovementDock';
-  dock.className = 'inspection-movement-dock';
-
-  const isFirst =
-    sectionIndex <= 0;
-
-  const isLast =
-    sectionIndex >= availableSections.length - 1;
-
-  dock.innerHTML = `
-    <div class="inspection-movement-label">
-      <strong>${escapeHtml(sectionMeta?.label || 'Inspection')}</strong>
-      <span>${sectionIndex + 1} of ${availableSections.length}</span>
-    </div>
-
-    <div class="inspection-movement-buttons">
-      <button
-        type="button"
-        onclick="goToPreviousInspectionSection()"
-        ${isFirst ? 'disabled' : ''}
-      >
-        Back
-      </button>
-
-      <button
-        type="button"
-        class="movement-next-btn"
-        onclick="goToNextInspectionSection()"
-        ${isLast ? 'disabled' : ''}
-      >
-        Next
-      </button>
-
-      <button
-        type="button"
-        onclick="toggleInspectionCommandMenu()"
-      >
-        Menu
-      </button>
-
-      <button
-        type="button"
-        onclick="closeInspectionSectionFocus()"
-      >
-        Full View
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(dock);
 }
 
 function removeInspectionSectionFocus() {
@@ -5476,14 +5427,13 @@ function removeInspectionSectionFocus() {
   });
 
   document
-  .querySelectorAll('.inspection-section-focus-toolbar')
-  .forEach(toolbar => {
-    toolbar.remove();
-  });
+    .querySelectorAll('.inspection-section-focus-toolbar')
+    .forEach(toolbar => {
+      toolbar.remove();
+    });
 
-removeInspectionMovementDock();
-
-activeInspectionSectionId = null;
+  removeInspectionMovementDock();
+  activeInspectionSectionId = null;
 }
 
 function focusInspectionSection(sectionId) {
@@ -5491,87 +5441,26 @@ function focusInspectionSection(sectionId) {
 
   if (!target) return;
 
+  // Fire-S v1.6:
+  // Do NOT enter single-section / guided movement mode.
+  // The user must always keep normal Save / Finish / More capability.
   removeInspectionSectionFocus();
 
   activeInspectionSectionId = sectionId;
+
   target.classList.add('inspection-section-focused');
-  const formSection = document.getElementById('projectFormSection');
 
-if (formSection) {
-  formSection.classList.add('inspection-section-mode');
-}
+  setTimeout(() => {
+    const targetTop =
+      target.getBoundingClientRect().top +
+      window.pageYOffset -
+      82;
 
-INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
-  const section = document.getElementById(sectionMeta.id);
-
-  if (!section) return;
-
-  const isActiveSection = sectionMeta.id === sectionId;
-
-  section.classList.toggle('inspection-section-hidden', !isActiveSection);
-  section.classList.toggle('inspection-section-focused', isActiveSection);
-});
-
- const availableSections = getAvailableInspectionSections();
-const sectionIndex = availableSections.findIndex(section => section.id === sectionId);
-const sectionMeta = availableSections[sectionIndex];
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'inspection-section-focus-toolbar';
-
-  toolbar.innerHTML = `
-    <div class="inspection-section-focus-title">
-      ${escapeHtml(sectionMeta?.label || 'Inspection Section')}
-    </div>
-
-    <div class="inspection-section-focus-actions">
-      <button
-        type="button"
-        onclick="goToPreviousInspectionSection()"
-        ${sectionIndex <= 0 ? 'disabled' : ''}
-      >
-        Previous
-      </button>
-
-      <button
-        type="button"
-        onclick="goToNextInspectionSection()"
-        ${sectionIndex >= availableSections.length - 1 ? 'disabled' : ''}
-      >
-        Next
-      </button>
-
-      <button
-        type="button"
-        onclick="closeInspectionSectionFocus()"
-      >
-        Close
-      </button>
-    </div>
-  `;
-
-  target.prepend(toolbar);
-
-showInspectionMovementDock(
-  sectionIndex,
-  availableSections,
-  sectionMeta
-);
-
-setTimeout(() => {
-  const formSection =
-    document.getElementById('projectFormSection');
-
-  const targetTop =
-    (formSection || target).getBoundingClientRect().top +
-    window.pageYOffset -
-    80;
-
-  window.scrollTo({
-    top: Math.max(targetTop, 0),
-    behavior: 'smooth'
-  });
-}, 40);
+    window.scrollTo({
+      top: Math.max(targetTop, 0),
+      behavior: 'smooth'
+    });
+  }, 40);
 }
 
 function goToPreviousInspectionSection() {
