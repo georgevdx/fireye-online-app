@@ -15630,3 +15630,431 @@ function updateProjectReadinessPanel() {
   }
 }
 
+
+
+// =====================================================
+// FIRE-S COMPLIANCE ENGINE v1
+// Executive dashboard + role-aware home experience
+// Safe add-on: calculated from existing local inspection_data/projects.
+// =====================================================
+
+function normalizeComplianceAnswer(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getProjectAnswersForCompliance(project) {
+  if (!project || !Array.isArray(project.answers)) {
+    return [];
+  }
+
+  return project.answers;
+}
+
+function getProjectComplianceStats(project) {
+  const answers = getProjectAnswersForCompliance(project);
+
+  let yes = 0;
+  let no = 0;
+  let na = 0;
+  let unanswered = 0;
+
+  answers.forEach(answer => {
+    const value = normalizeComplianceAnswer(answer?.answer);
+
+    if (value === 'yes') yes += 1;
+    else if (value === 'no') no += 1;
+    else if (value === 'n/a' || value === 'na' || value === 'not applicable') na += 1;
+    else unanswered += 1;
+  });
+
+  const scoredTotal = yes + no;
+  const percentage = scoredTotal > 0
+    ? Math.round((yes / scoredTotal) * 100)
+    : null;
+
+  return {
+    yes,
+    no,
+    na,
+    unanswered,
+    scoredTotal,
+    percentage
+  };
+}
+
+function getComplianceScoreLabel(score) {
+  if (score === null || score === undefined) return 'No scored data';
+  if (score >= 90) return 'Strong';
+  if (score >= 75) return 'Watch';
+  if (score >= 60) return 'At Risk';
+  return 'Critical';
+}
+
+function getComplianceScoreClass(score) {
+  if (score === null || score === undefined) return 'compliance-unknown';
+  if (score >= 90) return 'compliance-strong';
+  if (score >= 75) return 'compliance-watch';
+  if (score >= 60) return 'compliance-risk';
+  return 'compliance-critical';
+}
+
+function getProjectSiteKey(project) {
+  return String(
+    project?.siteId ||
+    project?.projectAddress ||
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' ') ||
+    project?.projectName ||
+    project?.id ||
+    'unknown-site'
+  ).trim().toLowerCase();
+}
+
+function getProjectSiteLabel(project) {
+  return (
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') ||
+    project?.projectName ||
+    project?.projectAddress ||
+    'Unnamed site'
+  );
+}
+
+function getProjectLatestDate(project) {
+  return (
+    project?.inspectionDate ||
+    project?.completedAt ||
+    project?.lastSaved ||
+    project?.updated_at ||
+    project?.created_at ||
+    ''
+  );
+}
+
+function getCompanyComplianceStats(projects) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  const totals = {
+    yes: 0,
+    no: 0,
+    na: 0,
+    unanswered: 0,
+    scoredTotal: 0,
+    compliancePercentage: null,
+    openFindings: 0,
+    overdueActions: 0,
+    inspections: safeProjects.length,
+    photos: 0,
+    reports: 0,
+    sites: 0,
+    sitesAtRisk: 0,
+    topAttentionSites: []
+  };
+
+  const siteMap = new Map();
+
+  safeProjects.forEach(project => {
+    const stats = getProjectComplianceStats(project);
+    totals.yes += stats.yes;
+    totals.no += stats.no;
+    totals.na += stats.na;
+    totals.unanswered += stats.unanswered;
+    totals.scoredTotal += stats.scoredTotal;
+    totals.openFindings += stats.no;
+    totals.photos += Array.isArray(project?.photos) ? project.photos.length : 0;
+
+    if (project?.completedAt || project?.archivedAt) {
+      totals.reports += 1;
+    }
+
+    if (typeof isProjectOverdueForCommandCentre === 'function' && isProjectOverdueForCommandCentre(project)) {
+      totals.overdueActions += 1;
+    }
+
+    const siteKey = getProjectSiteKey(project);
+    const existing = siteMap.get(siteKey) || {
+      key: siteKey,
+      label: getProjectSiteLabel(project),
+      yes: 0,
+      no: 0,
+      scoredTotal: 0,
+      inspections: 0,
+      latestDate: '',
+      percentage: null
+    };
+
+    existing.yes += stats.yes;
+    existing.no += stats.no;
+    existing.scoredTotal += stats.scoredTotal;
+    existing.inspections += 1;
+
+    const projectDate = getProjectLatestDate(project);
+    if (projectDate && (!existing.latestDate || String(projectDate) > String(existing.latestDate))) {
+      existing.latestDate = projectDate;
+    }
+
+    siteMap.set(siteKey, existing);
+  });
+
+  totals.compliancePercentage = totals.scoredTotal > 0
+    ? Math.round((totals.yes / totals.scoredTotal) * 100)
+    : null;
+
+  const sites = Array.from(siteMap.values()).map(site => {
+    const percentage = site.scoredTotal > 0
+      ? Math.round((site.yes / site.scoredTotal) * 100)
+      : null;
+
+    return {
+      ...site,
+      percentage,
+      findings: site.no
+    };
+  });
+
+  totals.sites = sites.length;
+  totals.sitesAtRisk = sites.filter(site => site.percentage !== null && site.percentage < 80).length;
+  totals.topAttentionSites = sites
+    .filter(site => site.scoredTotal > 0)
+    .sort((a, b) => {
+      if (a.percentage !== b.percentage) return a.percentage - b.percentage;
+      return b.findings - a.findings;
+    })
+    .slice(0, 5);
+
+  return totals;
+}
+
+function isManagementLandingRole() {
+  const role = getCurrentUserRole ? getCurrentUserRole() : currentUserProfile?.role;
+  return ['super_admin', 'company_owner', 'manager', 'viewer'].includes(role);
+}
+
+function getRoleLandingLabel() {
+  const role = getCurrentUserRole ? getCurrentUserRole() : currentUserProfile?.role;
+
+  if (role === 'inspector') return 'Inspector Mode';
+  if (role === 'manager') return 'Management Mode';
+  if (role === 'company_owner') return 'Owner Mode';
+  if (role === 'viewer') return 'Viewer Mode';
+  if (role === 'super_admin') return 'Fire-S Control Mode';
+  return 'Workspace Mode';
+}
+
+function ensureExecutiveComplianceDashboardMarkup() {
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre || document.getElementById('complianceHeroCard')) return;
+
+  const hero = document.createElement('section');
+  hero.className = 'compliance-hero-card compliance-unknown';
+  hero.id = 'complianceHeroCard';
+  hero.innerHTML = `
+    <div class="compliance-hero-top">
+      <div>
+        <div class="compliance-kicker">Fire Safety Compliance</div>
+        <h3 id="complianceHeroTitle">Executive Dashboard</h3>
+        <p id="complianceHeroSubtitle">Overall compliance calculated from inspection answers.</p>
+      </div>
+      <div class="compliance-mode-pill" id="complianceModePill">Workspace Mode</div>
+    </div>
+
+    <button type="button" class="compliance-score-button" id="cmdComplianceBtn">
+      <span class="compliance-score" id="cmdComplianceScore">--%</span>
+      <span class="compliance-score-label" id="cmdComplianceScoreLabel">No scored data</span>
+    </button>
+
+    <div class="compliance-breakdown-grid">
+      <button type="button" class="compliance-breakdown-card" id="cmdComplianceFindingsBtn">
+        <span id="cmdComplianceOpenFindings">0</span>
+        <strong>Open Findings</strong>
+      </button>
+      <button type="button" class="compliance-breakdown-card warning" id="cmdComplianceOverdueBtn">
+        <span id="cmdComplianceOverdueActions">0</span>
+        <strong>Overdue Actions</strong>
+      </button>
+      <button type="button" class="compliance-breakdown-card" id="cmdComplianceSitesBtn">
+        <span id="cmdComplianceSites">0</span>
+        <strong>Sites</strong>
+      </button>
+      <button type="button" class="compliance-breakdown-card" id="cmdComplianceInspectionsBtn">
+        <span id="cmdComplianceInspections">0</span>
+        <strong>Inspections</strong>
+      </button>
+    </div>
+
+    <div class="attention-sites-panel" id="attentionSitesPanel">
+      <div class="attention-sites-title">Sites Requiring Attention</div>
+      <div id="attentionSitesList" class="attention-sites-list">
+        <div class="attention-empty">No scored site data yet.</div>
+      </div>
+    </div>
+  `;
+
+  const stats = centre.querySelector('.main-command-stats');
+  if (stats) {
+    centre.insertBefore(hero, stats);
+  } else {
+    centre.appendChild(hero);
+  }
+
+  const complianceButton = document.getElementById('cmdComplianceBtn');
+  const findingsButton = document.getElementById('cmdComplianceFindingsBtn');
+  const overdueButton = document.getElementById('cmdComplianceOverdueBtn');
+  const sitesButton = document.getElementById('cmdComplianceSitesBtn');
+  const inspectionsButton = document.getElementById('cmdComplianceInspectionsBtn');
+
+  if (complianceButton) complianceButton.addEventListener('click', openMainDashboardCommand);
+  if (findingsButton) findingsButton.addEventListener('click', openFindingsCommand);
+  if (overdueButton) overdueButton.addEventListener('click', openOverdueCommand);
+  if (sitesButton) sitesButton.addEventListener('click', openMainDashboardCommand);
+  if (inspectionsButton) inspectionsButton.addEventListener('click', openInspectionsCommand);
+}
+
+function renderAttentionSites(stats) {
+  const list = document.getElementById('attentionSitesList');
+  if (!list) return;
+
+  const sites = stats?.topAttentionSites || [];
+
+  if (sites.length === 0) {
+    list.innerHTML = '<div class="attention-empty">No scored site data yet. Complete inspections to build the compliance ranking.</div>';
+    return;
+  }
+
+  list.innerHTML = sites.map(site => `
+    <button type="button" class="attention-site-row" data-site-key="${escapeHtml(site.key)}">
+      <span class="attention-site-name">${escapeHtml(site.label)}</span>
+      <span class="attention-site-meta">${site.findings} finding${site.findings === 1 ? '' : 's'} · ${site.inspections} inspection${site.inspections === 1 ? '' : 's'}</span>
+      <strong>${site.percentage}%</strong>
+    </button>
+  `).join('');
+
+  list.querySelectorAll('.attention-site-row').forEach(button => {
+    button.addEventListener('click', () => {
+      showProjectList();
+      setTimeout(() => {
+        const search = document.getElementById('projectSearch');
+        if (search) {
+          search.value = button.querySelector('.attention-site-name')?.textContent || '';
+          search.dispatchEvent(new Event('input'));
+          search.focus();
+        }
+      }, 150);
+    });
+  });
+}
+
+function openFindingsCommand() {
+  showProjectList();
+  setFilter('inspection-attention');
+  showMainCommandMessage('Findings view: showing inspections with attention items. Dedicated Findings Centre comes next.');
+}
+
+function openOverdueCommand() {
+  showProjectList();
+  setFilter('expiry-overdue');
+  showMainCommandMessage('Overdue view: showing inspections and actions requiring follow-up.');
+}
+
+// Override previous Home Command Centre renderer with Compliance Engine v1.
+function renderHomeCommandCentre() {
+  ensureExecutiveComplianceDashboardMarkup();
+
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  const projects = getHomeCommandProjects();
+  const stats = getCompanyComplianceStats(projects);
+  const complianceScore = stats.compliancePercentage;
+  const complianceClass = getComplianceScoreClass(complianceScore);
+  const complianceLabel = getComplianceScoreLabel(complianceScore);
+
+  const totalEl = document.getElementById('cmdTotalInspections');
+  const findingsEl = document.getElementById('cmdOpenFindings');
+  const overdueEl = document.getElementById('cmdOverdueItems');
+  const photosEl = document.getElementById('cmdPhotoCount');
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  const heroCard = document.getElementById('complianceHeroCard');
+  const scoreEl = document.getElementById('cmdComplianceScore');
+  const scoreLabelEl = document.getElementById('cmdComplianceScoreLabel');
+  const modePill = document.getElementById('complianceModePill');
+  const heroTitle = document.getElementById('complianceHeroTitle');
+  const heroSubtitle = document.getElementById('complianceHeroSubtitle');
+
+  if (heroCard) {
+    heroCard.classList.remove('compliance-unknown', 'compliance-strong', 'compliance-watch', 'compliance-risk', 'compliance-critical');
+    heroCard.classList.add(complianceClass);
+  }
+
+  if (scoreEl) scoreEl.textContent = complianceScore === null ? '--%' : `${complianceScore}%`;
+  if (scoreLabelEl) scoreLabelEl.textContent = complianceScore === null ? 'No scored data yet' : `${complianceLabel} Compliance`;
+  if (modePill) modePill.textContent = getRoleLandingLabel();
+
+  if (heroTitle) {
+    heroTitle.textContent = isManagementLandingRole()
+      ? 'Executive Compliance Dashboard'
+      : 'Inspector Workspace';
+  }
+
+  if (heroSubtitle) {
+    heroSubtitle.textContent = isManagementLandingRole()
+      ? 'Compliance is calculated from YES and NO checklist answers. N/A is ignored.'
+      : 'Your inspection workspace. Managers see the executive dashboard by default.';
+  }
+
+  if (totalEl) totalEl.textContent = stats.inspections;
+  if (findingsEl) findingsEl.textContent = stats.openFindings;
+  if (overdueEl) overdueEl.textContent = stats.overdueActions;
+  if (photosEl) photosEl.textContent = stats.photos;
+
+  const openFindingsEl = document.getElementById('cmdComplianceOpenFindings');
+  const overdueActionsEl = document.getElementById('cmdComplianceOverdueActions');
+  const sitesEl = document.getElementById('cmdComplianceSites');
+  const inspectionsEl = document.getElementById('cmdComplianceInspections');
+
+  if (openFindingsEl) openFindingsEl.textContent = stats.openFindings;
+  if (overdueActionsEl) overdueActionsEl.textContent = stats.overdueActions;
+  if (sitesEl) sitesEl.textContent = stats.sites;
+  if (inspectionsEl) inspectionsEl.textContent = stats.inspections;
+
+  if (accessEl) {
+    const companyName = currentUserProfile?.companyName || 'Local Workspace';
+    const role = currentUserProfile?.role || 'guest';
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent = isManagementLandingRole()
+      ? 'Monitor compliance, findings, overdue actions and inspections from one place.'
+      : 'Open your assigned inspections, continue drafts and capture findings quickly.';
+  }
+
+  renderAttentionSites(stats);
+}
+
+// Override binding initialiser to include new compliance/finding shortcuts safely.
+function initHomeCommandCentre() {
+  ensureExecutiveComplianceDashboardMarkup();
+
+  const bindings = [
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', openFindingsCommand],
+    ['cmdOverdueBtn', openOverdueCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  bindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (button && !button.dataset.complianceBound) {
+      button.addEventListener('click', handler);
+      button.dataset.complianceBound = 'true';
+    }
+  });
+
+  renderHomeCommandCentre();
+}
+

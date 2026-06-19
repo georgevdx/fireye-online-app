@@ -8857,3 +8857,251 @@ body > #actionDropdown.action-dropdown button:last-child {
   }
 }
 
+
+/* =====================================================
+   FIRE-S COMPLIANCE ENGINE v1
+   Executive dashboard hero + role-aware home layout
+   ===================================================== */
+.compliance-hero-card {
+  margin: 0 0 14px 0;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  color: #ffffff;
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.18);
+}
+
+.compliance-hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.compliance-kicker {
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-bottom: 4px;
+}
+
+.compliance-hero-card h3 {
+  margin: 0;
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.compliance-hero-card p {
+  margin: 6px 0 0;
+  color: #d1d5db;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.compliance-mode-pill {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.compliance-score-button {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  min-height: 138px;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.compliance-score-button:hover,
+.compliance-score-button:focus {
+  opacity: 1;
+  background: rgba(255,255,255,0.14);
+  outline: none;
+}
+
+.compliance-score {
+  display: block;
+  font-size: clamp(48px, 12vw, 86px);
+  font-weight: 900;
+  line-height: 0.95;
+  letter-spacing: -0.05em;
+}
+
+.compliance-score-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #e5e7eb;
+}
+
+.compliance-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.compliance-breakdown-card {
+  width: 100%;
+  max-width: none;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: rgba(255,255,255,0.08);
+  color: #ffffff;
+  text-align: left;
+}
+
+.compliance-breakdown-card:hover,
+.compliance-breakdown-card:focus {
+  background: rgba(255,255,255,0.14);
+  opacity: 1;
+  outline: none;
+}
+
+.compliance-breakdown-card span {
+  display: block;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.compliance-breakdown-card strong {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #d1d5db;
+}
+
+.compliance-strong .compliance-score {
+  color: #86efac;
+}
+
+.compliance-watch .compliance-score {
+  color: #fde68a;
+}
+
+.compliance-risk .compliance-score,
+.compliance-critical .compliance-score {
+  color: #fca5a5;
+}
+
+.compliance-unknown .compliance-score {
+  color: #e5e7eb;
+}
+
+.attention-sites-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+
+.attention-sites-title {
+  margin-bottom: 8px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #fca5a5;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.attention-sites-list {
+  display: grid;
+  gap: 7px;
+}
+
+.attention-site-row {
+  width: 100%;
+  max-width: none;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.13);
+  color: #ffffff;
+  text-align: left;
+}
+
+.attention-site-row:hover,
+.attention-site-row:focus {
+  background: rgba(255,255,255,0.15);
+  opacity: 1;
+  outline: none;
+}
+
+.attention-site-name {
+  font-size: 13px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+
+.attention-site-meta {
+  grid-column: 1;
+  color: #d1d5db;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.attention-site-row strong {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  font-size: 20px;
+  color: #fca5a5;
+}
+
+.attention-empty {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.08);
+  color: #d1d5db;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .compliance-hero-card {
+    padding: 13px;
+  }
+
+  .compliance-hero-top {
+    display: block;
+  }
+
+  .compliance-mode-pill {
+    display: inline-block;
+    margin-top: 10px;
+  }
+
+  .compliance-breakdown-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .compliance-score-button {
+    min-height: 112px;
+  }
+}
