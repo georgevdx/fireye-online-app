@@ -16268,7 +16268,7 @@ function renderHomeCommandCentre() {
 // =====================================================
 // FINDINGS CENTRE v1
 // =====================================================
-let findingsCentreFilter = 'all';
+findingsCentreFilter = findingsCentreFilter || 'all';
 
 function getProjectAnswerFindings(project) {
   const answers = Array.isArray(project?.answers) ? project.answers : [];
