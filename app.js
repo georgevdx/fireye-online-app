@@ -18157,3 +18157,876 @@ window.addEventListener('load', () => {
     console.warn('Reports Centre v1 init failed:', error);
   }
 });
+
+
+// =====================================================
+// FINDINGS CENTRE DASHBOARD v2.0
+// KPI cards + Open/Overdue/Closed filters + search + findings list.
+// Safe append-only override. Does not change inspection workflow.
+// =====================================================
+let fireSFindingsV2Filter = 'open';
+
+function fireSFindingsV2SafeText(value) {
+  if (typeof escapeHtml === 'function') {
+    return escapeHtml(value ?? '');
+  }
+
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function fireSFindingsV2DateOnly(value) {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function fireSFindingsV2FormatDate(value) {
+  if (!value) return '-';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value).slice(0, 10) || '-';
+  }
+
+  return date.toLocaleDateString();
+}
+
+function fireSFindingsV2Today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function fireSFindingsV2GetQuestionText(project, answer, fallbackIndex) {
+  try {
+    const checklist = typeof getChecklistForProject === 'function'
+      ? getChecklistForProject(project)
+      : [];
+
+    const itemIndex = Number(answer?.itemIndex ?? fallbackIndex);
+    const itemNumber = String(answer?.itemNumber || itemIndex + 1);
+
+    const checklistItem = (checklist || []).find((item, index) =>
+      index === itemIndex ||
+      String(item?.['Item Number'] || item?.itemNumber || '') === itemNumber
+    );
+
+    return (
+      checklistItem?.['Non Compliance Text'] ||
+      checklistItem?.['Checklist Item'] ||
+      checklistItem?.Requirement ||
+      checklistItem?.Question ||
+      answer?.question_text ||
+      answer?.questionText ||
+      `Checklist item ${itemNumber}`
+    );
+  } catch (error) {
+    return `Checklist item ${answer?.itemNumber || (fallbackIndex + 1)}`;
+  }
+}
+
+function fireSFindingsV2RiskRank(riskLevel) {
+  const value = String(riskLevel || '').toLowerCase();
+  if (value.includes('high')) return 1;
+  if (value.includes('medium')) return 2;
+  if (value.includes('low')) return 3;
+  return 4;
+}
+
+function fireSFindingsV2Status(project, answer) {
+  const rawStatus = String(
+    answer?.status ||
+    answer?.findingStatus ||
+    project?.findingStatus ||
+    ''
+  ).trim().toLowerCase();
+
+  if (['closed', 'complete', 'completed', 'resolved'].includes(rawStatus)) {
+    return 'closed';
+  }
+
+  return 'open';
+}
+
+function fireSFindingsV2RiskLevel(project, answer, isOverdue) {
+  const raw = String(
+    answer?.risk_level ||
+    answer?.riskLevel ||
+    answer?.risk ||
+    ''
+  ).trim();
+
+  if (raw) {
+    const lower = raw.toLowerCase();
+    if (lower.includes('high')) return 'High';
+    if (lower.includes('medium')) return 'Medium';
+    if (lower.includes('low')) return 'Low';
+    return raw;
+  }
+
+  if (isOverdue) return 'High';
+  return 'Medium';
+}
+
+function fireSFindingsV2GetLocalItems() {
+  const projects = typeof getHomeCommandProjects === 'function'
+    ? getHomeCommandProjects()
+    : (typeof getVisibleProjectsForCurrentUser === 'function'
+        ? getVisibleProjectsForCurrentUser(getProjects())
+        : getProjects());
+
+  const today = fireSFindingsV2Today();
+
+  return (projects || []).flatMap(project => {
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const projectDueDate = project?.followUpDate || '';
+    const projectDate =
+      project?.inspectionDate ||
+      project?.inspection_date ||
+      project?.completedAt ||
+      project?.updated_at ||
+      project?.lastSaved ||
+      project?.created_at ||
+      '';
+
+    const siteName =
+      project?.siteName ||
+      project?.projectName ||
+      [project?.organisationName, project?.siteName].filter(Boolean).join(' ') ||
+      'Unnamed site';
+
+    return answers
+      .filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no')
+      .map((answer, index) => {
+        const itemIndex = Number(answer?.itemIndex ?? index);
+        const dueDate =
+          answer?.due_date ||
+          answer?.dueDate ||
+          answer?.followUpDate ||
+          answer?.expiryDate ||
+          projectDueDate ||
+          '';
+
+        const status = fireSFindingsV2Status(project, answer);
+        const isOverdue =
+          status !== 'closed' &&
+          !!dueDate &&
+          fireSFindingsV2DateOnly(dueDate) < today;
+
+        const questionText = fireSFindingsV2GetQuestionText(project, answer, index);
+        const riskLevel = fireSFindingsV2RiskLevel(project, answer, isOverdue);
+
+        return {
+          id: `${project?.id || 'project'}-${itemIndex}`,
+          source: 'inspection-answer',
+          projectId: project?.id || '',
+          itemIndex,
+          itemNumber: answer?.itemNumber || String(itemIndex + 1),
+          siteName,
+          organisationName: project?.organisationName || '',
+          inspectionNumber: project?.inspectionNumber || '',
+          inspectorName: project?.inspectorName || '',
+          inspectionDate: projectDate,
+          questionText,
+          answer: answer?.answer || 'No',
+          correctiveAction:
+            answer?.corrective_action ||
+            answer?.correctiveAction ||
+            answer?.note ||
+            '',
+          dueDate,
+          status,
+          isOverdue,
+          riskLevel,
+          hasPhotos: Array.isArray(project?.photos) && project.photos.length > 0,
+          project
+        };
+      });
+  });
+}
+
+function fireSFindingsV2GetItems() {
+  // v2.0 uses current local/visible inspection data so the dashboard works offline
+  // and does not depend on a new Supabase query. Later v2.1 can merge the findings table.
+  return fireSFindingsV2GetLocalItems();
+}
+
+function fireSFindingsV2Stats(items) {
+  const open = items.filter(item => item.status !== 'closed');
+  const closed = items.filter(item => item.status === 'closed');
+  const overdue = open.filter(item => item.isOverdue);
+  const sites = new Set(open.map(item => item.siteName || item.projectId).filter(Boolean));
+
+  return {
+    total: items.length,
+    open: open.length,
+    overdue: overdue.length,
+    closed: closed.length,
+    sites: sites.size
+  };
+}
+
+function fireSFindingsV2SetFilter(filter) {
+  fireSFindingsV2Filter = filter || 'all';
+  renderFindingsCentre();
+}
+
+function fireSFindingsV2FilteredItems() {
+  const searchValue = String(document.getElementById('findingsSearch')?.value || '')
+    .trim()
+    .toLowerCase();
+
+  let items = fireSFindingsV2GetItems();
+
+  if (fireSFindingsV2Filter === 'open') {
+    items = items.filter(item => item.status !== 'closed');
+  }
+
+  if (fireSFindingsV2Filter === 'overdue') {
+    items = items.filter(item => item.status !== 'closed' && item.isOverdue);
+  }
+
+  if (fireSFindingsV2Filter === 'closed') {
+    items = items.filter(item => item.status === 'closed');
+  }
+
+  if (searchValue) {
+    items = items.filter(item => [
+      item.siteName,
+      item.organisationName,
+      item.inspectionNumber,
+      item.inspectorName,
+      item.questionText,
+      item.correctiveAction,
+      item.riskLevel,
+      item.status
+    ].join(' ').toLowerCase().includes(searchValue));
+  }
+
+  items.sort((a, b) => {
+    const overdueSort = Number(b.isOverdue) - Number(a.isOverdue);
+    if (overdueSort !== 0) return overdueSort;
+
+    const riskSort = fireSFindingsV2RiskRank(a.riskLevel) - fireSFindingsV2RiskRank(b.riskLevel);
+    if (riskSort !== 0) return riskSort;
+
+    if (a.status !== b.status) {
+      return a.status === 'closed' ? 1 : -1;
+    }
+
+    const aDate = new Date(a.dueDate || a.inspectionDate || 0).getTime() || 0;
+    const bDate = new Date(b.dueDate || b.inspectionDate || 0).getTime() || 0;
+    return bDate - aDate;
+  });
+
+  return items;
+}
+
+function ensureFindingsCentreSectionV2() {
+  let section = document.getElementById('findingsCentreSection');
+
+  if (!section) {
+    section = document.createElement('section');
+    section.id = 'findingsCentreSection';
+    document.body.appendChild(section);
+  }
+
+  section.className = 'findings-centre-v2-section';
+  section.style.display = 'none';
+
+  section.innerHTML = `
+    <div class="findings-v2-shell">
+      <div class="findings-v2-header">
+        <div>
+          <div class="findings-v2-kicker">Fire-S Risk Management</div>
+          <h2>⚠ Findings Centre</h2>
+          <p id="findingsCentreSubtitle">Open findings, overdue actions and affected sites.</p>
+        </div>
+
+        <button type="button" class="findings-v2-back-btn" id="closeFindingsCentreBtn">
+          Back to Dashboard
+        </button>
+      </div>
+
+      <div class="findings-v2-kpi-grid">
+        <button type="button" class="findings-v2-kpi" data-findings-filter="open">
+          <span>Open Findings</span>
+          <strong id="findingOpenCount">0</strong>
+        </button>
+
+        <button type="button" class="findings-v2-kpi overdue" data-findings-filter="overdue">
+          <span>Overdue</span>
+          <strong id="findingOverdueCount">0</strong>
+        </button>
+
+        <button type="button" class="findings-v2-kpi" data-findings-filter="closed">
+          <span>Closed</span>
+          <strong id="findingClosedCount">0</strong>
+        </button>
+
+        <button type="button" class="findings-v2-kpi" data-findings-filter="open">
+          <span>Sites Affected</span>
+          <strong id="findingSiteCount">0</strong>
+        </button>
+      </div>
+
+      <div class="findings-v2-toolbar">
+        <div class="findings-v2-filters">
+          <button type="button" data-findings-filter="all">All</button>
+          <button type="button" data-findings-filter="open">Open</button>
+          <button type="button" data-findings-filter="overdue">Overdue</button>
+          <button type="button" data-findings-filter="closed">Closed</button>
+        </div>
+
+        <input
+          id="findingsSearch"
+          class="findings-v2-search"
+          type="search"
+          placeholder="Search site or finding..."
+        />
+      </div>
+
+      <div id="findingsResultCount" class="findings-v2-result-count"></div>
+
+      <div id="findingsList" class="findings-v2-list"></div>
+    </div>
+  `;
+
+  injectFindingsCentreStylesV2();
+  bindFindingsCentreV2();
+}
+
+function injectFindingsCentreStylesV2() {
+  if (document.getElementById('findingsCentreV2Styles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'findingsCentreV2Styles';
+  style.textContent = `
+    .findings-centre-v2-section {
+      padding: 18px;
+      max-width: 1180px;
+      margin: 0 auto 32px;
+      font-family: Arial, sans-serif;
+    }
+
+    .findings-v2-shell {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+    }
+
+    .findings-v2-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+
+    .findings-v2-kicker {
+      color: #991b1b;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .findings-v2-header h2 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 34px);
+      color: #111827;
+    }
+
+    .findings-v2-header p {
+      margin: 8px 0 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+
+    .findings-v2-back-btn,
+    .findings-v2-filters button,
+    .findings-v2-kpi,
+    .findings-v2-open-btn {
+      border: 0;
+      border-radius: 14px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .findings-v2-back-btn {
+      background: #111827;
+      color: #fff;
+      padding: 11px 14px;
+      white-space: nowrap;
+    }
+
+    .findings-v2-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .findings-v2-kpi {
+      text-align: left;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      padding: 15px;
+      min-height: 96px;
+      color: #111827;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+    }
+
+    .findings-v2-kpi span {
+      display: block;
+      color: #6b7280;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .findings-v2-kpi strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 32px;
+      line-height: 1;
+      color: #111827;
+    }
+
+    .findings-v2-kpi.overdue strong {
+      color: #b91c1c;
+    }
+
+    .findings-v2-toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin: 12px 0;
+    }
+
+    .findings-v2-filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .findings-v2-filters button {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 9px 12px;
+    }
+
+    .findings-v2-filters button.active-finding-filter,
+    .findings-v2-kpi.active-finding-filter {
+      background: #991b1b;
+      color: #ffffff;
+    }
+
+    .findings-v2-kpi.active-finding-filter span,
+    .findings-v2-kpi.active-finding-filter strong {
+      color: #ffffff;
+    }
+
+    .findings-v2-search {
+      min-width: min(360px, 100%);
+      border: 1px solid #d1d5db;
+      border-radius: 14px;
+      padding: 11px 12px;
+      font-size: 14px;
+      background: #ffffff;
+    }
+
+    .findings-v2-result-count {
+      color: #6b7280;
+      font-size: 13px;
+      margin: 8px 2px 12px;
+      font-weight: 700;
+    }
+
+    .findings-v2-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .findings-v2-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-left: 6px solid #f59e0b;
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .findings-v2-card.risk-high,
+    .findings-v2-card.is-overdue {
+      border-left-color: #b91c1c;
+    }
+
+    .findings-v2-card.risk-low {
+      border-left-color: #16a34a;
+    }
+
+    .findings-v2-card.is-closed {
+      opacity: 0.72;
+      border-left-color: #6b7280;
+    }
+
+    .findings-v2-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .findings-v2-site {
+      font-size: 17px;
+      color: #111827;
+      font-weight: 900;
+    }
+
+    .findings-v2-question {
+      margin-top: 6px;
+      color: #374151;
+      font-weight: 700;
+    }
+
+    .findings-v2-meta {
+      margin-top: 6px;
+      color: #6b7280;
+      font-size: 13px;
+    }
+
+    .findings-v2-badges {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .findings-v2-badge {
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: 900;
+      background: #e5e7eb;
+      color: #374151;
+      text-transform: uppercase;
+    }
+
+    .findings-v2-badge.high,
+    .findings-v2-badge.overdue {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .findings-v2-badge.medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .findings-v2-badge.low,
+    .findings-v2-badge.closed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .findings-v2-detail-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .findings-v2-detail-grid div {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 9px;
+    }
+
+    .findings-v2-detail-grid span {
+      display: block;
+      color: #6b7280;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .findings-v2-detail-grid strong {
+      display: block;
+      margin-top: 3px;
+      color: #111827;
+      font-size: 13px;
+    }
+
+    .findings-v2-action {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .findings-v2-open-btn {
+      background: #111827;
+      color: #ffffff;
+      padding: 10px 13px;
+    }
+
+    .findings-v2-empty {
+      text-align: center;
+      background: #ffffff;
+      border: 1px dashed #d1d5db;
+      border-radius: 18px;
+      padding: 28px 16px;
+      color: #6b7280;
+    }
+
+    .findings-v2-empty strong {
+      display: block;
+      color: #111827;
+      font-size: 18px;
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 760px) {
+      .findings-centre-v2-section {
+        padding: 12px;
+      }
+
+      .findings-v2-header,
+      .findings-v2-toolbar {
+        display: block;
+      }
+
+      .findings-v2-back-btn {
+        margin-top: 12px;
+        width: 100%;
+      }
+
+      .findings-v2-kpi-grid,
+      .findings-v2-detail-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .findings-v2-search {
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .findings-v2-card-top {
+        display: block;
+      }
+
+      .findings-v2-badges {
+        justify-content: flex-start;
+        margin-top: 10px;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function renderFindingsCentre() {
+  const section = document.getElementById('findingsCentreSection');
+  const list = document.getElementById('findingsList');
+  if (!section || !list) return;
+
+  const allItems = fireSFindingsV2GetItems();
+  const filteredItems = fireSFindingsV2FilteredItems();
+  const stats = fireSFindingsV2Stats(allItems);
+
+  const openEl = document.getElementById('findingOpenCount');
+  const overdueEl = document.getElementById('findingOverdueCount');
+  const closedEl = document.getElementById('findingClosedCount');
+  const siteEl = document.getElementById('findingSiteCount');
+  const subtitleEl = document.getElementById('findingsCentreSubtitle');
+  const resultCountEl = document.getElementById('findingsResultCount');
+
+  if (openEl) openEl.textContent = stats.open;
+  if (overdueEl) overdueEl.textContent = stats.overdue;
+  if (closedEl) closedEl.textContent = stats.closed;
+  if (siteEl) siteEl.textContent = stats.sites;
+
+  if (subtitleEl) {
+    subtitleEl.textContent = stats.total
+      ? `${stats.open} open, ${stats.overdue} overdue, ${stats.closed} closed across ${stats.sites} affected site${stats.sites === 1 ? '' : 's'}.`
+      : 'No findings found in the visible inspections.';
+  }
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.classList.toggle('active-finding-filter', button.dataset.findingsFilter === fireSFindingsV2Filter);
+  });
+
+  if (resultCountEl) {
+    resultCountEl.textContent = `Showing ${filteredItems.length} of ${allItems.length} findings`;
+  }
+
+  if (!filteredItems.length) {
+    list.innerHTML = `
+      <div class="findings-v2-empty">
+        <strong>No findings found</strong>
+        <span>Great news. No findings match the current filters.</span>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filteredItems.map(item => {
+    const riskClass = String(item.riskLevel || '').toLowerCase().includes('high')
+      ? 'risk-high'
+      : String(item.riskLevel || '').toLowerCase().includes('low')
+        ? 'risk-low'
+        : 'risk-medium';
+
+    return `
+      <article class="findings-v2-card ${riskClass} ${item.isOverdue ? 'is-overdue' : ''} ${item.status === 'closed' ? 'is-closed' : ''}">
+        <div class="findings-v2-card-top">
+          <div>
+            <div class="findings-v2-site">${fireSFindingsV2SafeText(item.siteName)}</div>
+            <div class="findings-v2-question">${fireSFindingsV2SafeText(item.questionText)}</div>
+            <div class="findings-v2-meta">
+              ${fireSFindingsV2SafeText(item.organisationName || 'Organisation not recorded')}
+              · ${fireSFindingsV2SafeText(item.inspectionNumber || 'No inspection number')}
+            </div>
+          </div>
+
+          <div class="findings-v2-badges">
+            <span class="findings-v2-badge ${fireSFindingsV2SafeText(String(item.riskLevel || '').toLowerCase())}">${fireSFindingsV2SafeText(item.riskLevel || 'Medium')}</span>
+            <span class="findings-v2-badge ${item.status === 'closed' ? 'closed' : ''}">${fireSFindingsV2SafeText(item.status === 'closed' ? 'Closed' : 'Open')}</span>
+            ${item.isOverdue ? '<span class="findings-v2-badge overdue">Overdue</span>' : ''}
+          </div>
+        </div>
+
+        <div class="findings-v2-detail-grid">
+          <div><span>Due Date</span><strong>${fireSFindingsV2FormatDate(item.dueDate)}</strong></div>
+          <div><span>Inspection Date</span><strong>${fireSFindingsV2FormatDate(item.inspectionDate)}</strong></div>
+          <div><span>Inspector</span><strong>${fireSFindingsV2SafeText(item.inspectorName || '-')}</strong></div>
+          <div><span>Action</span><strong>${fireSFindingsV2SafeText(item.correctiveAction || 'Review required')}</strong></div>
+        </div>
+
+        <div class="findings-v2-action">
+          <button type="button" class="findings-v2-open-btn" onclick="openFindingInspection('${fireSFindingsV2SafeText(item.projectId)}', ${Number(item.itemIndex) || 0})">
+            Open Inspection
+          </button>
+        </div>
+      </article>
+    `;
+  }).join('');
+}
+
+function bindFindingsCentreV2() {
+  const closeBtn = document.getElementById('closeFindingsCentreBtn');
+  if (closeBtn) {
+    closeBtn.onclick = () => {
+      const section = document.getElementById('findingsCentreSection');
+      if (section) section.style.display = 'none';
+      showHome();
+    };
+  }
+
+  const search = document.getElementById('findingsSearch');
+  if (search) {
+    search.oninput = renderFindingsCentre;
+  }
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.onclick = () => fireSFindingsV2SetFilter(button.dataset.findingsFilter);
+  });
+}
+
+function openFindingsCentreCommand() {
+  ensureFindingsCentreSectionV2();
+
+  const section = document.getElementById('findingsCentreSection');
+  if (!section) return;
+
+  const homeSection = document.getElementById('homeSection');
+  const servicesSection = document.getElementById('servicesSection');
+  const projectListSection = document.getElementById('projectListSection');
+  const projectFormSection = document.getElementById('projectFormSection');
+  const reportsCentreSection = document.getElementById('reportsCentreSection');
+
+  if (homeSection) homeSection.style.display = 'none';
+  if (servicesSection) servicesSection.style.display = 'none';
+  if (projectListSection) projectListSection.style.display = 'none';
+  if (projectFormSection) projectFormSection.style.display = 'none';
+  if (reportsCentreSection) reportsCentreSection.style.display = 'none';
+
+  section.style.display = 'block';
+  renderFindingsCentre();
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeFindingsCentreCommand() {
+  const section = document.getElementById('findingsCentreSection');
+  if (section) section.style.display = 'none';
+  showHome();
+}
+
+function openFindingsCommand() {
+  openFindingsCentreCommand();
+}
+
+function openOverdueCommand() {
+  fireSFindingsV2Filter = 'overdue';
+  openFindingsCentreCommand();
+}
+
+function bindFindingsCentreDashboardV2Navigation() {
+  const bindings = [
+    ['cmdFindingsBtn', () => { fireSFindingsV2Filter = 'open'; openFindingsCentreCommand(); }],
+    ['cmdComplianceFindingsBtn', () => { fireSFindingsV2Filter = 'open'; openFindingsCentreCommand(); }],
+    ['cmdOverdueBtn', () => { fireSFindingsV2Filter = 'overdue'; openFindingsCentreCommand(); }],
+    ['cmdComplianceOverdueBtn', () => { fireSFindingsV2Filter = 'overdue'; openFindingsCentreCommand(); }]
+  ];
+
+  bindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button) return;
+
+    const replacement = button.cloneNode(true);
+    replacement.addEventListener('click', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') {
+        event.stopImmediatePropagation();
+      }
+      handler();
+    });
+
+    button.replaceWith(replacement);
+  });
+}
+
+window.fireSFindingsV2SetFilter = fireSFindingsV2SetFilter;
+window.openFindingsCentreCommand = openFindingsCentreCommand;
+window.closeFindingsCentreCommand = closeFindingsCentreCommand;
+window.openFindingsCommand = openFindingsCommand;
+window.openOverdueCommand = openOverdueCommand;
+window.renderFindingsCentre = renderFindingsCentre;
+window.bindFindingsCentreDashboardV2Navigation = bindFindingsCentreDashboardV2Navigation;
+
+window.addEventListener('load', () => {
+  try {
+    ensureFindingsCentreSectionV2();
+    bindFindingsCentreDashboardV2Navigation();
+
+    if (typeof bindFinalHomeNavigationTargets === 'function') {
+      bindFinalHomeNavigationTargets();
+      bindFindingsCentreDashboardV2Navigation();
+    }
+  } catch (error) {
+    console.warn('Findings Centre Dashboard v2.0 init failed:', error);
+  }
+});
