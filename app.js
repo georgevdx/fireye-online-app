@@ -3899,6 +3899,7 @@ function initHomeCommandCentre() {
 
 function initApp() {
   updateAppInfo();
+  injectInspectionGatewayPolishStyles();
   initHomeCommandCentre();
   initHomeCommandCentre();
   initFindingsCentre();
@@ -8800,6 +8801,7 @@ function handleReadinessAction(action) {
   }
 }
 
+window.setInspectionGatewayQuickFilter = setInspectionGatewayQuickFilter;
 window.focusFirstCurrentIssue = focusFirstCurrentIssue;
 window.focusFirstCurrentExpiry = focusFirstCurrentExpiry;
 window.focusFirstUnansweredChecklistItem = focusFirstUnansweredChecklistItem;
@@ -9198,7 +9200,8 @@ function getFilterLabel(filter) {
     followups: 'Follow-ups',
     soon: 'Due soon',
     overdue: 'Overdue',
-    risk: 'High risk',
+    risk: 'Open findings',
+    month: 'This month',
     'scheduled-new': 'Scheduled new inspections',
     'clear-completed': 'Clear completed inspections',
     'inspection-attention': 'Needs attention',
@@ -9654,6 +9657,271 @@ function initInspectionGatewayFilters() {
   updateInspectionDateFilterStatus();
 }
 
+
+function injectInspectionGatewayPolishStyles() {
+  if (document.getElementById('inspectionGatewayPolishStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'inspectionGatewayPolishStyles';
+  style.textContent = `
+    .gateway-quick-filter-bar {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin: 12px 0 14px;
+    }
+
+    .gateway-quick-filter-bar button {
+      border: 1px solid rgba(183, 28, 28, 0.22);
+      background: #ffffff;
+      border-radius: 14px;
+      padding: 10px 8px;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .gateway-quick-filter-bar button strong {
+      display: block;
+      font-size: 18px;
+      line-height: 1;
+      color: #b71c1c;
+    }
+
+    .gateway-quick-filter-bar button span {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #1f2937;
+    }
+
+    .gateway-quick-filter-bar button.gateway-filter-active {
+      background: #b71c1c;
+      color: #ffffff;
+      border-color: #b71c1c;
+    }
+
+    .gateway-quick-filter-bar button.gateway-filter-active strong,
+    .gateway-quick-filter-bar button.gateway-filter-active span {
+      color: #ffffff;
+    }
+
+    .inspection-project-list-item {
+      cursor: pointer;
+      border-left: 7px solid #cbd5e1;
+      transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+    }
+
+    .inspection-project-list-item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.10);
+    }
+
+    .inspection-card-status-red {
+      border-left-color: #b71c1c !important;
+    }
+
+    .inspection-card-status-amber {
+      border-left-color: #f59e0b !important;
+    }
+
+    .inspection-card-status-green {
+      border-left-color: #15803d !important;
+    }
+
+    .inspection-card-status-blue {
+      border-left-color: #1565c0 !important;
+    }
+
+    .inspection-card-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 10px 0;
+    }
+
+    .inspection-card-stat-grid div {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 11px;
+      padding: 8px;
+      min-width: 0;
+    }
+
+    .inspection-card-stat-grid span {
+      display: block;
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 800;
+      color: #64748b;
+      line-height: 1.1;
+    }
+
+    .inspection-card-stat-grid strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 15px;
+      color: #111827;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 640px) {
+      .gateway-quick-filter-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .inspection-card-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function getInspectionGatewayQuickFilterCounts(projects) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  return {
+    all: safeProjects.length,
+    'inspection-attention': safeProjects.filter(project =>
+      getProjectInspectionStatus(project).filter === 'inspection-attention'
+    ).length,
+    risk: safeProjects.filter(project =>
+      getProjectCompletionCounts(project).noCount > 0
+    ).length,
+    overdue: safeProjects.filter(project =>
+      getFollowUpStatus(project).class === 'status-overdue' ||
+      getProjectExpiryCounts(project).overdue > 0
+    ).length,
+    'inspection-complete': safeProjects.filter(project =>
+      getProjectInspectionStatus(project).filter === 'inspection-complete' ||
+      getProjectInspectionStatus(project).filter === 'clear-completed'
+    ).length,
+    month: safeProjects.filter(project => {
+      const dateValue = getProjectDateForFiltering(project);
+      if (!dateValue) return false;
+
+      const projectDate = new Date(dateValue);
+      if (Number.isNaN(projectDate.getTime())) return false;
+
+      const today = new Date();
+      return projectDate.getFullYear() === today.getFullYear() &&
+        projectDate.getMonth() === today.getMonth();
+    }).length
+  };
+}
+
+function renderInspectionGatewayQuickFilters(projects) {
+  const counts = getInspectionGatewayQuickFilterCounts(projects);
+
+  const filters = [
+    { key: 'all', label: 'All' },
+    { key: 'inspection-attention', label: 'Needs Attention' },
+    { key: 'risk', label: 'Open Findings' },
+    { key: 'overdue', label: 'Overdue' },
+    { key: 'inspection-complete', label: 'Completed' },
+    { key: 'month', label: 'This Month' }
+  ];
+
+  return `
+    <div class="gateway-quick-filter-bar" aria-label="Inspection quick filters">
+      ${filters.map(filter => `
+        <button
+          type="button"
+          class="${currentFilter === filter.key ? 'gateway-filter-active' : ''}"
+          onclick="setInspectionGatewayQuickFilter('${filter.key}')"
+        >
+          <strong>${counts[filter.key] || 0}</strong>
+          <span>${escapeHtml(filter.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function setInspectionGatewayQuickFilter(filter) {
+  currentFilter = filter || 'all';
+  currentProjectPage = 1;
+  renderProjectsList();
+  updateDashboardSelection();
+  closeFilterPanel();
+  scrollToFirstVisibleProject();
+}
+
+function projectMatchesThisMonth(project) {
+  const dateValue = getProjectDateForFiltering(project);
+  if (!dateValue) return false;
+
+  const projectDate = new Date(dateValue);
+  if (Number.isNaN(projectDate.getTime())) return false;
+
+  const today = new Date();
+  return projectDate.getFullYear() === today.getFullYear() &&
+    projectDate.getMonth() === today.getMonth();
+}
+
+function getInspectionCardVisualClass(project) {
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const followStatus = getFollowUpStatus(project);
+  const inspectionStatus = getProjectInspectionStatus(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  if (followStatus.class === 'status-overdue' || expiryCounts.overdue > 0) {
+    return 'inspection-card-status-red';
+  }
+
+  if (completion.noCount > 0 || expiryCounts.soon > 0 || dataQuality.count > 0) {
+    return 'inspection-card-status-amber';
+  }
+
+  if (
+    inspectionStatus.filter === 'inspection-complete' ||
+    inspectionStatus.filter === 'clear-completed'
+  ) {
+    return 'inspection-card-status-green';
+  }
+
+  return 'inspection-card-status-blue';
+}
+
+function renderInspectionCardStatsHtml(project) {
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const followStatus = getFollowUpStatus(project);
+  const complianceStats = typeof getProjectComplianceStats === 'function'
+    ? getProjectComplianceStats(project)
+    : { compliancePercentage: null };
+
+  const overdueCount =
+    (followStatus.class === 'status-overdue' ? 1 : 0) +
+    (expiryCounts.overdue || 0);
+
+  const scoreText =
+    complianceStats.compliancePercentage === null ||
+    complianceStats.compliancePercentage === undefined
+      ? 'No score'
+      : `${complianceStats.compliancePercentage}%`;
+
+  const lastUpdated = project.lastSaved || project.updatedAt || project.completedAt || '';
+  const lastUpdatedText = lastUpdated ? formatInspectionDate(lastUpdated) : '-';
+
+  return `
+    <div class="inspection-card-stat-grid">
+      <div><span>Findings</span><strong>${completion.noCount}</strong></div>
+      <div><span>Overdue</span><strong>${overdueCount}</strong></div>
+      <div><span>Compliance</span><strong>${escapeHtml(scoreText)}</strong></div>
+      <div><span>Updated</span><strong>${escapeHtml(lastUpdatedText)}</strong></div>
+    </div>
+  `;
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -9764,6 +10032,10 @@ function renderProjectsList() {
     );
   }
 
+  if (currentFilter === 'month') {
+    return projectMatchesThisMonth(project);
+  }
+
   if (currentFilter.startsWith('module-')) {
     return getModuleFilterKey(normalizeProductType(project.productType)) === currentFilter;
   }
@@ -9792,6 +10064,8 @@ function renderProjectsList() {
 });
 
   updateActiveFilterStatus(filteredProjects.length);
+
+  const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(projects);
 
   filteredProjects.sort((a, b) => {
       if (currentFilter === 'scheduled-new') {
@@ -9875,13 +10149,17 @@ function renderProjectsList() {
   }
 
   if (filteredProjects.length === 0) {
-    container.innerHTML = `<div class="empty-state">No matching inspections found.</div>`;
+    container.innerHTML = `
+      ${gatewayQuickFilterHtml}
+      <div class="empty-state">No matching inspections found.</div>
+    `;
     return;
   }
 
   window.currentProjectsListView = visibleProjects;
 
 container.innerHTML = `
+  ${gatewayQuickFilterHtml}
   <div id="projectListView" class="inspection-project-list">
     ${visibleProjects.map((project, index) => {
       const followStatus = getFollowUpStatus(project);
@@ -9937,9 +10215,16 @@ const scheduleHtml =
       const inspectionDate =
         getProjectInspectionDate(project);
 
+      const projectIdJs = JSON.stringify(project.id || '');
+      const visualClass = getInspectionCardVisualClass(project);
+
       return `
         <div
-          class="inspection-project-list-item"
+          class="inspection-project-list-item ${escapeHtml(visualClass)}"
+          role="button"
+          tabindex="0"
+          onclick='event.stopPropagation(); openProject(${projectIdJs})'
+          onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
         >
           <span class="inspection-project-list-title">
             ${escapeHtml(projectTitle)}
@@ -9977,6 +10262,8 @@ const scheduleHtml =
          <span class="inspection-project-list-address">
           ${escapeHtml(projectAddress)}
         </span>
+
+        ${renderInspectionCardStatsHtml(project)}
 
         <div class="inspection-summary-chip-row">
           ${inspectionChipHtml}
@@ -10156,7 +10443,7 @@ function getInspectionCardActionHtml(project, index) {
       <button
         type="button"
         class="inspection-card-action primary"
-        onclick='openProject(${projectIdJs})'
+        onclick='event.stopPropagation(); openProject(${projectIdJs})'
       >
         Open Inspection
       </button>
@@ -10167,7 +10454,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action danger"
-              onclick='openProjectAndReviewFindings(${projectIdJs})'
+              onclick='event.stopPropagation(); openProjectAndReviewFindings(${projectIdJs})'
             >
               Review Findings
             </button>
@@ -10181,7 +10468,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action secondary"
-              onclick='openProjectAndViewPhotos(${projectIdJs})'
+              onclick='event.stopPropagation(); openProjectAndViewPhotos(${projectIdJs})'
             >
               Photos (${photoCount})
             </button>
@@ -10192,7 +10479,7 @@ function getInspectionCardActionHtml(project, index) {
       <button
         type="button"
         class="inspection-card-action muted"
-        onclick="toggleInspectionCardMore(${index})"
+        onclick="event.stopPropagation(); toggleInspectionCardMore(${index})"
       >
         More
       </button>
@@ -10205,21 +10492,21 @@ function getInspectionCardActionHtml(project, index) {
     >
       <button
         type="button"
-        onclick='openProject(${projectIdJs})'
+        onclick='event.stopPropagation(); openProject(${projectIdJs})'
       >
         Edit / Continue
       </button>
 
       <button
         type="button"
-        onclick='openProjectAndGoToSchedule(${projectIdJs})'
+        onclick='event.stopPropagation(); openProjectAndGoToSchedule(${projectIdJs})'
       >
         Schedule / Cycle
       </button>
 
       <button
         type="button"
-        onclick='openProjectAndGenerateReport(${projectIdJs})'
+        onclick='event.stopPropagation(); openProjectAndGenerateReport(${projectIdJs})'
       >
         Report
       </button>
