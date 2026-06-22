@@ -9496,13 +9496,17 @@ function getInspectionGatewayDateFilters() {
 }
 
 function getProjectDateForFiltering(project) {
+  // Gateway date filtering must use the actual inspection record date,
+  // not follow-up / scheduled dates. Otherwise old inspections with future
+  // follow-up dates incorrectly appear inside the selected date range.
   return normaliseDateString(
     project?.inspectionDate ||
-    project?.completedAt ||
-    project?.scheduledDate ||
-    project?.followUpDate ||
-    project?.lastSaved ||
+    project?.inspection_date ||
+    project?.updatedAt ||
+    project?.updated_at ||
     project?.createdAt ||
+    project?.created_at ||
+    project?.lastSaved ||
     ''
   );
 }
