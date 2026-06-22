@@ -1,6 +1,9 @@
-let currentFilter = 'all';
+﻿let currentFilter = 'all';
 let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
+let inspectionGatewayFromDate = '';
+let inspectionGatewayToDate = '';
+let inspectionGatewaySort = 'priority';
 // =====================================================
 // GUIDED INSPECTION WORKFLOW - SAFE FEATURE FLAG
 // =====================================================
@@ -57,7 +60,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v98-inspection-gateway-filters-v1-1';
+const APP_VERSION = 'v93-beta10';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3608,7 +3611,6 @@ getEl('recurringCycleNotes').addEventListener('input', scheduleAutoSave);
     renderProjectsList();
     scrollToFirstVisibleProject();
   });
-  initInspectionGatewayFilters();
   getEl('productType').addEventListener('change', () => {
     updateInspectionTypeOptions();
     updateDisplay();
@@ -4497,257 +4499,6 @@ function closeFilterPanel() {
 
   filterPanel.style.display = 'none';
   toggleBtn.textContent = 'Show Filters';
-}
-
-
-// =====================================================
-// INSPECTION GATEWAY ADVANCED FILTERS v1.1
-// =====================================================
-function ensureInspectionGatewayAdvancedFiltersUI() {
-  const searchField = document.getElementById('projectSearch');
-
-  if (!searchField) return;
-
-  if (document.getElementById('inspectionAdvancedFilterPanel')) {
-    return;
-  }
-
-  searchField.placeholder =
-    'Search site, organisation, inspector, inspection number, mall or unit...';
-
-  const panel = document.createElement('div');
-  panel.id = 'inspectionAdvancedFilterPanel';
-  panel.className = 'inspection-advanced-filter-panel';
-
-  panel.innerHTML = `
-    <div class="inspection-date-filter-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0;">
-      <label style="display:block;">
-        <span style="font-size:12px;font-weight:800;color:#555;text-transform:uppercase;">From inspection date</span>
-        <input id="inspectionDateFrom" type="date" style="width:100%;max-width:none;">
-      </label>
-
-      <label style="display:block;">
-        <span style="font-size:12px;font-weight:800;color:#555;text-transform:uppercase;">To inspection date</span>
-        <input id="inspectionDateTo" type="date" style="width:100%;max-width:none;">
-      </label>
-
-      <label style="display:block;">
-        <span style="font-size:12px;font-weight:800;color:#555;text-transform:uppercase;">Sort</span>
-        <select id="inspectionSort" style="width:100%;max-width:none;">
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-        </select>
-      </label>
-    </div>
-
-    <div class="inspection-quick-date-filters" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;">
-      <button type="button" data-date-filter="today" style="width:auto;max-width:none;padding:8px 10px;">Today</button>
-      <button type="button" data-date-filter="7-days" style="width:auto;max-width:none;padding:8px 10px;">7 Days</button>
-      <button type="button" data-date-filter="30-days" style="width:auto;max-width:none;padding:8px 10px;">30 Days</button>
-      <button type="button" data-date-filter="90-days" style="width:auto;max-width:none;padding:8px 10px;">90 Days</button>
-      <button type="button" data-date-filter="year" style="width:auto;max-width:none;padding:8px 10px;">This Year</button>
-      <button type="button" data-date-filter="all" style="width:auto;max-width:none;padding:8px 10px;background:#555;">All</button>
-    </div>
-
-    <div id="inspectionDateFilterStatus" class="inspection-date-filter-status" style="margin:8px 0 10px;color:#555;font-size:13px;font-weight:700;">
-      Showing all inspection dates.
-    </div>
-  `;
-
-  searchField.insertAdjacentElement('afterend', panel);
-}
-
-function getInspectionGatewayDateFilters() {
-  const fromField = document.getElementById('inspectionDateFrom');
-  const toField = document.getElementById('inspectionDateTo');
-
-  return {
-    from: fromField ? fromField.value : '',
-    to: toField ? toField.value : ''
-  };
-}
-
-function getProjectDateForFiltering(project) {
-  return normaliseDateString(
-    project?.inspectionDate ||
-    project?.inspection_date ||
-    project?.updated_at ||
-    project?.updatedAt ||
-    project?.created_at ||
-    project?.createdAt ||
-    project?.completedAt ||
-    project?.scheduledDate ||
-    project?.followUpDate ||
-    project?.lastSaved ||
-    ''
-  );
-}
-
-function getProjectDateTimeForSorting(project) {
-  const dateText = getProjectDateForFiltering(project);
-  const time = dateText ? new Date(dateText).getTime() : 0;
-  return Number.isNaN(time) ? 0 : time;
-}
-
-function projectMatchesInspectionDateFilter(project) {
-  const filters = getInspectionGatewayDateFilters();
-  const projectDate = getProjectDateForFiltering(project);
-
-  if (!filters.from && !filters.to) return true;
-  if (!projectDate) return false;
-
-  if (filters.from && projectDate < filters.from) return false;
-  if (filters.to && projectDate > filters.to) return false;
-
-  return true;
-}
-
-function updateInspectionDateFilterStatus(filteredCount, totalCount) {
-  const status = document.getElementById('inspectionDateFilterStatus');
-  if (!status) return;
-
-  const filters = getInspectionGatewayDateFilters();
-
-  const countText =
-    Number.isFinite(filteredCount) && Number.isFinite(totalCount)
-      ? `Showing ${filteredCount} of ${totalCount} inspection${totalCount === 1 ? '' : 's'}`
-      : 'Showing inspections';
-
-  if (!filters.from && !filters.to) {
-    status.textContent = `${countText}. All inspection dates.`;
-    return;
-  }
-
-  if (filters.from && filters.to) {
-    status.textContent =
-      `${countText}. Date range: ${filters.from} to ${filters.to}.`;
-    return;
-  }
-
-  if (filters.from) {
-    status.textContent =
-      `${countText}. From ${filters.from}.`;
-    return;
-  }
-
-  status.textContent =
-    `${countText}. Up to ${filters.to}.`;
-}
-
-function setInspectionDateRange(from, to) {
-  const fromField = document.getElementById('inspectionDateFrom');
-  const toField = document.getElementById('inspectionDateTo');
-
-  if (fromField) fromField.value = from || '';
-  if (toField) toField.value = to || '';
-
-  currentProjectPage = 1;
-  renderProjectsList();
-  scrollToFirstVisibleProject();
-}
-
-function formatDateInputValue(date) {
-  return date.toISOString().slice(0, 10);
-}
-
-function applyInspectionQuickDateFilter(filter) {
-  const today = new Date();
-  let from = '';
-  let to = '';
-
-  const daysBackRange = days => {
-    const start = new Date(today);
-    start.setDate(today.getDate() - (days - 1));
-
-    return {
-      from: formatDateInputValue(start),
-      to: formatDateInputValue(today)
-    };
-  };
-
-  if (filter === 'today') {
-    from = to = formatDateInputValue(today);
-  }
-
-  if (filter === '7-days' || filter === 'week') {
-    const range = daysBackRange(7);
-    from = range.from;
-    to = range.to;
-  }
-
-  if (filter === '30-days' || filter === 'month') {
-    const range = daysBackRange(30);
-    from = range.from;
-    to = range.to;
-  }
-
-  if (filter === '90-days' || filter === 'quarter') {
-    const range = daysBackRange(90);
-    from = range.from;
-    to = range.to;
-  }
-
-  if (filter === 'year') {
-    from = formatDateInputValue(new Date(today.getFullYear(), 0, 1));
-    to = formatDateInputValue(today);
-  }
-
-  if (filter === 'all') {
-    from = '';
-    to = '';
-  }
-
-  setInspectionDateRange(from, to);
-
-  document
-    .querySelectorAll('[data-date-filter]')
-    .forEach(button => {
-      button.classList.toggle(
-        'active-date-filter',
-        button.dataset.dateFilter === filter && filter !== 'all'
-      );
-    });
-}
-
-function initInspectionGatewayFilters() {
-  ensureInspectionGatewayAdvancedFiltersUI();
-
-  const fromField = document.getElementById('inspectionDateFrom');
-  const toField = document.getElementById('inspectionDateTo');
-  const sortField = document.getElementById('inspectionSort');
-
-  [fromField, toField].forEach(field => {
-    if (!field) return;
-
-    field.addEventListener('change', () => {
-      currentProjectPage = 1;
-
-      document
-        .querySelectorAll('[data-date-filter]')
-        .forEach(button => button.classList.remove('active-date-filter'));
-
-      renderProjectsList();
-      scrollToFirstVisibleProject();
-    });
-  });
-
-  if (sortField) {
-    sortField.addEventListener('change', () => {
-      currentProjectPage = 1;
-      renderProjectsList();
-      scrollToFirstVisibleProject();
-    });
-  }
-
-  document
-    .querySelectorAll('[data-date-filter]')
-    .forEach(button => {
-      button.addEventListener('click', () => {
-        applyInspectionQuickDateFilter(button.dataset.dateFilter);
-      });
-    });
-
-  updateInspectionDateFilterStatus();
 }
 
 function updateOfflineReadinessBanner() {
@@ -9264,6 +9015,222 @@ function isCompletedAllClearInspection(project) {
   );
 }
 
+
+// =====================================================
+// INSPECTION GATEWAY ADVANCED FILTERS v1.1 HOTFIX
+// =====================================================
+function normaliseGatewayDate(value) {
+  if (!value) return '';
+  const raw = String(value).trim();
+  if (!raw) return '';
+  const direct = raw.slice(0, 10);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(direct)) return direct;
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return '';
+  return parsed.toISOString().slice(0, 10);
+}
+
+function getInspectionGatewayDate(project) {
+  return normaliseGatewayDate(
+    project?.inspectionDate ||
+    project?.inspection_date ||
+    project?.updated_at ||
+    project?.updatedAt ||
+    project?.created_at ||
+    project?.createdAt ||
+    project?.lastSaved ||
+    project?.completedAt ||
+    ''
+  );
+}
+
+function getInspectionGatewayDateTime(project) {
+  const value = getInspectionGatewayDate(project);
+  const time = value ? new Date(value).getTime() : 0;
+  return Number.isNaN(time) ? 0 : time;
+}
+
+function getInspectionGatewaySearchBlob(project) {
+  return [
+    project?.projectName,
+    project?.organisationName,
+    project?.siteName,
+    project?.projectAddress,
+    project?.addressLine,
+    project?.mallName,
+    project?.unitNumber,
+    project?.inspectorName,
+    project?.inspectionNumber,
+    project?.inspectionDate,
+    project?.inspection_date,
+    project?.productType,
+    project?.inspectionType,
+    project?.occupancy
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function inspectionGatewayDatePasses(project) {
+  const projectDate = getInspectionGatewayDate(project);
+  const fromDate = normaliseGatewayDate(inspectionGatewayFromDate);
+  const toDate = normaliseGatewayDate(inspectionGatewayToDate);
+
+  if (!fromDate && !toDate) return true;
+  if (!projectDate) return false;
+  if (fromDate && projectDate < fromDate) return false;
+  if (toDate && projectDate > toDate) return false;
+  return true;
+}
+
+function setInspectionGatewayDateRange(fromDate, toDate) {
+  inspectionGatewayFromDate = normaliseGatewayDate(fromDate);
+  inspectionGatewayToDate = normaliseGatewayDate(toDate);
+
+  const fromEl = document.getElementById('inspectionGatewayFromDate');
+  const toEl = document.getElementById('inspectionGatewayToDate');
+
+  if (fromEl) fromEl.value = inspectionGatewayFromDate;
+  if (toEl) toEl.value = inspectionGatewayToDate;
+
+  currentProjectPage = 1;
+  renderProjectsList();
+}
+
+function applyInspectionGatewayQuickFilter(range) {
+  const today = new Date();
+  const toDate = today.toISOString().slice(0, 10);
+  const from = new Date(today);
+
+  if (range === 'today') {
+    setInspectionGatewayDateRange(toDate, toDate);
+    return;
+  }
+
+  if (range === '7') {
+    from.setDate(today.getDate() - 6);
+    setInspectionGatewayDateRange(from.toISOString().slice(0, 10), toDate);
+    return;
+  }
+
+  if (range === '30') {
+    from.setDate(today.getDate() - 29);
+    setInspectionGatewayDateRange(from.toISOString().slice(0, 10), toDate);
+    return;
+  }
+
+  if (range === '90') {
+    from.setDate(today.getDate() - 89);
+    setInspectionGatewayDateRange(from.toISOString().slice(0, 10), toDate);
+    return;
+  }
+
+  if (range === 'year') {
+    setInspectionGatewayDateRange(`${today.getFullYear()}-01-01`, toDate);
+    return;
+  }
+
+  setInspectionGatewayDateRange('', '');
+}
+
+function renderInspectionGatewayFilterControls() {
+  const search = document.getElementById('projectSearch');
+  if (!search) return;
+
+  search.placeholder = 'Search site, organisation, inspector, inspection no, mall or unit';
+
+  let panel = document.getElementById('inspectionGatewayAdvancedFilters');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'inspectionGatewayAdvancedFilters';
+    panel.className = 'inspection-gateway-advanced-filters';
+    search.insertAdjacentElement('afterend', panel);
+  }
+
+  panel.innerHTML = `
+    <div class="gateway-filter-grid">
+      <label>
+        From date
+        <input id="inspectionGatewayFromDate" type="date" value="${escapeHtml(inspectionGatewayFromDate)}">
+      </label>
+
+      <label>
+        To date
+        <input id="inspectionGatewayToDate" type="date" value="${escapeHtml(inspectionGatewayToDate)}">
+      </label>
+
+      <label>
+        Sort
+        <select id="inspectionGatewaySort">
+          <option value="priority" ${inspectionGatewaySort === 'priority' ? 'selected' : ''}>Priority first</option>
+          <option value="newest" ${inspectionGatewaySort === 'newest' ? 'selected' : ''}>Newest first</option>
+          <option value="oldest" ${inspectionGatewaySort === 'oldest' ? 'selected' : ''}>Oldest first</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="gateway-quick-filter-row">
+      <button type="button" onclick="applyInspectionGatewayQuickFilter('today')">Today</button>
+      <button type="button" onclick="applyInspectionGatewayQuickFilter('7')">7 Days</button>
+      <button type="button" onclick="applyInspectionGatewayQuickFilter('30')">30 Days</button>
+      <button type="button" onclick="applyInspectionGatewayQuickFilter('90')">90 Days</button>
+      <button type="button" onclick="applyInspectionGatewayQuickFilter('year')">This Year</button>
+      <button type="button" onclick="applyInspectionGatewayQuickFilter('all')">All</button>
+    </div>
+
+    <div id="inspectionGatewayFilterSummary" class="gateway-filter-summary"></div>
+  `;
+
+  const fromEl = document.getElementById('inspectionGatewayFromDate');
+  const toEl = document.getElementById('inspectionGatewayToDate');
+  const sortEl = document.getElementById('inspectionGatewaySort');
+
+  if (fromEl) {
+    fromEl.addEventListener('input', () => {
+      inspectionGatewayFromDate = fromEl.value;
+      currentProjectPage = 1;
+      renderProjectsList();
+    });
+  }
+
+  if (toEl) {
+    toEl.addEventListener('input', () => {
+      inspectionGatewayToDate = toEl.value;
+      currentProjectPage = 1;
+      renderProjectsList();
+    });
+  }
+
+  if (sortEl) {
+    sortEl.addEventListener('change', () => {
+      inspectionGatewaySort = sortEl.value || 'priority';
+      currentProjectPage = 1;
+      renderProjectsList();
+    });
+  }
+}
+
+function updateInspectionGatewayFilterSummary(filteredCount, totalCount) {
+  const summary = document.getElementById('inspectionGatewayFilterSummary');
+  if (!summary) return;
+
+  const fromDate = normaliseGatewayDate(inspectionGatewayFromDate);
+  const toDate = normaliseGatewayDate(inspectionGatewayToDate);
+
+  const activeParts = [];
+  if (fromDate) activeParts.push(`from ${fromDate}`);
+  if (toDate) activeParts.push(`to ${toDate}`);
+
+  summary.textContent = activeParts.length
+    ? `Showing ${filteredCount} of ${totalCount} inspections (${activeParts.join(' ')})`
+    : `Showing ${filteredCount} of ${totalCount} inspections`;
+}
+
+function initInspectionGatewayFilters() {
+  renderInspectionGatewayFilterControls();
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -9297,6 +9264,7 @@ function renderProjectsList() {
 
  const searchField = document.getElementById('projectSearch');
   const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
+  renderInspectionGatewayFilterControls();
 
   container.innerHTML = '';
 
@@ -9306,28 +9274,14 @@ function renderProjectsList() {
 
   // Search filter
   if (searchText) {
-    const searchHaystack = [
-      project.projectName,
-      project.organisationName,
-      project.siteName,
-      project.projectAddress,
-      project.addressLine,
-      project.mallName,
-      project.unitNumber,
-      normalizeProductType(project.productType),
-      project.inspectionType,
-      project.inspectorName,
-      project.inspectionNumber,
-      getProjectDateForFiltering(project)
-    ]
-      .map(value => String(value || '').toLowerCase())
-      .join(' ');
+    const matchesSearch =
+      getInspectionGatewaySearchBlob(project).includes(searchText);
 
-    if (!searchHaystack.includes(searchText)) return false;
+    if (!matchesSearch) return false;
   }
 
-  // Hard inspection date filter
-  if (!projectMatchesInspectionDateFilter(project)) {
+  // Hard date range filter
+  if (!inspectionGatewayDatePasses(project)) {
     return false;
   }
 
@@ -9394,9 +9348,17 @@ function renderProjectsList() {
 });
 
   updateActiveFilterStatus(filteredProjects.length);
-  updateInspectionDateFilterStatus(filteredProjects.length, projects.length);
+  updateInspectionGatewayFilterSummary(filteredProjects.length, projects.length);
 
   filteredProjects.sort((a, b) => {
+    if (inspectionGatewaySort === 'newest') {
+      return getInspectionGatewayDateTime(b) - getInspectionGatewayDateTime(a);
+    }
+
+    if (inspectionGatewaySort === 'oldest') {
+      return getInspectionGatewayDateTime(a) - getInspectionGatewayDateTime(b);
+    }
+
       if (currentFilter === 'scheduled-new') {
       const aDate = a.scheduledDate || a.followUpDate || a.lastSaved || '';
       const bDate = b.scheduledDate || b.followUpDate || b.lastSaved || '';
@@ -9405,16 +9367,6 @@ function renderProjectsList() {
       const bTime = bDate ? new Date(bDate).getTime() : Number.MAX_SAFE_INTEGER;
 
       return aTime - bTime;
-    }
-
-    const gatewaySort = document.getElementById('inspectionSort')?.value || 'newest';
-
-    if (gatewaySort === 'oldest') {
-      return getProjectDateTimeForSorting(a) - getProjectDateTimeForSorting(b);
-    }
-
-    if (gatewaySort === 'newest') {
-      return getProjectDateTimeForSorting(b) - getProjectDateTimeForSorting(a);
     }
 
     const getProjectPriority = project => {
