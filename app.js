@@ -1,4 +1,4 @@
-﻿let currentFilter = 'all';
+let currentFilter = 'all';
 let currentBetaFeedbackFilter = 'all';
 let currentProjectPage = 1;
 // =====================================================
@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v93-beta10';
+const APP_VERSION = 'v97-findings-centre-v1-2';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3321,8 +3321,587 @@ function toggleGlobalActionDropdown() {
   openGlobalActionDropdown();
 }
 
+
+// =====================================================
+// HOME COMMAND CENTRE - SAFE BINDINGS HOTFIX
+// =====================================================
+function getCommandCentreProjects() {
+  const projects = getProjects();
+
+  if (
+    typeof getVisibleProjectsForCurrentUser === 'function' &&
+    currentUserProfile
+  ) {
+    return getVisibleProjectsForCurrentUser(projects);
+  }
+
+  return projects;
+}
+
+function getCommandCentreNoCount(project) {
+  return (project?.answers || []).filter(answer =>
+    String(answer?.answer || '').trim().toLowerCase() === 'no'
+  ).length;
+}
+
+function isCommandCentreOverdue(project) {
+  const dateValue =
+    project?.followUpDate ||
+    project?.scheduledDate ||
+    '';
+
+  if (!dateValue) return false;
+
+  const today = new Date().toISOString().slice(0, 10);
+  return String(dateValue).slice(0, 10) < today;
+}
+
+function renderHomeCommandCentre() {
+  const projects = getCommandCentreProjects();
+
+  const totalInspections = projects.length;
+  const openFindings = projects.reduce(
+    (sum, project) => sum + getCommandCentreNoCount(project),
+    0
+  );
+  const overdueItems = projects.filter(isCommandCentreOverdue).length;
+  const photoCount = projects.reduce(
+    (sum, project) => sum + ((project.photos || []).length),
+    0
+  );
+
+  const totalEl = document.getElementById('cmdTotalInspections');
+  const findingsEl = document.getElementById('cmdOpenFindings');
+  const overdueEl = document.getElementById('cmdOverdueItems');
+  const photosEl = document.getElementById('cmdPhotoCount');
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  if (totalEl) totalEl.textContent = totalInspections;
+  if (findingsEl) findingsEl.textContent = openFindings;
+  if (overdueEl) overdueEl.textContent = overdueItems;
+  if (photosEl) photosEl.textContent = photoCount;
+
+  if (accessEl) {
+    const companyName =
+      currentUserProfile?.companyName ||
+      currentCompanyAccess?.companyName ||
+      'Local Workspace';
+
+    const role =
+      currentUserProfile?.role ||
+      'local';
+
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent = totalInspections
+      ? `Showing ${totalInspections} inspection${totalInspections === 1 ? '' : 's'} available in this workspace.`
+      : 'Start by creating or scheduling your first inspection.';
+  }
+}
+
+function showMainCommandMessage(message) {
+  const box = document.getElementById('mainCommandMessage');
+
+  if (!box) return;
+
+  box.textContent = message || '';
+  box.style.display = message ? 'block' : 'none';
+}
+
+function openMainDashboardCommand() {
+  renderHomeCommandCentre();
+
+  const centre = document.getElementById('mainCommandCentre');
+
+  if (centre) {
+    centre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function openInspectionsCommand() {
+  showProjectList();
+}
+
+function openScheduleCommand() {
+  showProjectList();
+
+  setTimeout(() => {
+    const panel = document.getElementById('scheduleNewPanel');
+
+    if (panel) {
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 150);
+}
+
+function openReportsCommand() {
+  showProjectList();
+
+  setTimeout(() => {
+    const search = document.getElementById('projectSearch');
+
+    if (search) {
+      search.placeholder = 'Search completed inspections or report-ready sites';
+      search.focus();
+    }
+  }, 150);
+}
+
+function openCompanyCommand() {
+  const cloudDropdown = document.getElementById('cloudDropdown');
+  const cloudMenuBtn = document.getElementById('cloudMenuBtn');
+
+  if (cloudDropdown) {
+    cloudDropdown.style.display = 'block';
+  }
+
+  if (cloudMenuBtn) {
+    cloudMenuBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function openFindingsCentreCommand() {
+  showProjectList();
+
+  setTimeout(() => {
+    currentFilter = 'inspection-attention';
+    currentProjectPage = 1;
+    renderProjectsList();
+
+    const projectListSection = document.getElementById('projectListSection');
+    if (projectListSection) {
+      projectListSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 150);
+}
+
+function initHomeCommandCentre() {
+  const bindings = [
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdFindingsBtn', openFindingsCentreCommand],
+    ['cmdOverdueBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  bindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+
+    if (!button) return;
+
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      handler();
+    });
+  });
+
+  renderHomeCommandCentre();
+}
+
+
+// =====================================================
+// MAIN DASHBOARD / HOME COMMAND CENTRE v1
+// =====================================================
+function getProjectNoFindingCount(project) {
+  return (project?.answers || []).filter(answer =>
+    String(answer?.answer || '').trim().toLowerCase() === 'no'
+  ).length;
+}
+
+function isProjectCompletedForCommandCentre(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.archivedAt ||
+    project?.scheduledStatus === 'completed' ||
+    project?.archiveStatus === 'completed'
+  );
+}
+
+function isProjectOverdueForCommandCentre(project) {
+  const dateValue =
+    project?.followUpDate ||
+    project?.scheduledDate ||
+    '';
+
+  if (!dateValue || isProjectCompletedForCommandCentre(project)) return false;
+
+  const today = new Date().toISOString().slice(0, 10);
+  return String(dateValue).slice(0, 10) < today;
+}
+
+function getHomeCommandProjects() {
+  const allProjects = getProjects();
+
+  if (typeof getVisibleProjectsForCurrentUser === 'function' && currentUserProfile) {
+    return getVisibleProjectsForCurrentUser(allProjects);
+  }
+
+  return allProjects;
+}
+
+function renderHomeCommandCentre() {
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  const projects = getHomeCommandProjects();
+  const totalInspections = projects.length;
+  const openFindings = projects.reduce(
+    (sum, project) => sum + getProjectNoFindingCount(project),
+    0
+  );
+  const overdueItems = projects.filter(isProjectOverdueForCommandCentre).length;
+  const photoCount = projects.reduce(
+    (sum, project) => sum + ((project.photos || []).length),
+    0
+  );
+
+  const totalEl = document.getElementById('cmdTotalInspections');
+  const findingsEl = document.getElementById('cmdOpenFindings');
+  const overdueEl = document.getElementById('cmdOverdueItems');
+  const photosEl = document.getElementById('cmdPhotoCount');
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  if (totalEl) totalEl.textContent = totalInspections;
+  if (findingsEl) findingsEl.textContent = openFindings;
+  if (overdueEl) overdueEl.textContent = overdueItems;
+  if (photosEl) photosEl.textContent = photoCount;
+
+  if (accessEl) {
+    const companyName = currentUserProfile?.companyName || 'Local Workspace';
+    const role = currentUserProfile?.role || 'guest';
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent = totalInspections
+      ? `You have ${totalInspections} inspection${totalInspections === 1 ? '' : 's'} available in this workspace.`
+      : 'Start by creating or scheduling your first inspection.';
+  }
+}
+
+function showMainCommandMessage(message) {
+  const box = document.getElementById('mainCommandMessage');
+  if (!box) return;
+
+  box.textContent = message;
+  box.style.display = message ? 'block' : 'none';
+}
+
+function openMainDashboardCommand() {
+  renderHomeCommandCentre();
+  showMainCommandMessage('Dashboard summary refreshed. Full graph dashboard comes next in Phase 2.');
+  const centre = document.getElementById('mainCommandCentre');
+  if (centre) {
+    centre.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function openInspectionsCommand() {
+  showProjectList();
+}
+
+function openScheduleCommand() {
+  showProjectList();
+  setTimeout(() => {
+    const panel = document.getElementById('scheduleNewPanel');
+    if (panel) {
+      panel.style.display = 'block';
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 150);
+}
+
+function openReportsCommand() {
+  showProjectList();
+  setTimeout(() => {
+    const search = document.getElementById('projectSearch');
+    if (search) {
+      search.placeholder = 'Search completed inspections or report-ready sites';
+      search.focus();
+    }
+  }, 150);
+}
+
+function openCompanyCommand() {
+  const cloudMenuBtn = document.getElementById('cloudMenuBtn');
+  const cloudDropdown = document.getElementById('cloudDropdown');
+
+  if (cloudDropdown) {
+    cloudDropdown.style.display = 'block';
+  }
+
+  if (cloudMenuBtn) {
+    cloudMenuBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  showMainCommandMessage('Company tools are currently inside the Cloud menu. User management dashboard comes next.');
+}
+
+
+// =====================================================
+// FINDINGS CENTRE v1
+// =====================================================
+let findingsCentreFilter = 'all';
+
+function getProjectAnswerFindings(project) {
+  const answers = Array.isArray(project?.answers) ? project.answers : [];
+  const hasPhotos = (project?.photos || []).length > 0;
+  const followUpDate = project?.followUpDate || project?.scheduledDate || '';
+  const isOverdue = followUpDate && String(followUpDate).slice(0, 10) < new Date().toISOString().slice(0, 10);
+
+  return answers
+    .filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no')
+    .map((answer, index) => ({
+      id: `${project.id || 'project'}-${answer.itemIndex ?? index}`,
+      projectId: project.id,
+      itemNumber: answer.itemNumber || String((answer.itemIndex ?? index) + 1),
+      itemIndex: answer.itemIndex ?? index,
+      note: answer.note || '',
+      expiryDate: answer.expiryDate || '',
+      siteName: project.siteName || project.projectName || 'Unnamed site',
+      organisationName: project.organisationName || '',
+      projectAddress: project.projectAddress || project.addressLine || '',
+      inspectionNumber: project.inspectionNumber || '',
+      inspectorName: project.inspectorName || '',
+      inspectionDate: project.inspectionDate || project.completedAt || project.lastSaved || '',
+      followUpDate,
+      isOverdue,
+      hasPhotos,
+      riskLevel: isOverdue ? 'High' : 'Medium',
+      project
+    }));
+}
+
+function getAllFindingsCentreItems() {
+  return getHomeCommandProjects()
+    .flatMap(project => getProjectAnswerFindings(project));
+}
+
+function formatFindingsDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toLocaleDateString();
+}
+
+function setFindingsCentreFilter(filter) {
+  findingsCentreFilter = filter || 'all';
+  renderFindingsCentre();
+}
+
+function getFilteredFindingsCentreItems() {
+  const searchValue = String(document.getElementById('findingsSearch')?.value || '').toLowerCase().trim();
+  const sortValue = document.getElementById('findingsSort')?.value || 'latest';
+
+  let findings = getAllFindingsCentreItems();
+
+  if (findingsCentreFilter === 'overdue') {
+    findings = findings.filter(finding => finding.isOverdue);
+  }
+
+  if (findingsCentreFilter === 'with-photo') {
+    findings = findings.filter(finding => finding.hasPhotos);
+  }
+
+  if (searchValue) {
+    findings = findings.filter(finding => [
+      finding.siteName,
+      finding.organisationName,
+      finding.projectAddress,
+      finding.inspectionNumber,
+      finding.inspectorName,
+      finding.note,
+      finding.itemNumber
+    ].join(' ').toLowerCase().includes(searchValue));
+  }
+
+  findings.sort((a, b) => {
+    if (sortValue === 'site') {
+      return String(a.siteName).localeCompare(String(b.siteName));
+    }
+
+    if (sortValue === 'inspection') {
+      return String(a.inspectionNumber).localeCompare(String(b.inspectionNumber));
+    }
+
+    if (sortValue === 'overdue') {
+      return Number(b.isOverdue) - Number(a.isOverdue);
+    }
+
+    const aTime = new Date(a.inspectionDate || 0).getTime() || 0;
+    const bTime = new Date(b.inspectionDate || 0).getTime() || 0;
+    return bTime - aTime;
+  });
+
+  return findings;
+}
+
+function renderFindingsCentre() {
+  const section = document.getElementById('findingsCentreSection');
+  const list = document.getElementById('findingsList');
+  if (!section || !list) return;
+
+  const allFindings = getAllFindingsCentreItems();
+  const filteredFindings = getFilteredFindingsCentreItems();
+  const overdueCount = allFindings.filter(finding => finding.isOverdue).length;
+  const photoSiteCount = new Set(
+    allFindings
+      .filter(finding => finding.hasPhotos)
+      .map(finding => finding.projectId)
+  ).size;
+
+  const totalEl = document.getElementById('findingTotalCount');
+  const openEl = document.getElementById('findingOpenCount');
+  const overdueEl = document.getElementById('findingOverdueCount');
+  const photoEl = document.getElementById('findingPhotoCount');
+  const subtitleEl = document.getElementById('findingsCentreSubtitle');
+
+  if (totalEl) totalEl.textContent = allFindings.length;
+  if (openEl) openEl.textContent = allFindings.length;
+  if (overdueEl) overdueEl.textContent = overdueCount;
+  if (photoEl) photoEl.textContent = photoSiteCount;
+
+  if (subtitleEl) {
+    subtitleEl.textContent = allFindings.length
+      ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
+      : 'No open findings found in the visible inspections.';
+  }
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.classList.toggle('active-finding-filter', button.dataset.findingsFilter === findingsCentreFilter);
+  });
+
+  if (filteredFindings.length === 0) {
+    list.innerHTML = `
+      <div class="findings-empty-state">
+        <strong>No findings to show.</strong>
+        <span>Try another filter or search term.</span>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filteredFindings.map(finding => `
+    <article class="finding-item-card ${finding.isOverdue ? 'finding-overdue' : ''}">
+      <div class="finding-item-top">
+        <div>
+          <div class="finding-site">${escapeHtml(finding.siteName)}</div>
+          <div class="finding-meta">
+            ${escapeHtml(finding.organisationName || 'Organisation not recorded')} · ${escapeHtml(finding.inspectionNumber || 'No inspection number')}
+          </div>
+        </div>
+        <span class="finding-risk ${finding.riskLevel === 'High' ? 'risk-high' : 'risk-medium'}">${finding.riskLevel}</span>
+      </div>
+
+      <div class="finding-detail-grid">
+        <div><span>Question / Item</span><strong>${escapeHtml(finding.itemNumber)}</strong></div>
+        <div><span>Inspector</span><strong>${escapeHtml(finding.inspectorName || '-')}</strong></div>
+        <div><span>Inspection Date</span><strong>${formatFindingsDate(finding.inspectionDate)}</strong></div>
+        <div><span>Follow-up</span><strong>${formatFindingsDate(finding.followUpDate)}</strong></div>
+      </div>
+
+      ${finding.note ? `<div class="finding-note"><strong>Note:</strong> ${escapeHtml(finding.note)}</div>` : ''}
+      ${finding.projectAddress ? `<div class="finding-address">${escapeHtml(finding.projectAddress)}</div>` : ''}
+
+      <div class="finding-actions">
+        <button type="button" onclick="openFindingInspection('${finding.projectId}', ${Number(finding.itemIndex) || 0})">Open Inspection</button>
+      </div>
+    </article>
+  `).join('');
+}
+
+function openFindingsCentreCommand() {
+  const section = document.getElementById('findingsCentreSection');
+  if (!section) {
+    showProjectList();
+    return;
+  }
+
+  section.style.display = 'block';
+  renderFindingsCentre();
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeFindingsCentreCommand() {
+  const section = document.getElementById('findingsCentreSection');
+  if (section) section.style.display = 'none';
+}
+
+function openFindingInspection(projectId, itemIndex) {
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project) {
+    alert('Inspection could not be found on this device. Sync / refresh may be required.');
+    return;
+  }
+
+  openProject(projectId);
+
+  setTimeout(() => {
+    const checklistCard = document.getElementById('checklistCard');
+    if (checklistCard) {
+      checklistCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const row = document.querySelector(`.checklist-row[data-item-index="${itemIndex}"]`);
+    if (row) {
+      row.classList.add('issue-focus');
+      setTimeout(() => row.classList.remove('issue-focus'), 4000);
+    }
+  }, 500);
+}
+
+function initFindingsCentre() {
+  const closeBtn = document.getElementById('closeFindingsCentreBtn');
+  if (closeBtn) closeBtn.addEventListener('click', closeFindingsCentreCommand);
+
+  const search = document.getElementById('findingsSearch');
+  if (search) search.addEventListener('input', renderFindingsCentre);
+
+  const sort = document.getElementById('findingsSort');
+  if (sort) sort.addEventListener('change', renderFindingsCentre);
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.addEventListener('click', () => setFindingsCentreFilter(button.dataset.findingsFilter));
+  });
+}
+
+function initHomeCommandCentre() {
+  const bindings = [
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', openFindingsCentreCommand],
+    ['cmdOverdueBtn', openInspectionsCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  bindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (button) {
+      button.addEventListener('click', handler);
+    }
+  });
+
+  renderHomeCommandCentre();
+}
+
 function initApp() {
   updateAppInfo();
+  initHomeCommandCentre();
+  initHomeCommandCentre();
+  initFindingsCentre();
 
   const refreshSyncBtn = document.getElementById('refreshSyncBtn');
 
@@ -3608,6 +4187,8 @@ getEl('recurringCycleNotes').addEventListener('input', scheduleAutoSave);
     renderProjectsList();
     scrollToFirstVisibleProject();
   });
+
+  initInspectionGatewayFilters();
   getEl('productType').addEventListener('change', () => {
     updateInspectionTypeOptions();
     updateDisplay();
@@ -4856,6 +5437,7 @@ function showProjectList() {
   getEl('projectListSection').style.display = 'block';
   getEl('projectFormSection').style.display = 'none';
   renderProjectsList();
+  renderHomeCommandCentre();
   updateFloatingBackButton();
 }
 
@@ -5007,62 +5589,13 @@ function removeInspectionMovementDock() {
   }
 }
 
-function showInspectionMovementDock(sectionIndex, availableSections, sectionMeta) {
+function showInspectionMovementDock() {
+  // Fire-S v1.6:
+  // The Back / Next / Menu / Full View movement dock was removed because it
+  // covered the real Save / Finish / More action bar during inspections.
+  // Section cards now scroll to the relevant area without hiding the rest of
+  // the inspection form.
   removeInspectionMovementDock();
-
-  const dock =
-    document.createElement('div');
-
-  dock.id = 'inspectionMovementDock';
-  dock.className = 'inspection-movement-dock';
-
-  const isFirst =
-    sectionIndex <= 0;
-
-  const isLast =
-    sectionIndex >= availableSections.length - 1;
-
-  dock.innerHTML = `
-    <div class="inspection-movement-label">
-      <strong>${escapeHtml(sectionMeta?.label || 'Inspection')}</strong>
-      <span>${sectionIndex + 1} of ${availableSections.length}</span>
-    </div>
-
-    <div class="inspection-movement-buttons">
-      <button
-        type="button"
-        onclick="goToPreviousInspectionSection()"
-        ${isFirst ? 'disabled' : ''}
-      >
-        Back
-      </button>
-
-      <button
-        type="button"
-        class="movement-next-btn"
-        onclick="goToNextInspectionSection()"
-        ${isLast ? 'disabled' : ''}
-      >
-        Next
-      </button>
-
-      <button
-        type="button"
-        onclick="toggleInspectionCommandMenu()"
-      >
-        Menu
-      </button>
-
-      <button
-        type="button"
-        onclick="closeInspectionSectionFocus()"
-      >
-        Full View
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(dock);
 }
 
 function removeInspectionSectionFocus() {
@@ -5082,14 +5615,13 @@ function removeInspectionSectionFocus() {
   });
 
   document
-  .querySelectorAll('.inspection-section-focus-toolbar')
-  .forEach(toolbar => {
-    toolbar.remove();
-  });
+    .querySelectorAll('.inspection-section-focus-toolbar')
+    .forEach(toolbar => {
+      toolbar.remove();
+    });
 
-removeInspectionMovementDock();
-
-activeInspectionSectionId = null;
+  removeInspectionMovementDock();
+  activeInspectionSectionId = null;
 }
 
 function focusInspectionSection(sectionId) {
@@ -5097,87 +5629,26 @@ function focusInspectionSection(sectionId) {
 
   if (!target) return;
 
+  // Fire-S v1.6:
+  // Do NOT enter single-section / guided movement mode.
+  // The user must always keep normal Save / Finish / More capability.
   removeInspectionSectionFocus();
 
   activeInspectionSectionId = sectionId;
+
   target.classList.add('inspection-section-focused');
-  const formSection = document.getElementById('projectFormSection');
 
-if (formSection) {
-  formSection.classList.add('inspection-section-mode');
-}
+  setTimeout(() => {
+    const targetTop =
+      target.getBoundingClientRect().top +
+      window.pageYOffset -
+      82;
 
-INSPECTION_SECTION_FLOW.forEach(sectionMeta => {
-  const section = document.getElementById(sectionMeta.id);
-
-  if (!section) return;
-
-  const isActiveSection = sectionMeta.id === sectionId;
-
-  section.classList.toggle('inspection-section-hidden', !isActiveSection);
-  section.classList.toggle('inspection-section-focused', isActiveSection);
-});
-
- const availableSections = getAvailableInspectionSections();
-const sectionIndex = availableSections.findIndex(section => section.id === sectionId);
-const sectionMeta = availableSections[sectionIndex];
-
-  const toolbar = document.createElement('div');
-  toolbar.className = 'inspection-section-focus-toolbar';
-
-  toolbar.innerHTML = `
-    <div class="inspection-section-focus-title">
-      ${escapeHtml(sectionMeta?.label || 'Inspection Section')}
-    </div>
-
-    <div class="inspection-section-focus-actions">
-      <button
-        type="button"
-        onclick="goToPreviousInspectionSection()"
-        ${sectionIndex <= 0 ? 'disabled' : ''}
-      >
-        Previous
-      </button>
-
-      <button
-        type="button"
-        onclick="goToNextInspectionSection()"
-        ${sectionIndex >= availableSections.length - 1 ? 'disabled' : ''}
-      >
-        Next
-      </button>
-
-      <button
-        type="button"
-        onclick="closeInspectionSectionFocus()"
-      >
-        Close
-      </button>
-    </div>
-  `;
-
-  target.prepend(toolbar);
-
-showInspectionMovementDock(
-  sectionIndex,
-  availableSections,
-  sectionMeta
-);
-
-setTimeout(() => {
-  const formSection =
-    document.getElementById('projectFormSection');
-
-  const targetTop =
-    (formSection || target).getBoundingClientRect().top +
-    window.pageYOffset -
-    80;
-
-  window.scrollTo({
-    top: Math.max(targetTop, 0),
-    behavior: 'smooth'
-  });
-}, 40);
+    window.scrollTo({
+      top: Math.max(targetTop, 0),
+      behavior: 'smooth'
+    });
+  }, 40);
 }
 
 function goToPreviousInspectionSection() {
@@ -6296,6 +6767,7 @@ function showHome() {
   getEl('projectListSection').style.display = 'none';
   getEl('projectFormSection').style.display = 'none';
 
+  renderHomeCommandCentre();
   updateFloatingBackButton();
 }
 
@@ -9012,6 +9484,172 @@ function isCompletedAllClearInspection(project) {
   );
 }
 
+
+function getInspectionGatewayDateFilters() {
+  const fromField = document.getElementById('inspectionDateFrom');
+  const toField = document.getElementById('inspectionDateTo');
+
+  return {
+    from: fromField ? fromField.value : '',
+    to: toField ? toField.value : ''
+  };
+}
+
+function getProjectDateForFiltering(project) {
+  return normaliseDateString(
+    project?.inspectionDate ||
+    project?.completedAt ||
+    project?.scheduledDate ||
+    project?.followUpDate ||
+    project?.lastSaved ||
+    project?.createdAt ||
+    ''
+  );
+}
+
+function projectMatchesInspectionDateFilter(project) {
+  const filters = getInspectionGatewayDateFilters();
+  const projectDate = getProjectDateForFiltering(project);
+
+  if (!filters.from && !filters.to) return true;
+  if (!projectDate) return false;
+
+  if (filters.from && projectDate < filters.from) return false;
+  if (filters.to && projectDate > filters.to) return false;
+
+  return true;
+}
+
+function updateInspectionDateFilterStatus() {
+  const status = document.getElementById('inspectionDateFilterStatus');
+  if (!status) return;
+
+  const filters = getInspectionGatewayDateFilters();
+
+  if (!filters.from && !filters.to) {
+    status.textContent = 'Showing all inspection dates.';
+    return;
+  }
+
+  if (filters.from && filters.to) {
+    status.textContent = `Showing inspections from ${filters.from} to ${filters.to}.`;
+    return;
+  }
+
+  if (filters.from) {
+    status.textContent = `Showing inspections from ${filters.from}.`;
+    return;
+  }
+
+  status.textContent = `Showing inspections up to ${filters.to}.`;
+}
+
+function setInspectionDateRange(from, to) {
+  const fromField = document.getElementById('inspectionDateFrom');
+  const toField = document.getElementById('inspectionDateTo');
+
+  if (fromField) fromField.value = from || '';
+  if (toField) toField.value = to || '';
+
+  currentProjectPage = 1;
+  updateInspectionDateFilterStatus();
+  renderProjectsList();
+  scrollToFirstVisibleProject();
+}
+
+function startOfWeekMonday(date) {
+  const result = new Date(date);
+  const day = result.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  result.setDate(result.getDate() + diff);
+  return result;
+}
+
+function formatDateInputValue(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function applyInspectionQuickDateFilter(filter) {
+  const today = new Date();
+  let from = '';
+  let to = '';
+
+  if (filter === 'today') {
+    from = to = formatDateInputValue(today);
+  }
+
+  if (filter === 'week') {
+    const start = startOfWeekMonday(today);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    from = formatDateInputValue(start);
+    to = formatDateInputValue(end);
+  }
+
+  if (filter === 'month') {
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    from = formatDateInputValue(start);
+    to = formatDateInputValue(end);
+  }
+
+  if (filter === 'quarter') {
+    const quarterStartMonth = Math.floor(today.getMonth() / 3) * 3;
+    const start = new Date(today.getFullYear(), quarterStartMonth, 1);
+    const end = new Date(today.getFullYear(), quarterStartMonth + 3, 0);
+    from = formatDateInputValue(start);
+    to = formatDateInputValue(end);
+  }
+
+  if (filter === 'year') {
+    const start = new Date(today.getFullYear(), 0, 1);
+    const end = new Date(today.getFullYear(), 11, 31);
+    from = formatDateInputValue(start);
+    to = formatDateInputValue(end);
+  }
+
+  setInspectionDateRange(from, to);
+
+  document
+    .querySelectorAll('[data-date-filter]')
+    .forEach(button => {
+      button.classList.toggle(
+        'active-date-filter',
+        button.dataset.dateFilter === filter && filter !== 'all'
+      );
+    });
+}
+
+function initInspectionGatewayFilters() {
+  const fromField = document.getElementById('inspectionDateFrom');
+  const toField = document.getElementById('inspectionDateTo');
+
+  [fromField, toField].forEach(field => {
+    if (!field) return;
+
+    field.addEventListener('change', () => {
+      currentProjectPage = 1;
+      updateInspectionDateFilterStatus();
+      renderProjectsList();
+      scrollToFirstVisibleProject();
+
+      document
+        .querySelectorAll('[data-date-filter]')
+        .forEach(button => button.classList.remove('active-date-filter'));
+    });
+  });
+
+  document
+    .querySelectorAll('[data-date-filter]')
+    .forEach(button => {
+      button.addEventListener('click', () => {
+        applyInspectionQuickDateFilter(button.dataset.dateFilter);
+      });
+    });
+
+  updateInspectionDateFilterStatus();
+}
+
 function renderProjectsList() {
   const container = getEl('projectsList');
 
@@ -9055,21 +9693,36 @@ function renderProjectsList() {
   // Search filter
   if (searchText) {
     const placeName = (project.projectName || '').toLowerCase();
-    const address = (project.projectAddress || '').toLowerCase();
+    const organisationName = (project.organisationName || '').toLowerCase();
+    const siteName = (project.siteName || '').toLowerCase();
+    const address = (project.projectAddress || project.addressLine || '').toLowerCase();
     const mallName = (project.mallName || '').toLowerCase();
     const unitNumber = (project.unitNumber || '').toLowerCase();
     const moduleName = normalizeProductType(project.productType).toLowerCase();
     const inspectionType = (project.inspectionType || '').toLowerCase();
+    const inspectorName = (project.inspectorName || '').toLowerCase();
+    const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
+    const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
 
     const matchesSearch =
       placeName.includes(searchText) ||
+      organisationName.includes(searchText) ||
+      siteName.includes(searchText) ||
       address.includes(searchText) ||
       mallName.includes(searchText) ||
       unitNumber.includes(searchText) ||
       moduleName.includes(searchText) ||
-      inspectionType.includes(searchText);
+      inspectionType.includes(searchText) ||
+      inspectorName.includes(searchText) ||
+      inspectionNumber.includes(searchText) ||
+      inspectionDate.includes(searchText);
 
     if (!matchesSearch) return false;
+  }
+
+  // Inspection date filter
+  if (!projectMatchesInspectionDateFilter(project)) {
+    return false;
   }
 
   // Follow-up filter
@@ -9281,10 +9934,8 @@ const scheduleHtml =
         getProjectInspectionDate(project);
 
       return `
-        <button
-          type="button"
+        <div
           class="inspection-project-list-item"
-          onclick="openProjectSummaryCard(${index})"
         >
           <span class="inspection-project-list-title">
             ${escapeHtml(projectTitle)}
@@ -9335,7 +9986,7 @@ const scheduleHtml =
 
         ${getInspectionCardActionHtml(project, index)}
 
-        </button>
+        </div>
       `;
     }).join('')}
   </div>
@@ -9453,7 +10104,7 @@ function getInspectionCardAttentionSummary(project) {
   const parts = [];
 
   if (completion.noCount > 0) {
-    parts.push(`${completion.noCount} NO finding${completion.noCount === 1 ? '' : 's'}`);
+    parts.push(`${completion.noCount} open finding${completion.noCount === 1 ? '' : 's'}`);
   }
 
   if (completion.unanswered > 0) {
@@ -9494,12 +10145,14 @@ function getInspectionCardActionHtml(project, index) {
   const hasPhotos =
     photoCount > 0;
 
+  const projectIdJs = JSON.stringify(project?.id || '');
+
   return `
     <div class="inspection-card-action-row">
       <button
         type="button"
         class="inspection-card-action primary"
-        onclick="openProject(${index})"
+        onclick='openProject(${projectIdJs})'
       >
         Open Inspection
       </button>
@@ -9510,7 +10163,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action danger"
-              onclick="openProjectAndReviewFindings(${index})"
+              onclick='openProjectAndReviewFindings(${projectIdJs})'
             >
               Review Findings
             </button>
@@ -9524,7 +10177,7 @@ function getInspectionCardActionHtml(project, index) {
             <button
               type="button"
               class="inspection-card-action secondary"
-              onclick="openProjectAndViewPhotos(${index})"
+              onclick='openProjectAndViewPhotos(${projectIdJs})'
             >
               Photos (${photoCount})
             </button>
@@ -9548,21 +10201,21 @@ function getInspectionCardActionHtml(project, index) {
     >
       <button
         type="button"
-        onclick="openProject(${index})"
+        onclick='openProject(${projectIdJs})'
       >
         Edit / Continue
       </button>
 
       <button
         type="button"
-        onclick="openProjectAndGoToSchedule(${index})"
+        onclick='openProjectAndGoToSchedule(${projectIdJs})'
       >
         Schedule / Cycle
       </button>
 
       <button
         type="button"
-        onclick="openProjectAndGenerateReport(${index})"
+        onclick='openProjectAndGenerateReport(${projectIdJs})'
       >
         Report
       </button>
@@ -9570,8 +10223,8 @@ function getInspectionCardActionHtml(project, index) {
   `;
 }
 
-function openProjectAndReviewFindings(index) {
-  openProject(index);
+function openProjectAndReviewFindings(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     focusInspectionSection('checklistCard');
@@ -9582,24 +10235,24 @@ function openProjectAndReviewFindings(index) {
   }, 250);
 }
 
-function openProjectAndViewPhotos(index) {
-  openProject(index);
+function openProjectAndViewPhotos(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     focusInspectionSection('photoEvidenceCard');
   }, 250);
 }
 
-function openProjectAndGoToSchedule(index) {
-  openProject(index);
+function openProjectAndGoToSchedule(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     focusInspectionSection('nextInspectionCard');
   }, 250);
 }
 
-function openProjectAndGenerateReport(index) {
-  openProject(index);
+function openProjectAndGenerateReport(projectId) {
+  openProject(projectId);
 
   setTimeout(() => {
     generateReport();
@@ -10107,12 +10760,44 @@ function archiveCurrentInspectionCycle(project, archiveReason = 'cycle_start') {
   ];
 }
 
+
+function resolveProjectOpenIdentifier(projectIdentifier) {
+  const projects = getProjects();
+
+  // Primary path: project id from dashboard/cards/findings centre.
+  if (typeof projectIdentifier === 'string') {
+    const byId = projects.find(project => project.id === projectIdentifier);
+    if (byId) return byId;
+
+    // Fallback: numeric string from older buttons.
+    const numericIndex = Number(projectIdentifier);
+    if (Number.isInteger(numericIndex)) {
+      const visible = window.currentProjectsListView || [];
+      if (visible[numericIndex]) return visible[numericIndex];
+      if (projects[numericIndex]) return projects[numericIndex];
+    }
+  }
+
+  // Backward compatibility: old project cards passed page index.
+  if (typeof projectIdentifier === 'number' && Number.isInteger(projectIdentifier)) {
+    const visible = window.currentProjectsListView || [];
+    if (visible[projectIdentifier]) return visible[projectIdentifier];
+    if (projects[projectIdentifier]) return projects[projectIdentifier];
+  }
+
+  return null;
+}
+
 function openProject(projectId, focusMode) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
   const projects = getProjects();
-  const project = projects.find(p => p.id === projectId);
-  if (!project) return;
+  const project = resolveProjectOpenIdentifier(projectId);
+  if (!project) {
+    console.warn('Open inspection failed: project not found for identifier', projectId);
+    alert('Could not open this inspection. Please refresh the list and try again.');
+    return;
+  }
 
   currentProjectId = project.id;
   followUpFindingModeActive = false;
@@ -11315,7 +12000,7 @@ function createFollowUpInspection() {
   if (!followUpDate) return;
 
   const confirmed = confirm(
-  'Schedule a corrective follow-up for this same site? Use this only when NO findings or corrective actions must be checked again. This will not create a duplicate card.'
+  'Schedule a corrective follow-up for this same site? Use this only when open findings or corrective actions must be checked again. This will not create a duplicate card.'
 );
   if (!confirmed) return;
 
@@ -11333,7 +12018,7 @@ scheduledStatus: 'scheduled',
 scheduleFreshInspection: true,
 scheduledReason: 'follow_up',
 scheduleType: 'follow_up',
-scheduledNote: 'Corrective follow-up for NO findings / action items.',
+scheduledNote: 'Corrective follow-up for open findings / action items.',
 
     completedAt: null,
     archiveStatus: '',
@@ -15005,3 +15690,1377 @@ window.addEventListener('online', async () => {
   runBackgroundSync('signal restored');
 });
 
+
+
+/* =====================================================
+   FIRE-S COMMAND CENTRE V1
+   Safe UI overlay: reduces scrolling by turning the
+   existing inspection flow into actionable cards.
+   ===================================================== */
+
+function getCommandCentreStatus(type, value) {
+  if (type === 'danger') return { label: 'Needs attention', className: 'cc-danger' };
+  if (type === 'warning') return { label: 'In progress', className: 'cc-warning' };
+  if (type === 'ready') return { label: 'Ready', className: 'cc-ready' };
+  if (type === 'complete') return { label: 'Complete', className: 'cc-complete' };
+  return { label: value || 'Not started', className: 'cc-neutral' };
+}
+
+function getCurrentCommandCentreProject() {
+  const snapshot =
+    typeof getCurrentFormProjectSnapshot === 'function'
+      ? getCurrentFormProjectSnapshot()
+      : {};
+
+  const projects =
+    typeof getProjects === 'function'
+      ? getProjects()
+      : [];
+
+  const storedProject =
+    projects.find(project => project.id === currentProjectId) || {};
+
+  return {
+    ...storedProject,
+    ...snapshot,
+    photos:
+      Array.isArray(currentPhotos) && currentPhotos.length > 0
+        ? currentPhotos
+        : (storedProject.photos || snapshot.photos || [])
+  };
+}
+
+function getCommandCentreCardHtml(card) {
+  return `
+    <button
+      type="button"
+      class="command-centre-card ${escapeHtml(card.className)}"
+      onclick="${escapeHtml(card.action)}"
+    >
+      <div class="command-centre-card-top">
+        <span class="command-centre-icon">${card.icon}</span>
+        <span class="command-centre-status">${escapeHtml(card.status)}</span>
+      </div>
+
+      <strong>${escapeHtml(card.title)}</strong>
+      <span>${escapeHtml(card.detail)}</span>
+    </button>
+  `;
+}
+
+function buildCommandCentreCards(project, completion, expiryCounts, dataQuality, percent) {
+  const photoCount =
+    Array.isArray(project.photos)
+      ? project.photos.length
+      : 0;
+
+  const noCount =
+    Number(completion.noCount || 0);
+
+  const commentReady =
+    String(project.finalComments || '').trim().length > 0;
+
+  const hasFollowUp =
+    String(project.followUpRequired || '').trim() === 'Yes' ||
+    !!String(project.followUpDate || '').trim() ||
+    project.recurringCycleEnabled === true;
+
+  const reportReady =
+    dataQuality.count === 0 && completion.total > 0 && completion.unanswered === 0;
+
+  const siteStatus =
+    dataQuality.count > 0
+      ? getCommandCentreStatus('danger')
+      : getCommandCentreStatus('complete');
+
+  const checklistStatus =
+    completion.total === 0
+      ? getCommandCentreStatus('neutral', 'Not loaded')
+      : completion.unanswered > 0
+        ? getCommandCentreStatus('warning')
+        : getCommandCentreStatus('complete');
+
+  const findingsStatus =
+    noCount > 0
+      ? getCommandCentreStatus('danger')
+      : getCommandCentreStatus('complete');
+
+  const photoStatus =
+    photoCount > 0
+      ? getCommandCentreStatus('complete')
+      : getCommandCentreStatus('warning');
+
+  const commentStatus =
+    commentReady
+      ? getCommandCentreStatus('complete')
+      : getCommandCentreStatus('warning');
+
+  const scheduleStatus =
+    hasFollowUp
+      ? getCommandCentreStatus('ready')
+      : getCommandCentreStatus('neutral', 'Optional');
+
+  const expiryTotal =
+    Number(expiryCounts.overdue || 0) +
+    Number(expiryCounts.soon || 0) +
+    Number(expiryCounts.missing || 0);
+
+  const expiryStatus =
+    expiryCounts.overdue > 0
+      ? getCommandCentreStatus('danger')
+      : expiryTotal > 0
+        ? getCommandCentreStatus('warning')
+        : getCommandCentreStatus('complete');
+
+  const reportStatus =
+    reportReady
+      ? getCommandCentreStatus('ready')
+      : getCommandCentreStatus('warning');
+
+  return [
+    {
+      title: 'Site Information',
+      icon: '🏢',
+      status: siteStatus.label,
+      className: siteStatus.className,
+      detail:
+        dataQuality.count > 0
+          ? `${dataQuality.count} missing field${dataQuality.count === 1 ? '' : 's'}`
+          : 'Client, site and inspection info ready',
+      action: "handleCommandCentreCard('projectDetailsCard')"
+    },
+    {
+      title: 'Checklist',
+      icon: '✅',
+      status: checklistStatus.label,
+      className: checklistStatus.className,
+      detail:
+        completion.total > 0
+          ? `${completion.answered}/${completion.total} answered · ${percent}%`
+          : 'Checklist not loaded yet',
+      action: "handleCommandCentreCard('checklistCard')"
+    },
+    {
+      title: 'Findings',
+      icon: '🚩',
+      status: findingsStatus.label,
+      className: findingsStatus.className,
+      detail:
+        noCount > 0
+          ? `${noCount} NO answer${noCount === 1 ? '' : 's'} to review`
+          : 'No open open findings detected',
+      action: noCount > 0
+        ? "handleSmartQuickLink('finding')"
+        : "handleCommandCentreCard('checklistCard')"
+    },
+    {
+      title: 'Photo Evidence',
+      icon: '📷',
+      status: photoStatus.label,
+      className: photoStatus.className,
+      detail:
+        photoCount > 0
+          ? `${photoCount} photo${photoCount === 1 ? '' : 's'} added`
+          : 'Add site evidence photos',
+      action: "handleCommandCentreCard('photoEvidenceCard')"
+    },
+    {
+      title: 'Comments',
+      icon: '📝',
+      status: commentStatus.label,
+      className: commentStatus.className,
+      detail:
+        commentReady
+          ? 'Final comment captured'
+          : 'Add conclusion or recommendation',
+      action: "handleCommandCentreCard('inspectorCommentsCard')"
+    },
+    {
+      title: 'Scheduling',
+      icon: '📅',
+      status: scheduleStatus.label,
+      className: scheduleStatus.className,
+      detail:
+        hasFollowUp
+          ? 'Follow-up or recurring cycle set'
+          : 'Optional next inspection planning',
+      action: "handleCommandCentreCard('nextInspectionCard')"
+    },
+    {
+      title: 'Expiry / Equipment',
+      icon: '⏱️',
+      status: expiryStatus.label,
+      className: expiryStatus.className,
+      detail:
+        expiryTotal > 0
+          ? `${expiryTotal} expiry item${expiryTotal === 1 ? '' : 's'} need review`
+          : 'No expiry alerts',
+      action:
+        expiryCounts.overdue > 0
+          ? "handleSmartQuickLink('expiry-overdue')"
+          : expiryCounts.soon > 0
+            ? "handleSmartQuickLink('expiry-soon')"
+            : expiryCounts.missing > 0
+              ? "handleSmartQuickLink('expiry-missing')"
+              : "handleCommandCentreCard('checklistCard')"
+    },
+    {
+      title: 'Report',
+      icon: '📄',
+      status: reportStatus.label,
+      className: reportStatus.className,
+      detail:
+        reportReady
+          ? 'Ready to generate report'
+          : 'Complete inspection before final report',
+      action: "handleCommandCentreReport()"
+    }
+  ];
+}
+
+function handleCommandCentreCard(sectionId) {
+  const target = document.getElementById(sectionId);
+
+  if (!target) {
+    alert('This section is not available yet.');
+    return;
+  }
+
+  if (typeof focusInspectionSection === 'function') {
+    focusInspectionSection(sectionId);
+  } else {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function handleCommandCentreReport() {
+  if (typeof generateReport === 'function') {
+    generateReport();
+  }
+
+  const reportSection = document.getElementById('reportSection');
+
+  if (reportSection) {
+    reportSection.style.display = 'block';
+    handleCommandCentreCard('reportSection');
+  }
+}
+
+function updateProjectReadinessPanel() {
+  const quickSummary =
+    document.getElementById('quickReadinessSummary');
+
+  const oldPanel =
+    document.getElementById('projectReadinessPanel');
+
+  if (!quickSummary && !oldPanel) return;
+
+  const formSection = document.getElementById('projectFormSection');
+
+  if (!formSection || formSection.style.display === 'none') {
+    if (quickSummary) quickSummary.innerHTML = '';
+    if (oldPanel) oldPanel.innerHTML = '';
+    return;
+  }
+
+  const project = getCurrentCommandCentreProject();
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  const percent = completion.total
+    ? Math.round((completion.answered / completion.total) * 100)
+    : 0;
+
+  const commandCards =
+    buildCommandCentreCards(
+      project,
+      completion,
+      expiryCounts,
+      dataQuality,
+      percent
+    );
+
+  const quickLinks = [];
+
+  if (dataQuality.count > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'warning',
+      label: 'Complete inspection info',
+      count: dataQuality.count,
+      detail: `Missing: ${dataQuality.missing.join(', ')}`,
+      action: 'missing-info'
+    });
+  }
+
+  if (completion.unanswered > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'progress',
+      label: 'Continue Q&A checklist',
+      count: completion.unanswered,
+      detail: 'Tap to continue with the first unanswered question.',
+      action: 'unanswered'
+    });
+  }
+
+  if (completion.noCount > 0) {
+    quickLinks.push({
+      group: 'inspection',
+      type: 'danger',
+      label: 'Review Action Items',
+      count: completion.noCount,
+      detail: 'Inspection requirements answered NO may need corrective action.',
+      action: 'finding'
+    });
+  }
+
+  if (expiryCounts.overdue > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'danger',
+      label: 'Expired equipment',
+      count: expiryCounts.overdue,
+      detail: 'Expiry date has already passed.',
+      action: 'expiry-overdue'
+    });
+  }
+
+  if (expiryCounts.soon > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Equipment due soon',
+      count: expiryCounts.soon,
+      detail: 'Expiry date is approaching.',
+      action: 'expiry-soon'
+    });
+  }
+
+  if (expiryCounts.missing > 0) {
+    quickLinks.push({
+      group: 'equipment',
+      type: 'warning',
+      label: 'Missing equipment expiry dates',
+      count: expiryCounts.missing,
+      detail: 'Enter expiry dates where applicable.',
+      action: 'expiry-missing'
+    });
+  }
+
+  const renderQuickLink = link => `
+    <button
+      type="button"
+      class="quick-link-chip quick-link-${escapeHtml(link.type)}"
+      onclick="handleSmartQuickLink('${escapeHtml(link.action)}')"
+    >
+      <span class="quick-link-main">
+        ${escapeHtml(link.label)}
+      </span>
+
+      <strong>${link.count}</strong>
+
+      <small>${escapeHtml(link.detail)}</small>
+    </button>
+  `;
+
+  const inspectionLinks =
+    quickLinks.filter(link => link.group === 'inspection');
+
+  const equipmentLinks =
+    quickLinks.filter(link => link.group === 'equipment');
+
+  const projectTitle =
+    project.projectName ||
+    [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
+    'Current inspection';
+
+  const inspectionNumber =
+    project.inspectionNumber ||
+    'Draft inspection';
+
+  const summaryHtml = `
+    <div class="command-centre-hero">
+      <div>
+        <div class="command-centre-kicker">Inspection Command Centre</div>
+        <h3>${escapeHtml(projectTitle)}</h3>
+        <p>${escapeHtml(inspectionNumber)} · ${escapeHtml(project.inspectorName || 'Inspector not set')}</p>
+      </div>
+
+      <div class="command-centre-progress">
+        <strong>${percent}%</strong>
+        <span>Checklist progress</span>
+      </div>
+    </div>
+
+    <div class="command-centre-grid">
+      ${commandCards.map(getCommandCentreCardHtml).join('')}
+    </div>
+
+    ${
+      quickLinks.length > 0
+        ? `
+          <div class="command-centre-actions-heading">
+            Smart Actions
+          </div>
+        `
+        : `
+          <div class="command-centre-clear-line">
+            No urgent smart actions. Continue from any card above.
+          </div>
+        `
+    }
+
+    ${
+      inspectionLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Inspection action items
+          </div>
+
+          <div class="quick-link-list">
+            ${inspectionLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : ''
+    }
+
+    ${
+      equipmentLinks.length > 0
+        ? `
+          <div class="quick-link-section-title">
+            Equipment status
+          </div>
+
+          <div class="quick-link-list">
+            ${equipmentLinks.map(renderQuickLink).join('')}
+          </div>
+        `
+        : ''
+    }
+  `;
+
+  if (quickSummary) {
+    quickSummary.innerHTML = summaryHtml;
+  }
+
+  if (oldPanel) {
+    oldPanel.innerHTML = '';
+    oldPanel.style.display = 'none';
+  }
+}
+
+
+
+// =====================================================
+// FIRE-S COMPLIANCE ENGINE v1
+// Executive dashboard + role-aware home experience
+// Safe add-on: calculated from existing local inspection_data/projects.
+// =====================================================
+
+function normalizeComplianceAnswer(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function getProjectAnswersForCompliance(project) {
+  if (!project || !Array.isArray(project.answers)) {
+    return [];
+  }
+
+  return project.answers;
+}
+
+function getProjectComplianceStats(project) {
+  const answers = getProjectAnswersForCompliance(project);
+
+  let yes = 0;
+  let no = 0;
+  let na = 0;
+  let unanswered = 0;
+
+  answers.forEach(answer => {
+    const value = normalizeComplianceAnswer(answer?.answer);
+
+    if (value === 'yes') yes += 1;
+    else if (value === 'no') no += 1;
+    else if (value === 'n/a' || value === 'na' || value === 'not applicable') na += 1;
+    else unanswered += 1;
+  });
+
+  const scoredTotal = yes + no;
+  const percentage = scoredTotal > 0
+    ? Math.round((yes / scoredTotal) * 100)
+    : null;
+
+  return {
+    yes,
+    no,
+    na,
+    unanswered,
+    scoredTotal,
+    percentage
+  };
+}
+
+function getComplianceScoreLabel(score) {
+  if (score === null || score === undefined) return 'No scored data';
+  if (score >= 90) return 'Strong';
+  if (score >= 75) return 'Watch';
+  if (score >= 60) return 'At Risk';
+  return 'Critical';
+}
+
+function getComplianceScoreClass(score) {
+  if (score === null || score === undefined) return 'compliance-unknown';
+  if (score >= 90) return 'compliance-strong';
+  if (score >= 75) return 'compliance-watch';
+  if (score >= 60) return 'compliance-risk';
+  return 'compliance-critical';
+}
+
+function getProjectSiteKey(project) {
+  return String(
+    project?.siteId ||
+    project?.projectAddress ||
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' ') ||
+    project?.projectName ||
+    project?.id ||
+    'unknown-site'
+  ).trim().toLowerCase();
+}
+
+function getProjectSiteLabel(project) {
+  return (
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') ||
+    project?.projectName ||
+    project?.projectAddress ||
+    'Unnamed site'
+  );
+}
+
+function getProjectLatestDate(project) {
+  return (
+    project?.inspectionDate ||
+    project?.completedAt ||
+    project?.lastSaved ||
+    project?.updated_at ||
+    project?.created_at ||
+    ''
+  );
+}
+
+function getCompanyComplianceStats(projects) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  const totals = {
+    yes: 0,
+    no: 0,
+    na: 0,
+    unanswered: 0,
+    scoredTotal: 0,
+    compliancePercentage: null,
+    openFindings: 0,
+    overdueActions: 0,
+    inspections: safeProjects.length,
+    photos: 0,
+    reports: 0,
+    sites: 0,
+    sitesAtRisk: 0,
+    topAttentionSites: []
+  };
+
+  const siteMap = new Map();
+
+  safeProjects.forEach(project => {
+    const stats = getProjectComplianceStats(project);
+    totals.yes += stats.yes;
+    totals.no += stats.no;
+    totals.na += stats.na;
+    totals.unanswered += stats.unanswered;
+    totals.scoredTotal += stats.scoredTotal;
+    totals.openFindings += stats.no;
+    totals.photos += Array.isArray(project?.photos) ? project.photos.length : 0;
+
+    if (project?.completedAt || project?.archivedAt) {
+      totals.reports += 1;
+    }
+
+    if (typeof isProjectOverdueForCommandCentre === 'function' && isProjectOverdueForCommandCentre(project)) {
+      totals.overdueActions += 1;
+    }
+
+    const siteKey = getProjectSiteKey(project);
+    const existing = siteMap.get(siteKey) || {
+      key: siteKey,
+      label: getProjectSiteLabel(project),
+      yes: 0,
+      no: 0,
+      scoredTotal: 0,
+      inspections: 0,
+      latestDate: '',
+      percentage: null
+    };
+
+    existing.yes += stats.yes;
+    existing.no += stats.no;
+    existing.scoredTotal += stats.scoredTotal;
+    existing.inspections += 1;
+
+    const projectDate = getProjectLatestDate(project);
+    if (projectDate && (!existing.latestDate || String(projectDate) > String(existing.latestDate))) {
+      existing.latestDate = projectDate;
+    }
+
+    siteMap.set(siteKey, existing);
+  });
+
+  totals.compliancePercentage = totals.scoredTotal > 0
+    ? Math.round((totals.yes / totals.scoredTotal) * 100)
+    : null;
+
+  const sites = Array.from(siteMap.values()).map(site => {
+    const percentage = site.scoredTotal > 0
+      ? Math.round((site.yes / site.scoredTotal) * 100)
+      : null;
+
+    return {
+      ...site,
+      percentage,
+      findings: site.no
+    };
+  });
+
+  totals.sites = sites.length;
+  totals.sitesAtRisk = sites.filter(site => site.percentage !== null && site.percentage < 80).length;
+  totals.topAttentionSites = sites
+    .filter(site => site.scoredTotal > 0)
+    .sort((a, b) => {
+      if (a.percentage !== b.percentage) return a.percentage - b.percentage;
+      return b.findings - a.findings;
+    })
+    .slice(0, 5);
+
+  return totals;
+}
+
+function isManagementLandingRole() {
+  const role = getCurrentUserRole ? getCurrentUserRole() : currentUserProfile?.role;
+  return ['super_admin', 'company_owner', 'manager', 'viewer'].includes(role);
+}
+
+function getRoleLandingLabel() {
+  const role = getCurrentUserRole ? getCurrentUserRole() : currentUserProfile?.role;
+
+  if (role === 'inspector') return 'Inspector Mode';
+  if (role === 'manager') return 'Management Mode';
+  if (role === 'company_owner') return 'Owner Mode';
+  if (role === 'viewer') return 'Viewer Mode';
+  if (role === 'super_admin') return 'Fire-S Control Mode';
+  return 'Workspace Mode';
+}
+
+function ensureExecutiveComplianceDashboardMarkup() {
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre || document.getElementById('complianceHeroCard')) return;
+
+  const hero = document.createElement('section');
+  hero.className = 'compliance-hero-card compliance-unknown';
+  hero.id = 'complianceHeroCard';
+  hero.innerHTML = `
+    <div class="compliance-hero-top">
+      <div>
+        <div class="compliance-kicker">Fire Safety Compliance</div>
+        <h3 id="complianceHeroTitle">Executive Dashboard</h3>
+        <p id="complianceHeroSubtitle">Overall compliance calculated from inspection answers.</p>
+      </div>
+      <div class="compliance-mode-pill" id="complianceModePill">Workspace Mode</div>
+    </div>
+
+    <button type="button" class="compliance-score-button" id="cmdComplianceBtn">
+      <span class="compliance-score" id="cmdComplianceScore">--%</span>
+      <span class="compliance-score-label" id="cmdComplianceScoreLabel">No scored data</span>
+    </button>
+
+    <div class="compliance-breakdown-grid">
+      <button type="button" class="compliance-breakdown-card" id="cmdComplianceFindingsBtn">
+        <span id="cmdComplianceOpenFindings">0</span>
+        <strong>Open Findings</strong>
+      </button>
+      <button type="button" class="compliance-breakdown-card warning" id="cmdComplianceOverdueBtn">
+        <span id="cmdComplianceOverdueActions">0</span>
+        <strong>Overdue Actions</strong>
+      </button>
+      <button type="button" class="compliance-breakdown-card" id="cmdComplianceSitesBtn">
+        <span id="cmdComplianceSites">0</span>
+        <strong>Sites</strong>
+      </button>
+      <button type="button" class="compliance-breakdown-card" id="cmdComplianceInspectionsBtn">
+        <span id="cmdComplianceInspections">0</span>
+        <strong>Inspections</strong>
+      </button>
+    </div>
+
+    <div class="attention-sites-panel" id="attentionSitesPanel">
+      <div class="attention-sites-title">Sites Requiring Attention</div>
+      <div id="attentionSitesList" class="attention-sites-list">
+        <div class="attention-empty">No scored site data yet.</div>
+      </div>
+    </div>
+  `;
+
+  const stats = centre.querySelector('.main-command-stats');
+  if (stats) {
+    centre.insertBefore(hero, stats);
+  } else {
+    centre.appendChild(hero);
+  }
+
+  const complianceButton = document.getElementById('cmdComplianceBtn');
+  const findingsButton = document.getElementById('cmdComplianceFindingsBtn');
+  const overdueButton = document.getElementById('cmdComplianceOverdueBtn');
+  const sitesButton = document.getElementById('cmdComplianceSitesBtn');
+  const inspectionsButton = document.getElementById('cmdComplianceInspectionsBtn');
+
+  if (complianceButton) complianceButton.addEventListener('click', openMainDashboardCommand);
+  if (findingsButton) findingsButton.addEventListener('click', openFindingsCommand);
+  if (overdueButton) overdueButton.addEventListener('click', openOverdueCommand);
+  if (sitesButton) sitesButton.addEventListener('click', openMainDashboardCommand);
+  if (inspectionsButton) inspectionsButton.addEventListener('click', openInspectionsCommand);
+}
+
+function renderAttentionSites(stats) {
+  const list = document.getElementById('attentionSitesList');
+  if (!list) return;
+
+  const sites = stats?.topAttentionSites || [];
+
+  if (sites.length === 0) {
+    list.innerHTML = '<div class="attention-empty">No scored site data yet. Complete inspections to build the compliance ranking.</div>';
+    return;
+  }
+
+  list.innerHTML = sites.map(site => `
+    <button type="button" class="attention-site-row" data-site-key="${escapeHtml(site.key)}">
+      <span class="attention-site-name">${escapeHtml(site.label)}</span>
+      <span class="attention-site-meta">${site.findings} finding${site.findings === 1 ? '' : 's'} · ${site.inspections} inspection${site.inspections === 1 ? '' : 's'}</span>
+      <strong>${site.percentage}%</strong>
+    </button>
+  `).join('');
+
+  list.querySelectorAll('.attention-site-row').forEach(button => {
+    button.addEventListener('click', () => {
+      showProjectList();
+      setTimeout(() => {
+        const search = document.getElementById('projectSearch');
+        if (search) {
+          search.value = button.querySelector('.attention-site-name')?.textContent || '';
+          search.dispatchEvent(new Event('input'));
+          search.focus();
+        }
+      }, 150);
+    });
+  });
+}
+
+function openFindingsCommand() {
+  showProjectList();
+  setFilter('inspection-attention');
+  showMainCommandMessage('Findings view: showing inspections with attention items. Dedicated Findings Centre comes next.');
+}
+
+function openOverdueCommand() {
+  showProjectList();
+  setFilter('expiry-overdue');
+  showMainCommandMessage('Overdue view: showing inspections and actions requiring follow-up.');
+}
+
+// Override previous Home Command Centre renderer with Compliance Engine v1.
+function renderHomeCommandCentre() {
+  ensureExecutiveComplianceDashboardMarkup();
+
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  const projects = getHomeCommandProjects();
+  const stats = getCompanyComplianceStats(projects);
+  const complianceScore = stats.compliancePercentage;
+  const complianceClass = getComplianceScoreClass(complianceScore);
+  const complianceLabel = getComplianceScoreLabel(complianceScore);
+
+  const totalEl = document.getElementById('cmdTotalInspections');
+  const findingsEl = document.getElementById('cmdOpenFindings');
+  const overdueEl = document.getElementById('cmdOverdueItems');
+  const photosEl = document.getElementById('cmdPhotoCount');
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  const heroCard = document.getElementById('complianceHeroCard');
+  const scoreEl = document.getElementById('cmdComplianceScore');
+  const scoreLabelEl = document.getElementById('cmdComplianceScoreLabel');
+  const modePill = document.getElementById('complianceModePill');
+  const heroTitle = document.getElementById('complianceHeroTitle');
+  const heroSubtitle = document.getElementById('complianceHeroSubtitle');
+
+  if (heroCard) {
+    heroCard.classList.remove('compliance-unknown', 'compliance-strong', 'compliance-watch', 'compliance-risk', 'compliance-critical');
+    heroCard.classList.add(complianceClass);
+  }
+
+  if (scoreEl) scoreEl.textContent = complianceScore === null ? '--%' : `${complianceScore}%`;
+  if (scoreLabelEl) scoreLabelEl.textContent = complianceScore === null ? 'No scored data yet' : `${complianceLabel} Compliance`;
+  if (modePill) modePill.textContent = getRoleLandingLabel();
+
+  if (heroTitle) {
+    heroTitle.textContent = isManagementLandingRole()
+      ? 'Executive Compliance Dashboard'
+      : 'Inspector Workspace';
+  }
+
+  if (heroSubtitle) {
+    heroSubtitle.textContent = isManagementLandingRole()
+      ? 'Compliance is calculated from YES and NO checklist answers. N/A is ignored.'
+      : 'Your inspection workspace. Managers see the executive dashboard by default.';
+  }
+
+  if (totalEl) totalEl.textContent = stats.inspections;
+  if (findingsEl) findingsEl.textContent = stats.openFindings;
+  if (overdueEl) overdueEl.textContent = stats.overdueActions;
+  if (photosEl) photosEl.textContent = stats.photos;
+
+  const openFindingsEl = document.getElementById('cmdComplianceOpenFindings');
+  const overdueActionsEl = document.getElementById('cmdComplianceOverdueActions');
+  const sitesEl = document.getElementById('cmdComplianceSites');
+  const inspectionsEl = document.getElementById('cmdComplianceInspections');
+
+  if (openFindingsEl) openFindingsEl.textContent = stats.openFindings;
+  if (overdueActionsEl) overdueActionsEl.textContent = stats.overdueActions;
+  if (sitesEl) sitesEl.textContent = stats.sites;
+  if (inspectionsEl) inspectionsEl.textContent = stats.inspections;
+
+  if (accessEl) {
+    const companyName = currentUserProfile?.companyName || 'Local Workspace';
+    const role = currentUserProfile?.role || 'guest';
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent = isManagementLandingRole()
+      ? 'Monitor compliance, findings, overdue actions and inspections from one place.'
+      : 'Open your assigned inspections, continue drafts and capture findings quickly.';
+  }
+
+  renderAttentionSites(stats);
+}
+
+// Override binding initialiser to include new compliance/finding shortcuts safely.
+
+// =====================================================
+// FINDINGS CENTRE v1
+// =====================================================
+findingsCentreFilter = findingsCentreFilter || 'all';
+
+function getProjectAnswerFindings(project) {
+  const answers = Array.isArray(project?.answers) ? project.answers : [];
+  const hasPhotos = (project?.photos || []).length > 0;
+  const followUpDate = project?.followUpDate || project?.scheduledDate || '';
+  const isOverdue = followUpDate && String(followUpDate).slice(0, 10) < new Date().toISOString().slice(0, 10);
+
+  return answers
+    .filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no')
+    .map((answer, index) => ({
+      id: `${project.id || 'project'}-${answer.itemIndex ?? index}`,
+      projectId: project.id,
+      itemNumber: answer.itemNumber || String((answer.itemIndex ?? index) + 1),
+      itemIndex: answer.itemIndex ?? index,
+      note: answer.note || '',
+      expiryDate: answer.expiryDate || '',
+      siteName: project.siteName || project.projectName || 'Unnamed site',
+      organisationName: project.organisationName || '',
+      projectAddress: project.projectAddress || project.addressLine || '',
+      inspectionNumber: project.inspectionNumber || '',
+      inspectorName: project.inspectorName || '',
+      inspectionDate: project.inspectionDate || project.completedAt || project.lastSaved || '',
+      followUpDate,
+      isOverdue,
+      hasPhotos,
+      riskLevel: isOverdue ? 'High' : 'Medium',
+      project
+    }));
+}
+
+function getAllFindingsCentreItems() {
+  return getHomeCommandProjects()
+    .flatMap(project => getProjectAnswerFindings(project));
+}
+
+function formatFindingsDate(value) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+  return date.toLocaleDateString();
+}
+
+function setFindingsCentreFilter(filter) {
+  findingsCentreFilter = filter || 'all';
+  renderFindingsCentre();
+}
+
+function getFilteredFindingsCentreItems() {
+  const searchValue = String(document.getElementById('findingsSearch')?.value || '').toLowerCase().trim();
+  const sortValue = document.getElementById('findingsSort')?.value || 'latest';
+
+  let findings = getAllFindingsCentreItems();
+
+  if (findingsCentreFilter === 'overdue') {
+    findings = findings.filter(finding => finding.isOverdue);
+  }
+
+  if (findingsCentreFilter === 'with-photo') {
+    findings = findings.filter(finding => finding.hasPhotos);
+  }
+
+  if (searchValue) {
+    findings = findings.filter(finding => [
+      finding.siteName,
+      finding.organisationName,
+      finding.projectAddress,
+      finding.inspectionNumber,
+      finding.inspectorName,
+      finding.note,
+      finding.itemNumber
+    ].join(' ').toLowerCase().includes(searchValue));
+  }
+
+  findings.sort((a, b) => {
+    if (sortValue === 'site') {
+      return String(a.siteName).localeCompare(String(b.siteName));
+    }
+
+    if (sortValue === 'inspection') {
+      return String(a.inspectionNumber).localeCompare(String(b.inspectionNumber));
+    }
+
+    if (sortValue === 'overdue') {
+      return Number(b.isOverdue) - Number(a.isOverdue);
+    }
+
+    const aTime = new Date(a.inspectionDate || 0).getTime() || 0;
+    const bTime = new Date(b.inspectionDate || 0).getTime() || 0;
+    return bTime - aTime;
+  });
+
+  return findings;
+}
+
+function renderFindingsCentre() {
+  const section = document.getElementById('findingsCentreSection');
+  const list = document.getElementById('findingsList');
+  if (!section || !list) return;
+
+  const allFindings = getAllFindingsCentreItems();
+  const filteredFindings = getFilteredFindingsCentreItems();
+  const overdueCount = allFindings.filter(finding => finding.isOverdue).length;
+  const photoSiteCount = new Set(
+    allFindings
+      .filter(finding => finding.hasPhotos)
+      .map(finding => finding.projectId)
+  ).size;
+
+  const totalEl = document.getElementById('findingTotalCount');
+  const openEl = document.getElementById('findingOpenCount');
+  const overdueEl = document.getElementById('findingOverdueCount');
+  const photoEl = document.getElementById('findingPhotoCount');
+  const subtitleEl = document.getElementById('findingsCentreSubtitle');
+
+  if (totalEl) totalEl.textContent = allFindings.length;
+  if (openEl) openEl.textContent = allFindings.length;
+  if (overdueEl) overdueEl.textContent = overdueCount;
+  if (photoEl) photoEl.textContent = photoSiteCount;
+
+  if (subtitleEl) {
+    subtitleEl.textContent = allFindings.length
+      ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
+      : 'No open findings found in the visible inspections.';
+  }
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.classList.toggle('active-finding-filter', button.dataset.findingsFilter === findingsCentreFilter);
+  });
+
+  if (filteredFindings.length === 0) {
+    list.innerHTML = `
+      <div class="findings-empty-state">
+        <strong>No findings to show.</strong>
+        <span>Try another filter or search term.</span>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filteredFindings.map(finding => `
+    <article class="finding-item-card ${finding.isOverdue ? 'finding-overdue' : ''}">
+      <div class="finding-item-top">
+        <div>
+          <div class="finding-site">${escapeHtml(finding.siteName)}</div>
+          <div class="finding-meta">
+            ${escapeHtml(finding.organisationName || 'Organisation not recorded')} · ${escapeHtml(finding.inspectionNumber || 'No inspection number')}
+          </div>
+        </div>
+        <span class="finding-risk ${finding.riskLevel === 'High' ? 'risk-high' : 'risk-medium'}">${finding.riskLevel}</span>
+      </div>
+
+      <div class="finding-detail-grid">
+        <div><span>Question / Item</span><strong>${escapeHtml(finding.itemNumber)}</strong></div>
+        <div><span>Inspector</span><strong>${escapeHtml(finding.inspectorName || '-')}</strong></div>
+        <div><span>Inspection Date</span><strong>${formatFindingsDate(finding.inspectionDate)}</strong></div>
+        <div><span>Follow-up</span><strong>${formatFindingsDate(finding.followUpDate)}</strong></div>
+      </div>
+
+      ${finding.note ? `<div class="finding-note"><strong>Note:</strong> ${escapeHtml(finding.note)}</div>` : ''}
+      ${finding.projectAddress ? `<div class="finding-address">${escapeHtml(finding.projectAddress)}</div>` : ''}
+
+      <div class="finding-actions">
+        <button type="button" onclick="openFindingInspection('${finding.projectId}', ${Number(finding.itemIndex) || 0})">Open Inspection</button>
+      </div>
+    </article>
+  `).join('');
+}
+
+function openFindingsCentreCommand() {
+  const section = document.getElementById('findingsCentreSection');
+  if (!section) {
+    showProjectList();
+    return;
+  }
+
+  section.style.display = 'block';
+  renderFindingsCentre();
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeFindingsCentreCommand() {
+  const section = document.getElementById('findingsCentreSection');
+  if (section) section.style.display = 'none';
+}
+
+function openFindingInspection(projectId, itemIndex) {
+  const projects = getProjects();
+  const project = projects.find(p => p.id === projectId);
+
+  if (!project) {
+    alert('Inspection could not be found on this device. Sync / refresh may be required.');
+    return;
+  }
+
+  openProject(projectId);
+
+  setTimeout(() => {
+    const checklistCard = document.getElementById('checklistCard');
+    if (checklistCard) {
+      checklistCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    const row = document.querySelector(`.checklist-row[data-item-index="${itemIndex}"]`);
+    if (row) {
+      row.classList.add('issue-focus');
+      setTimeout(() => row.classList.remove('issue-focus'), 4000);
+    }
+  }, 500);
+}
+
+function initFindingsCentre() {
+  const closeBtn = document.getElementById('closeFindingsCentreBtn');
+  if (closeBtn) closeBtn.addEventListener('click', closeFindingsCentreCommand);
+
+  const search = document.getElementById('findingsSearch');
+  if (search) search.addEventListener('input', renderFindingsCentre);
+
+  const sort = document.getElementById('findingsSort');
+  if (sort) sort.addEventListener('change', renderFindingsCentre);
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.addEventListener('click', () => setFindingsCentreFilter(button.dataset.findingsFilter));
+  });
+}
+
+function initHomeCommandCentre() {
+  ensureExecutiveComplianceDashboardMarkup();
+
+  const bindings = [
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', openFindingsCommand],
+    ['cmdOverdueBtn', openOverdueCommand],
+    ['cmdInspectionsBtn', openInspectionsCommand],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  bindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (button && !button.dataset.complianceBound) {
+      button.addEventListener('click', handler);
+      button.dataset.complianceBound = 'true';
+    }
+  });
+
+  renderHomeCommandCentre();
+}
+
+
+
+// =====================================================
+// FINDINGS CENTRE v1.2 - MANAGER SUMMARY OVERRIDES
+// =====================================================
+function getFindingRiskLevelV12(finding) {
+  if (finding?.isOverdue) return 'High';
+  if (finding?.note && String(finding.note).trim()) return 'Medium';
+  return 'Medium';
+}
+
+function getFilteredFindingsCentreItems() {
+  const searchValue = String(document.getElementById('findingsSearch')?.value || '').toLowerCase().trim();
+  const sortValue = document.getElementById('findingsSort')?.value || 'latest';
+
+  let findings = getAllFindingsCentreItems().map(finding => ({
+    ...finding,
+    riskLevel: getFindingRiskLevelV12(finding)
+  }));
+
+  if (findingsCentreFilter === 'overdue') {
+    findings = findings.filter(finding => finding.isOverdue);
+  }
+
+  if (findingsCentreFilter === 'high') {
+    findings = findings.filter(finding => finding.riskLevel === 'High');
+  }
+
+  if (findingsCentreFilter === 'with-photo') {
+    findings = findings.filter(finding => finding.hasPhotos);
+  }
+
+  if (searchValue) {
+    findings = findings.filter(finding => [
+      finding.siteName,
+      finding.organisationName,
+      finding.projectAddress,
+      finding.inspectionNumber,
+      finding.inspectorName,
+      finding.note,
+      finding.itemNumber
+    ].join(' ').toLowerCase().includes(searchValue));
+  }
+
+  findings.sort((a, b) => {
+    if (sortValue === 'site') {
+      return String(a.siteName).localeCompare(String(b.siteName));
+    }
+
+    if (sortValue === 'inspection') {
+      return String(a.inspectionNumber).localeCompare(String(b.inspectionNumber));
+    }
+
+    if (sortValue === 'overdue') {
+      return Number(b.isOverdue) - Number(a.isOverdue);
+    }
+
+    if (sortValue === 'risk') {
+      return (a.riskLevel === 'High' ? 0 : 1) - (b.riskLevel === 'High' ? 0 : 1);
+    }
+
+    const aTime = new Date(a.inspectionDate || 0).getTime() || 0;
+    const bTime = new Date(b.inspectionDate || 0).getTime() || 0;
+    return bTime - aTime;
+  });
+
+  return findings;
+}
+
+function getFindingsBySiteSummaryV12(findings) {
+  const siteMap = new Map();
+
+  (findings || []).forEach(finding => {
+    const key = [
+      finding.siteName || 'Unnamed site',
+      finding.projectAddress || ''
+    ].join('|');
+
+    if (!siteMap.has(key)) {
+      siteMap.set(key, {
+        siteName: finding.siteName || 'Unnamed site',
+        organisationName: finding.organisationName || '',
+        address: finding.projectAddress || '',
+        total: 0,
+        overdue: 0,
+        high: 0,
+        latestDate: '',
+        projectId: finding.projectId
+      });
+    }
+
+    const site = siteMap.get(key);
+    site.total += 1;
+    if (finding.isOverdue) site.overdue += 1;
+    if (finding.riskLevel === 'High') site.high += 1;
+
+    const currentTime = new Date(site.latestDate || 0).getTime() || 0;
+    const findingTime = new Date(finding.inspectionDate || 0).getTime() || 0;
+    if (findingTime >= currentTime) {
+      site.latestDate = finding.inspectionDate;
+      site.projectId = finding.projectId || site.projectId;
+    }
+  });
+
+  return Array.from(siteMap.values())
+    .sort((a, b) => (b.high - a.high) || (b.overdue - a.overdue) || (b.total - a.total))
+    .slice(0, 6);
+}
+
+function setFindingsSearch(value) {
+  const field = document.getElementById('findingsSearch');
+  if (field) field.value = value || '';
+  renderFindingsCentre();
+}
+
+function renderFindingsBySiteSummaryV12(allFindings) {
+  const container = document.getElementById('findingsBySiteSummary');
+  if (!container) return;
+
+  const sites = getFindingsBySiteSummaryV12(allFindings);
+
+  if (!sites.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="findings-site-summary-title">Sites requiring attention</div>
+    <div class="findings-site-summary-grid">
+      ${sites.map(site => `
+        <button type="button" class="findings-site-summary-card" onclick="setFindingsSearch('${escapeHtml(String(site.siteName || '').replace(/'/g, "\\'"))}')">
+          <span>${escapeHtml(site.siteName)}</span>
+          <strong>${site.total}</strong>
+          <small>${site.high} high · ${site.overdue} overdue</small>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderFindingsCentre() {
+  const section = document.getElementById('findingsCentreSection');
+  const list = document.getElementById('findingsList');
+  if (!section || !list) return;
+
+  const allFindings = getAllFindingsCentreItems().map(finding => ({
+    ...finding,
+    riskLevel: getFindingRiskLevelV12(finding)
+  }));
+  const filteredFindings = getFilteredFindingsCentreItems();
+  const overdueCount = allFindings.filter(finding => finding.isOverdue).length;
+  const highCount = allFindings.filter(finding => finding.riskLevel === 'High').length;
+  const photoSiteCount = new Set(
+    allFindings
+      .filter(finding => finding.hasPhotos)
+      .map(finding => finding.projectId)
+  ).size;
+
+  const totalEl = document.getElementById('findingTotalCount');
+  const openEl = document.getElementById('findingOpenCount');
+  const overdueEl = document.getElementById('findingOverdueCount');
+  const highEl = document.getElementById('findingHighCount');
+  const photoEl = document.getElementById('findingPhotoCount');
+  const subtitleEl = document.getElementById('findingsCentreSubtitle');
+
+  if (totalEl) totalEl.textContent = allFindings.length;
+  if (openEl) openEl.textContent = allFindings.length;
+  if (overdueEl) overdueEl.textContent = overdueCount;
+  if (highEl) highEl.textContent = highCount;
+  if (photoEl) photoEl.textContent = photoSiteCount;
+
+  if (subtitleEl) {
+    subtitleEl.textContent = allFindings.length
+      ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
+      : 'No open findings found in the visible inspections.';
+  }
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    button.classList.toggle('active-finding-filter', button.dataset.findingsFilter === findingsCentreFilter);
+  });
+
+  renderFindingsBySiteSummaryV12(allFindings);
+
+  if (filteredFindings.length === 0) {
+    list.innerHTML = `
+      <div class="findings-empty-state">
+        <strong>No findings to show.</strong>
+        <span>Try another filter or search term.</span>
+      </div>
+    `;
+    return;
+  }
+
+  list.innerHTML = filteredFindings.map(finding => `
+    <article class="finding-item-card ${finding.isOverdue ? 'finding-overdue' : ''}">
+      <div class="finding-item-top">
+        <div>
+          <div class="finding-site">${escapeHtml(finding.siteName)}</div>
+          <div class="finding-meta">
+            ${escapeHtml(finding.organisationName || 'Organisation not recorded')} · ${escapeHtml(finding.inspectionNumber || 'No inspection number')}
+          </div>
+        </div>
+        <span class="finding-risk ${finding.riskLevel === 'High' ? 'risk-high' : 'risk-medium'}">${finding.riskLevel}</span>
+      </div>
+
+      <div class="finding-detail-grid">
+        <div><span>Question / Item</span><strong>${escapeHtml(finding.itemNumber)}</strong></div>
+        <div><span>Inspector</span><strong>${escapeHtml(finding.inspectorName || '-')}</strong></div>
+        <div><span>Inspection Date</span><strong>${formatFindingsDate(finding.inspectionDate)}</strong></div>
+        <div><span>Follow-up</span><strong>${formatFindingsDate(finding.followUpDate)}</strong></div>
+      </div>
+
+      ${finding.note ? `<div class="finding-note"><strong>Note:</strong> ${escapeHtml(finding.note)}</div>` : ''}
+      ${finding.projectAddress ? `<div class="finding-address">${escapeHtml(finding.projectAddress)}</div>` : ''}
+
+      <div class="finding-actions">
+        <button type="button" onclick="openFindingInspection('${finding.projectId}', ${Number(finding.itemIndex) || 0})">Open Inspection</button>
+      </div>
+    </article>
+  `).join('');
+}
+
+function initialiseFindingsCentreBindingsV12() {
+  const search = document.getElementById('findingsSearch');
+  if (search && !search.dataset.v12Bound) {
+    search.dataset.v12Bound = 'true';
+    search.addEventListener('input', renderFindingsCentre);
+  }
+
+  const sort = document.getElementById('findingsSort');
+  if (sort && !sort.dataset.v12Bound) {
+    sort.dataset.v12Bound = 'true';
+    sort.addEventListener('change', renderFindingsCentre);
+  }
+
+  document.querySelectorAll('[data-findings-filter]').forEach(button => {
+    if (button.dataset.v12Bound) return;
+    button.dataset.v12Bound = 'true';
+    button.addEventListener('click', () => setFindingsCentreFilter(button.dataset.findingsFilter));
+  });
+
+  const closeBtn = document.getElementById('closeFindingsCentreBtn');
+  if (closeBtn && !closeBtn.dataset.v12Bound) {
+    closeBtn.dataset.v12Bound = 'true';
+    closeBtn.addEventListener('click', closeFindingsCentreCommand);
+  }
+}
+
+window.addEventListener('load', () => {
+  try {
+    initialiseFindingsCentreBindingsV12();
+  } catch (error) {
+    console.warn('Findings Centre v1.2 binding failed:', error);
+  }
+});
