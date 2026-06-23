@@ -9622,3 +9622,67 @@ body > #actionDropdown.action-dropdown button:last-child {
   color: #2e7d32;
   border: 1px solid #81c784;
 }
+
+
+/* FIRE-S Executive Activity Feed v1.0 */
+.executive-activity-row {
+  grid-template-columns: 1.3fr auto auto;
+}
+.executive-status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.executive-status-action {
+  background: #ffebee;
+  color: #b71c1c;
+  border: 1px solid #e57373;
+}
+.executive-status-overdue {
+  background: #fff3e0;
+  color: #ef6c00;
+  border: 1px solid #ffb74d;
+}
+.executive-status-compliant {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #81c784;
+}
+.executive-status-progress {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #64b5f6;
+}
+@media (max-width: 640px) {
+  .executive-activity-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .executive-activity-row .attention-site-meta {
+    text-align: left;
+  }
+  .executive-status-badge {
+    width: fit-content;
+  }
+}
+
+
+
+/* FIRE-S Executive Dashboard Count Sync v1.1 */
+.compliance-score-label {
+  white-space: normal;
+  line-height: 1.2;
+}
+.compliance-breakdown-card strong,
+.main-stat-card .stat-label {
+  white-space: normal;
+  line-height: 1.15;
+}

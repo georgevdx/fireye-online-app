@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v83-executive-activity-feed-v1-0';
+const APP_VERSION = 'v84-exec-dashboard-count-sync-v1-1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -16717,7 +16717,7 @@ function ensureExecutiveComplianceDashboardMarkup() {
       <div>
         <div class="compliance-kicker">Fire Safety Compliance</div>
         <h3 id="complianceHeroTitle">Executive Dashboard</h3>
-        <p id="complianceHeroSubtitle">Overall compliance calculated from inspection answers.</p>
+        <p id="complianceHeroSubtitle">Premises requiring action, overdue inspections, compliant sites and monthly inspection activity.</p>
       </div>
       <div class="compliance-mode-pill" id="complianceModePill">Workspace Mode</div>
     </div>
@@ -16730,11 +16730,11 @@ function ensureExecutiveComplianceDashboardMarkup() {
     <div class="compliance-breakdown-grid">
       <button type="button" class="compliance-breakdown-card" id="cmdComplianceFindingsBtn">
         <span id="cmdComplianceOpenFindings">0</span>
-        <strong>Open Action Items</strong>
+        <strong>Premises Requiring Action</strong>
       </button>
       <button type="button" class="compliance-breakdown-card warning" id="cmdComplianceOverdueBtn">
         <span id="cmdComplianceOverdueActions">0</span>
-        <strong>Overdue Actions</strong>
+        <strong>Overdue Inspections</strong>
       </button>
       <button type="button" class="compliance-breakdown-card" id="cmdComplianceSitesBtn">
         <span id="cmdComplianceSites">0</span>
@@ -18934,3 +18934,252 @@ setTimeout(() => {
     console.warn('Executive Activity Feed v1.0 failed:', error);
   }
 }, 600);
+
+
+
+
+/* =====================================================
+   FIRE-S Executive Dashboard Count Sync v1.1
+   Fixes:
+   - KPI numbers now use the exact same Gateway filter logic
+   - Overdue card opens the Overdue Gateway filter, not Missing Data
+   - Hero score shows Compliance Score percentage, not duplicate Compliant Sites
+   - Executive labels are corrected to premises-based language
+   ===================================================== */
+
+function fsDashboardGetBaseProjectsForCounts() {
+  const projects =
+    typeof fsExecutiveGetProjects === 'function'
+      ? fsExecutiveGetProjects()
+      : (
+        typeof getHomeCommandProjects === 'function'
+          ? getHomeCommandProjects()
+          : (
+            typeof getProjects === 'function'
+              ? getProjects()
+              : []
+          )
+      );
+
+  return Array.isArray(projects) ? projects : [];
+}
+
+function fsDashboardCountByGatewayFilter(projects, filter) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  if (typeof projectMatchesInspectionGatewayQuickFilter !== 'function') {
+    return safeProjects.length;
+  }
+
+  return safeProjects.filter(project =>
+    projectMatchesInspectionGatewayQuickFilter(project, filter)
+  ).length;
+}
+
+function fsDashboardCalculateKpis() {
+  const projects = fsDashboardGetBaseProjectsForCounts();
+
+  const compliantSites =
+    fsDashboardCountByGatewayFilter(projects, 'compliant');
+
+  const totalSites =
+    projects.length;
+
+  const complianceScore =
+    totalSites > 0
+      ? Math.round((compliantSites / totalSites) * 100)
+      : 0;
+
+  return {
+    projects,
+    totalSites,
+    complianceScore,
+
+    // Important:
+    // These counts intentionally match the exact filters opened by the cards.
+    premisesRequiringAction:
+      fsDashboardCountByGatewayFilter(projects, 'inspection-attention'),
+
+    overdueInspections:
+      fsDashboardCountByGatewayFilter(projects, 'overdue'),
+
+    compliantSites,
+
+    inspectionsThisMonth:
+      fsDashboardCountByGatewayFilter(projects, 'month')
+  };
+}
+
+// Override KPI source so all downstream dashboard code receives synced values.
+function fsExecutiveGetKpis() {
+  return fsDashboardCalculateKpis();
+}
+
+function fsDashboardSetText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function fsDashboardSetLabel(buttonId, label) {
+  const button = document.getElementById(buttonId);
+  if (!button) return;
+
+  const statLabel = button.querySelector('.stat-label');
+  if (statLabel) statLabel.textContent = label;
+
+  const strong = button.querySelector('strong');
+  if (strong) strong.textContent = label;
+}
+
+function fsDashboardRelabelAll() {
+  fsDashboardSetLabel('cmdComplianceFindingsBtn', 'Premises Requiring Action');
+  fsDashboardSetLabel('cmdComplianceOverdueBtn', 'Overdue Inspections');
+  fsDashboardSetLabel('cmdComplianceSitesBtn', 'Compliant Sites');
+  fsDashboardSetLabel('cmdComplianceInspectionsBtn', 'Inspections This Month');
+
+  fsDashboardSetLabel('cmdDashboardBtn', 'Compliant Sites');
+  fsDashboardSetLabel('cmdFindingsBtn', 'Premises Requiring Action');
+  fsDashboardSetLabel('cmdOverdueBtn', 'Overdue Inspections');
+
+  const photoNumber = document.getElementById('cmdPhotoCount');
+  const photoCard = photoNumber?.closest('.main-stat-card');
+  const photoLabel = photoCard?.querySelector('.stat-label');
+
+  if (photoLabel) {
+    photoLabel.textContent = 'Inspections This Month';
+  }
+
+  const heroSubtitle = document.getElementById('complianceHeroSubtitle');
+  if (heroSubtitle) {
+    heroSubtitle.textContent =
+      'Premises requiring action, overdue inspections, compliant sites and monthly inspection activity.';
+  }
+}
+
+function fsDashboardOpenGateway(filter, message) {
+  showProjectList();
+
+  setTimeout(() => {
+    currentFilter = filter || 'all';
+    currentProjectPage = 1;
+
+    if (typeof renderProjectsList === 'function') renderProjectsList();
+    if (typeof updateDashboardSelection === 'function') updateDashboardSelection();
+
+    const projectListSection = document.getElementById('projectListSection');
+    if (projectListSection) {
+      projectListSection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+
+    if (typeof showMainCommandMessage === 'function') {
+      showMainCommandMessage(message || '');
+    }
+  }, 120);
+}
+
+function openMainDashboardCommand() {
+  fsDashboardOpenGateway(
+    'compliant',
+    'Compliant Sites filter active in the Inspection Gateway.'
+  );
+}
+
+function openFindingsCentreCommand() {
+  fsDashboardOpenGateway(
+    'inspection-attention',
+    'Premises Requiring Action filter active in the Inspection Gateway.'
+  );
+}
+
+function openFindingsCommand() {
+  openFindingsCentreCommand();
+}
+
+function openOverdueCommand() {
+  fsDashboardOpenGateway(
+    'overdue',
+    'Overdue Inspections filter active in the Inspection Gateway.'
+  );
+}
+
+function openInspectionsCommand() {
+  fsDashboardOpenGateway(
+    'month',
+    'Inspections This Month filter active in the Inspection Gateway.'
+  );
+}
+
+function renderHomeCommandCentre() {
+  if (typeof ensureFinalHomeDashboardStyles === 'function') ensureFinalHomeDashboardStyles();
+  if (typeof ensureExecutiveComplianceDashboardMarkup === 'function') ensureExecutiveComplianceDashboardMarkup();
+  if (typeof cleanupDuplicateHomeKpiCards === 'function') cleanupDuplicateHomeKpiCards();
+
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
+
+  const kpis = fsDashboardCalculateKpis();
+
+  const scoreEl = document.getElementById('cmdComplianceScore');
+  const scoreLabelEl = document.getElementById('cmdComplianceScoreLabel');
+  const heroTitle = document.getElementById('complianceHeroTitle');
+  const modePill = document.getElementById('complianceModePill');
+
+  if (scoreEl) scoreEl.textContent = `${kpis.complianceScore}%`;
+  if (scoreLabelEl) scoreLabelEl.textContent = 'Compliance Score';
+  if (heroTitle) heroTitle.textContent = 'Executive Compliance Dashboard';
+  if (modePill && typeof getRoleLandingLabel === 'function') {
+    modePill.textContent = getRoleLandingLabel();
+  }
+
+  fsDashboardSetText('cmdComplianceOpenFindings', kpis.premisesRequiringAction);
+  fsDashboardSetText('cmdComplianceOverdueActions', kpis.overdueInspections);
+  fsDashboardSetText('cmdComplianceSites', kpis.compliantSites);
+  fsDashboardSetText('cmdComplianceInspections', kpis.inspectionsThisMonth);
+
+  fsDashboardSetText('cmdOpenFindings', kpis.premisesRequiringAction);
+  fsDashboardSetText('cmdOverdueItems', kpis.overdueInspections);
+  fsDashboardSetText('cmdTotalInspections', kpis.compliantSites);
+  fsDashboardSetText('cmdPhotoCount', kpis.inspectionsThisMonth);
+
+  fsDashboardRelabelAll();
+
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  if (accessEl) {
+    const companyName =
+      currentUserProfile?.companyName ||
+      currentCompanyAccess?.companyName ||
+      'Local Workspace';
+
+    const role =
+      currentUserProfile?.role ||
+      'local';
+
+    accessEl.textContent = `${companyName} · ${role}`;
+  }
+
+  if (subtitleEl) {
+    subtitleEl.textContent =
+      `${kpis.premisesRequiringAction} premise${kpis.premisesRequiringAction === 1 ? '' : 's'} require action, ${kpis.overdueInspections} inspection${kpis.overdueInspections === 1 ? '' : 's'} overdue.`;
+  }
+
+  if (typeof renderAttentionSites === 'function') {
+    renderAttentionSites(kpis.projects);
+  }
+
+  if (typeof removeHomeRecentActivityPanel === 'function') removeHomeRecentActivityPanel();
+  if (typeof setHomeActionCardLabels === 'function') setHomeActionCardLabels();
+  if (typeof bindFinalHomeNavigationTargets === 'function') bindFinalHomeNavigationTargets();
+}
+
+setTimeout(() => {
+  try {
+    renderHomeCommandCentre();
+  } catch (error) {
+    console.warn('Executive Dashboard Count Sync v1.1 failed:', error);
+  }
+}, 700);
