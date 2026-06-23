@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v86-compact-cards-premises-search-v1-0';
+const APP_VERSION = 'v87-premises-dropdown-flicker-fix-v1-1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19834,5 +19834,171 @@ setTimeout(() => {
     fireSEnsurePremisesDropdown(projects);
   } catch (error) {
     console.warn('Premises dropdown init failed:', error);
+  }
+}, 500);
+
+
+
+
+/* =====================================================
+   FIRE-S Premises Dropdown + Flicker Fix v1.1
+   - Dropdown now shows only premises / site name
+   - Dropdown no longer rebuilds on every render unless data changed
+   - Search input no longer triggers excessive full redraws while typing
+   ===================================================== */
+
+let fireSPremisesDropdownSignature = '';
+let fireSSearchRenderTimer = null;
+
+function fireSGetPremisesDropdownLabel(project) {
+  const organisation =
+    String(project?.organisationName || '').trim();
+
+  const site =
+    String(project?.siteName || '').trim();
+
+  const projectName =
+    String(project?.projectName || '').trim();
+
+  if (organisation && site) {
+    return `${organisation} - ${site}`;
+  }
+
+  if (site) {
+    return site;
+  }
+
+  if (projectName) {
+    return projectName;
+  }
+
+  return 'Untitled Premises';
+}
+
+function fireSBuildPremisesOptions(projects) {
+  const map = new Map();
+
+  (projects || []).forEach(project => {
+    const key = fireSGetPremisesKey(project);
+    if (!key || map.has(key)) return;
+
+    map.set(key, fireSGetPremisesDropdownLabel(project));
+  });
+
+  return Array.from(map.entries())
+    .sort((a, b) => a[1].localeCompare(b[1]));
+}
+
+function fireSEnsurePremisesDropdown(projects) {
+  const searchField = document.getElementById('projectSearch');
+  if (!searchField) return;
+
+  let wrapper = document.getElementById('premisesSearchWrapper');
+
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.id = 'premisesSearchWrapper';
+    wrapper.className = 'premises-search-wrapper';
+
+    wrapper.innerHTML = `
+      <label for="premisesQuickSelect">Quick premises lookup</label>
+      <select id="premisesQuickSelect">
+        <option value="">All premises</option>
+      </select>
+    `;
+
+    searchField.insertAdjacentElement('afterend', wrapper);
+  }
+
+  const select = document.getElementById('premisesQuickSelect');
+  if (!select) return;
+
+  const options = fireSBuildPremisesOptions(projects);
+  const signature = JSON.stringify(options);
+
+  // Important flicker fix:
+  // Do not rebuild the select on every render. Rebuilding causes visible flicker
+  // and can reset the dropdown while the user is interacting with the Gateway.
+  if (signature !== fireSPremisesDropdownSignature) {
+    const currentValue = fireSPremisesDropdownFilter || select.value || '';
+
+    select.innerHTML = `
+      <option value="">All premises</option>
+      ${options.map(([key, label]) => `
+        <option value="${fireSEscapeSelectValue(key)}">
+          ${escapeHtml(label)}
+        </option>
+      `).join('')}
+    `;
+
+    if (currentValue && options.some(([key]) => key === currentValue)) {
+      select.value = currentValue;
+    } else {
+      select.value = '';
+      fireSPremisesDropdownFilter = '';
+    }
+
+    fireSPremisesDropdownSignature = signature;
+  }
+
+  if (select.dataset.fireSBound !== 'true') {
+    select.dataset.fireSBound = 'true';
+
+    select.addEventListener('change', () => {
+      fireSPremisesDropdownFilter = select.value || '';
+      currentProjectPage = 1;
+      renderProjectsList();
+      updateDashboardSelection();
+    });
+  }
+
+  // Replace older immediate search redraw with a calmer debounced redraw.
+  if (searchField.dataset.fireSSearchDebounced !== 'true') {
+    searchField.dataset.fireSSearchDebounced = 'true';
+
+    searchField.addEventListener('input', () => {
+      clearTimeout(fireSSearchRenderTimer);
+
+      fireSSearchRenderTimer = setTimeout(() => {
+        currentProjectPage = 1;
+        renderProjectsList();
+        updateDashboardSelection();
+      }, 180);
+    });
+  }
+}
+
+// Reduce visible flicker during autosave:
+// When the user is inside an inspection form, autosave must not keep rebuilding
+// the hidden Gateway list in the background.
+if (typeof autoSaveProject === 'function' && !window.fireSAutoSaveFlickerFixApplied) {
+  window.fireSAutoSaveFlickerFixApplied = true;
+
+  const fireSOriginalAutoSaveProject = autoSaveProject;
+
+  autoSaveProject = function fireSAutoSaveProjectNoGatewayFlicker() {
+    const originalRenderProjectsList = renderProjectsList;
+
+    const formIsOpen =
+      document.getElementById('projectFormSection')?.style.display !== 'none';
+
+    if (formIsOpen) {
+      renderProjectsList = function fireSSkipHiddenGatewayRender() {};
+    }
+
+    try {
+      return fireSOriginalAutoSaveProject.apply(this, arguments);
+    } finally {
+      renderProjectsList = originalRenderProjectsList;
+    }
+  };
+}
+
+setTimeout(() => {
+  try {
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    fireSEnsurePremisesDropdown(projects);
+  } catch (error) {
+    console.warn('Premises dropdown flicker fix init failed:', error);
   }
 }, 500);

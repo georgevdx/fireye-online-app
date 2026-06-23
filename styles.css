@@ -9926,3 +9926,22 @@ body > #actionDropdown.action-dropdown button:last-child {
     justify-content: flex-start;
   }
 }
+
+
+
+
+/* FIRE-S Premises Dropdown + Flicker Fix v1.1 */
+.premises-search-wrapper {
+  transition: none;
+}
+
+#premisesQuickSelect {
+  min-height: 44px;
+}
+
+.compact-inspection-card,
+.compact-status-badge,
+.compact-primary-action,
+.compact-card-btn {
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
