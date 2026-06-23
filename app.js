@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v81-gateway-count-sync-action-items';
+const APP_VERSION = 'v82-executive-dashboard-v1-1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -18482,333 +18482,200 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
 /* =====================================================
-   FIRE-S Executive Dashboard Smart Navigation v1.0
+   FIRE-S Executive Dashboard v1.1
+   Premises-based Executive KPIs + Smart Gateway Navigation
    ===================================================== */
-(function () {
 
-  function fireSOpenGatewayFilter(filterKey, message) {
-    try {
-      showProjectList();
-      currentFilter = filterKey;
-      currentProjectPage = 1;
-
-      if (typeof renderProjectsList === 'function') {
-        renderProjectsList();
-      }
-
-      if (typeof updateDashboardSelection === 'function') {
-        updateDashboardSelection();
-      }
-
-      const section = document.getElementById('projectListSection');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-
-      if (typeof showMainCommandMessage === 'function' && message) {
-        showMainCommandMessage(message);
-      }
-    } catch (e) {
-      console.warn('Gateway navigation failed', e);
-    }
+function fsExecutiveGetProjects() {
+  const projects = typeof getProjects === 'function' ? getProjects() : [];
+  if (typeof getVisibleProjectsForCurrentUser === 'function' && currentUserProfile) {
+    return getVisibleProjectsForCurrentUser(projects);
   }
+  return projects;
+}
 
-  window.openFindingsCommand = function () {
-    fireSOpenGatewayFilter(
-      'risk',
-      'Open Action Items: filtered Inspection Gateway view.'
-    );
+function fsExecutiveAnswerValue(answer) {
+  return String(answer?.answer || '').trim().toLowerCase();
+}
+
+function fsExecutiveHasActionRequired(project) {
+  const answers = Array.isArray(project?.answers) ? project.answers : [];
+  return answers.some(answer => fsExecutiveAnswerValue(answer) === 'no');
+}
+
+function fsExecutiveIsClosed(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.archivedAt ||
+    project?.scheduledStatus === 'completed' ||
+    project?.archiveStatus === 'completed'
+  );
+}
+
+function fsExecutiveIsOverdueInspection(project) {
+  if (!project || fsExecutiveIsClosed(project)) return false;
+  const dateValue = project.scheduledDate || project.followUpDate || '';
+  if (!dateValue) return false;
+  return String(dateValue).slice(0, 10) < new Date().toISOString().slice(0, 10);
+}
+
+function fsExecutiveIsCompliantSite(project) {
+  const answers = Array.isArray(project?.answers) ? project.answers : [];
+  if (!fsExecutiveIsClosed(project)) return false;
+  if (answers.length === 0) return false;
+  const allAnswered = answers.every(answer =>
+    ['yes', 'no', 'n/a'].includes(fsExecutiveAnswerValue(answer))
+  );
+  return allAnswered && !fsExecutiveHasActionRequired(project);
+}
+
+function fsExecutiveCompletedThisMonth(project) {
+  const value = project?.completedAt || project?.archivedAt || '';
+  if (!value) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+}
+
+function fsExecutiveGetKpis() {
+  const projects = fsExecutiveGetProjects();
+  return {
+    projects,
+    premisesRequiringAction: projects.filter(fsExecutiveHasActionRequired).length,
+    overdueInspections: projects.filter(fsExecutiveIsOverdueInspection).length,
+    compliantSites: projects.filter(fsExecutiveIsCompliantSite).length,
+    inspectionsThisMonth: projects.filter(fsExecutiveCompletedThisMonth).length
   };
+}
 
-  window.openOverdueCommand = function () {
-    fireSOpenGatewayFilter(
-      'overdue',
-      'Overdue Inspections: filtered Inspection Gateway view.'
-    );
-  };
+function fsExecutiveSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
 
-  window.openInspectionsCommand = function () {
-    fireSOpenGatewayFilter(
-      'month',
-      'Inspections This Month: filtered Inspection Gateway view.'
-    );
-  };
+function fsExecutiveRelabelCards() {
+  const labels = [
+    ['cmdDashboardBtn', 'Compliant Sites'],
+    ['cmdFindingsBtn', 'Premises Requiring Action'],
+    ['cmdOverdueBtn', 'Overdue Inspections']
+  ];
+  labels.forEach(([buttonId, label]) => {
+    const button = document.getElementById(buttonId);
+    const labelEl = button?.querySelector('.stat-label');
+    if (labelEl) labelEl.textContent = label;
+  });
 
-  window.openMainDashboardCommand = function () {
-    fireSOpenGatewayFilter(
-      'compliant',
-      'Compliant Sites: filtered Inspection Gateway view.'
-    );
-  };
+  const photoNumber = document.getElementById('cmdPhotoCount');
+  const photoCard = photoNumber?.closest('.main-stat-card');
+  const photoLabel = photoCard?.querySelector('.stat-label');
+  if (photoLabel) photoLabel.textContent = 'Inspections This Month';
+}
 
-})();
+function renderHomeCommandCentre() {
+  const centre = document.getElementById('mainCommandCentre');
+  if (!centre) return;
 
+  const kpis = fsExecutiveGetKpis();
 
+  fsExecutiveSetText('cmdOpenFindings', kpis.premisesRequiringAction);
+  fsExecutiveSetText('cmdOverdueItems', kpis.overdueInspections);
+  fsExecutiveSetText('cmdTotalInspections', kpis.compliantSites);
+  fsExecutiveSetText('cmdPhotoCount', kpis.inspectionsThisMonth);
 
+  fsExecutiveRelabelCards();
 
-/* =====================================================
-   FIRE-S Executive Dashboard Safe Labels + Count v1.2
-   Fix: no card innerHTML replacement, prevents partial homepage load.
-   ===================================================== */
-(function () {
-  function fsVisibleProjects() {
-    try {
-      const projects = typeof getProjects === 'function' ? getProjects() : [];
-      if (
-        typeof getVisibleProjectsForCurrentUser === 'function' &&
-        typeof currentUserProfile !== 'undefined' &&
-        currentUserProfile
-      ) {
-        return getVisibleProjectsForCurrentUser(projects);
-      }
-      return projects;
-    } catch (e) {
-      console.warn('Dashboard project read failed', e);
-      return [];
-    }
+  const accessEl = document.getElementById('mainCommandAccessStatus');
+  const subtitleEl = document.getElementById('mainCommandSubtitle');
+
+  if (accessEl) {
+    const companyName =
+      currentUserProfile?.companyName ||
+      currentCompanyAccess?.companyName ||
+      'Local Workspace';
+
+    const role = currentUserProfile?.role || 'local';
+    accessEl.textContent = `${companyName} · ${role}`;
   }
 
-  function fsHasActionRequired(project) {
-    return (project?.answers || []).some(answer =>
-      String(answer?.answer || '').trim().toLowerCase() === 'no'
-    );
+  if (subtitleEl) {
+    subtitleEl.textContent = kpis.projects.length
+      ? `${kpis.premisesRequiringAction} premise${kpis.premisesRequiringAction === 1 ? '' : 's'} require action, ${kpis.overdueInspections} inspection${kpis.overdueInspections === 1 ? '' : 's'} overdue.`
+      : 'Start by creating or scheduling your first inspection.';
   }
+}
 
-  function fsIsClosed(project) {
-    return Boolean(
-      project?.completedAt ||
-      project?.archivedAt ||
-      project?.scheduledStatus === 'completed' ||
-      project?.archiveStatus === 'completed'
-    );
-  }
-
-  function fsIsOverdueInspection(project) {
-    if (!project || fsIsClosed(project)) return false;
-    const dateValue = project.scheduledDate || project.followUpDate || '';
-    if (!dateValue) return false;
-    return String(dateValue).slice(0, 10) < new Date().toISOString().slice(0, 10);
-  }
-
-  function fsIsCompliant(project) {
-    const answers = project?.answers || [];
-    const total = answers.length;
-    const answered = answers.filter(answer =>
-      ['yes', 'no', 'n/a'].includes(String(answer?.answer || '').trim().toLowerCase())
-    ).length;
-
-    return fsIsClosed(project) && total > 0 && answered === total && !fsHasActionRequired(project);
-  }
-
-  function fsThisMonth(project) {
-    const value = project?.completedAt || project?.archivedAt || project?.lastSaved || '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return false;
-    const now = new Date();
-    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-  }
-
-  function fsSetTextById(id, text) {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-  }
-
-  function fsRelabelExecutiveDashboard() {
-    const textMap = {
-      'Open Action Items': 'Open Premises with Actions Required',
-      'Open Findings': 'Open Premises with Actions Required',
-      'Overdue Actions': 'Overdue Inspections',
-      'Photo Count': 'Inspections This Month',
-      'Photos': 'Inspections This Month',
-      'Total Inspections': 'Compliant Sites'
-    };
-
-    document.querySelectorAll('body *').forEach(el => {
-      if (!el || el.children.length > 0) return;
-      const current = String(el.textContent || '').trim();
-      if (textMap[current]) {
-        el.textContent = textMap[current];
-      }
-    });
-  }
-
-  const originalRenderHomeCommandCentre =
-    typeof window.renderHomeCommandCentre === 'function'
-      ? window.renderHomeCommandCentre
-      : null;
-
-  window.renderHomeCommandCentre = function () {
-    if (originalRenderHomeCommandCentre) {
-      try {
-        originalRenderHomeCommandCentre();
-      } catch (e) {
-        console.warn('Original dashboard render failed', e);
-      }
-    }
-
-    const projects = fsVisibleProjects();
-
-    fsSetTextById('cmdOpenFindings', projects.filter(fsHasActionRequired).length);
-    fsSetTextById('cmdOverdueItems', projects.filter(fsIsOverdueInspection).length);
-    fsSetTextById('cmdTotalInspections', projects.filter(fsIsCompliant).length);
-    fsSetTextById('cmdPhotoCount', projects.filter(fsThisMonth).length);
-
-    const subtitleEl = document.getElementById('mainCommandSubtitle');
-    if (subtitleEl) {
-      const premises = projects.filter(fsHasActionRequired).length;
-      subtitleEl.textContent =
-        projects.length
-          ? `${premises} premise${premises === 1 ? '' : 's'} currently require action.`
-          : 'Start by creating or scheduling your first inspection.';
-    }
-
-    fsRelabelExecutiveDashboard();
-  };
+function fsExecutiveOpenGateway(filter, message) {
+  showProjectList();
 
   setTimeout(() => {
-    try {
-      if (typeof window.renderHomeCommandCentre === 'function') {
-        window.renderHomeCommandCentre();
-      }
-    } catch (e) {
-      console.warn('Safe dashboard refresh failed', e);
+    currentFilter = filter || 'all';
+    currentProjectPage = 1;
+
+    if (typeof renderProjectsList === 'function') renderProjectsList();
+    if (typeof updateDashboardSelection === 'function') updateDashboardSelection();
+
+    const projectListSection = document.getElementById('projectListSection');
+    if (projectListSection) {
+      projectListSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-  }, 300);
-})();
 
-
-
-
-/* =====================================================
-   FIRE-S Executive Dashboard Open Premises Fix v1.3
-   Purpose:
-   - Rename Open Action Items to Open Premises with Actions Required
-   - Count inspections/premises with at least one NO answer, not total NO answers
-   - Clicking the KPI opens Inspection Gateway with the Needs Attention filter
-   ===================================================== */
-(function () {
-
-  function fsProjectsForDashboard() {
-    try {
-      const projects = typeof getProjects === 'function' ? getProjects() : [];
-
-      if (
-        typeof getVisibleProjectsForCurrentUser === 'function' &&
-        typeof currentUserProfile !== 'undefined' &&
-        currentUserProfile
-      ) {
-        return getVisibleProjectsForCurrentUser(projects);
-      }
-
-      return projects;
-    } catch (error) {
-      console.warn('Fire-S dashboard project lookup failed', error);
-      return [];
+    if (typeof showMainCommandMessage === 'function') {
+      showMainCommandMessage(message || '');
     }
+  }, 120);
+}
+
+function openMainDashboardCommand() {
+  fsExecutiveOpenGateway('inspection-complete', 'Compliant Sites filter active in the Inspection Gateway.');
+}
+
+function openFindingsCentreCommand() {
+  fsExecutiveOpenGateway('inspection-attention', 'Premises Requiring Action filter active in the Inspection Gateway.');
+}
+
+function openFindingsCommand() {
+  openFindingsCentreCommand();
+}
+
+function openOverdueCommand() {
+  fsExecutiveOpenGateway('inspection-warning', 'Overdue Inspections filter active in the Inspection Gateway.');
+}
+
+function openInspectionsCommand() {
+  fsExecutiveOpenGateway('month', 'Inspections This Month filter active in the Inspection Gateway.');
+}
+
+function initHomeCommandCentre() {
+  const bindings = [
+    ['cmdDashboardBtn', openMainDashboardCommand],
+    ['cmdFindingsBtn', openFindingsCentreCommand],
+    ['cmdOverdueBtn', openOverdueCommand],
+    ['cmdInspectionsBtn', () => fsExecutiveOpenGateway('all', 'Inspection Gateway opened.')],
+    ['cmdScheduleBtn', openScheduleCommand],
+    ['cmdReportsBtn', openReportsCommand],
+    ['cmdCompanyBtn', openCompanyCommand],
+    ['cmdServicesBtn', showServices]
+  ];
+
+  bindings.forEach(([id, handler]) => {
+    const button = document.getElementById(id);
+    if (!button || button.dataset.fsExecutiveBound === 'true') return;
+    button.dataset.fsExecutiveBound = 'true';
+    button.addEventListener('click', event => {
+      event.preventDefault();
+      handler();
+    });
+  });
+
+  renderHomeCommandCentre();
+}
+
+setTimeout(() => {
+  try {
+    renderHomeCommandCentre();
+  } catch (error) {
+    console.warn('Executive Dashboard v1.1 refresh failed:', error);
   }
-
-  function fsHasActionsRequired(project) {
-    return Array.isArray(project?.answers) &&
-      project.answers.some(answer =>
-        String(answer?.answer || '').trim().toLowerCase() === 'no'
-      );
-  }
-
-  function fsRenameOpenActionKpi() {
-    const valueEl = document.getElementById('cmdOpenFindings');
-    if (!valueEl) return;
-
-    const card =
-      valueEl.closest('button, article, .command-card, .command-kpi-card, .dashboard-card, .kpi-card, div');
-
-    if (!card) return;
-
-    const walker = document.createTreeWalker(
-      card,
-      NodeFilter.SHOW_TEXT,
-      null
-    );
-
-    let node;
-
-    while ((node = walker.nextNode())) {
-      const text = String(node.nodeValue || '');
-
-      if (
-        /Open\s+Action\s+Items/i.test(text) ||
-        /Open\s+Findings/i.test(text) ||
-        /Open\s+Actions/i.test(text)
-      ) {
-        node.nodeValue = text
-          .replace(/Open\s+Action\s+Items/gi, 'Open Premises with Actions Required')
-          .replace(/Open\s+Findings/gi, 'Open Premises with Actions Required')
-          .replace(/Open\s+Actions/gi, 'Open Premises with Actions Required');
-      }
-    }
-
-    card.setAttribute(
-      'title',
-      'Premises / inspections where one or more action items are required.'
-    );
-  }
-
-  function fsUpdateOpenPremisesCount() {
-    const projects = fsProjectsForDashboard();
-    const count = projects.filter(fsHasActionsRequired).length;
-
-    const valueEl = document.getElementById('cmdOpenFindings');
-    if (valueEl) {
-      valueEl.textContent = count;
-    }
-
-    fsRenameOpenActionKpi();
-  }
-
-  function fsOpenPremisesWithActions() {
-    try {
-      showProjectList();
-
-      // This is the existing Gateway filter for inspections requiring attention.
-      currentFilter = 'inspection-attention';
-      currentProjectPage = 1;
-
-      if (typeof renderProjectsList === 'function') {
-        renderProjectsList();
-      }
-
-      if (typeof updateDashboardSelection === 'function') {
-        updateDashboardSelection();
-      }
-
-      const section = document.getElementById('projectListSection');
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    } catch (error) {
-      console.warn('Open Premises with Actions navigation failed', error);
-    }
-  }
-
-  // Override only this KPI action. Do not touch the other dashboard cards.
-  window.openFindingsCommand = fsOpenPremisesWithActions;
-  window.openFindingsCentreCommand = fsOpenPremisesWithActions;
-
-  const originalRenderHomeCommandCentre =
-    typeof window.renderHomeCommandCentre === 'function'
-      ? window.renderHomeCommandCentre
-      : null;
-
-  window.renderHomeCommandCentre = function () {
-    if (originalRenderHomeCommandCentre) {
-      originalRenderHomeCommandCentre();
-    }
-
-    fsUpdateOpenPremisesCount();
-  };
-
-  setTimeout(fsUpdateOpenPremisesCount, 300);
-  setTimeout(fsUpdateOpenPremisesCount, 1000);
-
-})();
+}, 500);
