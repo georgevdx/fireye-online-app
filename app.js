@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v80-home-recent-inspections';
+const APP_VERSION = 'v81-gateway-count-sync-action-items';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -3771,8 +3771,8 @@ function renderFindingsCentre() {
 
   if (subtitleEl) {
     subtitleEl.textContent = allFindings.length
-      ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
-      : 'No open findings found in the visible inspections.';
+      ? `${allFindings.length} open action item${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
+      : 'No open action items found in the visible inspections.';
   }
 
   document.querySelectorAll('[data-findings-filter]').forEach(button => {
@@ -3782,7 +3782,7 @@ function renderFindingsCentre() {
   if (filteredFindings.length === 0) {
     list.innerHTML = `
       <div class="findings-empty-state">
-        <strong>No findings to show.</strong>
+        <strong>No action items to show.</strong>
         <span>Try another filter or search term.</span>
       </div>
     `;
@@ -9083,7 +9083,7 @@ function renderDashboardMetrics(projectsOverride) {
           data-filter="inspection-complete"
           onclick="setFilter('inspection-complete')">
           <div class="metric-number">${inspectionStatusCounts['inspection-complete'] || 0}</div>
-          <div class="metric-label">Completed</div>
+          <div class="metric-label">Closed</div>
         </div>
         
       </div>
@@ -9200,14 +9200,15 @@ function getFilterLabel(filter) {
     followups: 'Follow-ups',
     soon: 'Due soon',
     overdue: 'Overdue',
-    risk: 'Open findings',
+    risk: 'Open action items',
     month: 'This month',
     'scheduled-new': 'Scheduled new inspections',
-    'clear-completed': 'Clear completed inspections',
+    'clear-completed': 'Compliant inspections',
+    compliant: 'Compliant inspections',
     'inspection-attention': 'Needs attention',
     'inspection-warning': 'Missing data',
     'inspection-progress': 'In progress',
-    'inspection-complete': 'Completed',
+    'inspection-complete': 'Closed',
     'inspection-draft': 'Draft',
     'expiry-overdue': 'Expired equipment',
     'expiry-soon': 'Equipment due soon',
@@ -9784,36 +9785,164 @@ function injectInspectionGatewayPolishStyles() {
   document.head.appendChild(style);
 }
 
+function getProjectOpenActionItemCount(project) {
+  return getProjectCompletionCounts(project).noCount || 0;
+}
+
+function hasProjectOpenActionItems(project) {
+  return getProjectOpenActionItemCount(project) > 0;
+}
+
+function hasProjectOverdueActions(project) {
+  const followStatus = getFollowUpStatus(project);
+  const scheduleStatus =
+    typeof getProjectScheduleStatus === 'function'
+      ? getProjectScheduleStatus(project)
+      : { className: '' };
+
+  return (
+    followStatus.class === 'status-overdue' ||
+    scheduleStatus.className === 'schedule-overdue' ||
+    getProjectExpiryCounts(project).overdue > 0
+  );
+}
+
+function isProjectCompliantForGateway(project) {
+  return isCompletedAllClearInspection(project);
+}
+
+function projectMatchesGatewayBaseFilters(project, searchText) {
+  const normalizedSearch = String(searchText || '').trim().toLowerCase();
+
+  if (normalizedSearch) {
+    const placeName = (project.projectName || '').toLowerCase();
+    const organisationName = (project.organisationName || '').toLowerCase();
+    const siteName = (project.siteName || '').toLowerCase();
+    const address = (project.projectAddress || project.addressLine || '').toLowerCase();
+    const mallName = (project.mallName || '').toLowerCase();
+    const unitNumber = (project.unitNumber || '').toLowerCase();
+    const moduleName = normalizeProductType(project.productType).toLowerCase();
+    const inspectionType = (project.inspectionType || '').toLowerCase();
+    const inspectorName = (project.inspectorName || '').toLowerCase();
+    const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
+    const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
+
+    const matchesSearch =
+      placeName.includes(normalizedSearch) ||
+      organisationName.includes(normalizedSearch) ||
+      siteName.includes(normalizedSearch) ||
+      address.includes(normalizedSearch) ||
+      mallName.includes(normalizedSearch) ||
+      unitNumber.includes(normalizedSearch) ||
+      moduleName.includes(normalizedSearch) ||
+      inspectionType.includes(normalizedSearch) ||
+      inspectorName.includes(normalizedSearch) ||
+      inspectionNumber.includes(normalizedSearch) ||
+      inspectionDate.includes(normalizedSearch);
+
+    if (!matchesSearch) return false;
+  }
+
+  return projectMatchesInspectionDateFilter(project);
+}
+
+function projectMatchesInspectionGatewayQuickFilter(project, filter) {
+  const activeFilter = filter || 'all';
+  const followStatus = getFollowUpStatus(project);
+
+  if (activeFilter === 'all') return true;
+
+  if (activeFilter === 'overdue') {
+    return hasProjectOverdueActions(project);
+  }
+
+  if (activeFilter === 'soon') {
+    return followStatus.class === 'status-soon';
+  }
+
+  if (activeFilter === 'none') {
+    return followStatus.class === 'status-none';
+  }
+
+  if (activeFilter === 'followups') {
+    return project.followUpRequired === 'Yes';
+  }
+
+  if (activeFilter === 'scheduled-new') {
+    return (
+      project.scheduledStatus === 'scheduled' &&
+      project.scheduleType === 'new_site' &&
+      !project.completedAt
+    );
+  }
+
+  if (activeFilter === 'risk') {
+    return hasProjectOpenActionItems(project);
+  }
+
+  if (activeFilter === 'inspection-attention') {
+    return (
+      getProjectInspectionStatus(project).filter === 'inspection-attention' ||
+      hasProjectOpenActionItems(project) ||
+      hasProjectOverdueActions(project)
+    );
+  }
+
+  if (activeFilter === 'compliant' || activeFilter === 'clear-completed') {
+    return isProjectCompliantForGateway(project);
+  }
+
+  if (activeFilter === 'month') {
+    return projectMatchesThisMonth(project);
+  }
+
+  if (activeFilter.startsWith('module-')) {
+    return getModuleFilterKey(normalizeProductType(project.productType)) === activeFilter;
+  }
+
+  if (activeFilter.startsWith('inspection-')) {
+    return getProjectInspectionStatus(project).filter === activeFilter;
+  }
+
+  if (activeFilter === 'expiry-overdue') {
+    return getProjectExpiryCounts(project).overdue > 0;
+  }
+
+  if (activeFilter === 'expiry-soon') {
+    return getProjectExpiryCounts(project).soon > 0;
+  }
+
+  if (activeFilter === 'expiry-scheduled') {
+    return getProjectExpiryCounts(project).scheduled > 0;
+  }
+
+  if (activeFilter === 'expiry-missing') {
+    return getProjectExpiryCounts(project).missing > 0;
+  }
+
+  return true;
+}
+
 function getInspectionGatewayQuickFilterCounts(projects) {
   const safeProjects = Array.isArray(projects) ? projects : [];
 
   return {
     all: safeProjects.length,
     'inspection-attention': safeProjects.filter(project =>
-      getProjectInspectionStatus(project).filter === 'inspection-attention'
+      projectMatchesInspectionGatewayQuickFilter(project, 'inspection-attention')
     ).length,
     risk: safeProjects.filter(project =>
-      getProjectCompletionCounts(project).noCount > 0
+      projectMatchesInspectionGatewayQuickFilter(project, 'risk')
     ).length,
     overdue: safeProjects.filter(project =>
-      getFollowUpStatus(project).class === 'status-overdue' ||
-      getProjectExpiryCounts(project).overdue > 0
+      projectMatchesInspectionGatewayQuickFilter(project, 'overdue')
     ).length,
-    'inspection-complete': safeProjects.filter(project =>
-      getProjectInspectionStatus(project).filter === 'inspection-complete' ||
-      getProjectInspectionStatus(project).filter === 'clear-completed'
+    compliant: safeProjects.filter(project =>
+      projectMatchesInspectionGatewayQuickFilter(project, 'compliant')
     ).length,
-    month: safeProjects.filter(project => {
-      const dateValue = getProjectDateForFiltering(project);
-      if (!dateValue) return false;
-
-      const projectDate = new Date(dateValue);
-      if (Number.isNaN(projectDate.getTime())) return false;
-
-      const today = new Date();
-      return projectDate.getFullYear() === today.getFullYear() &&
-        projectDate.getMonth() === today.getMonth();
-    }).length
+    month: safeProjects.filter(project =>
+      projectMatchesInspectionGatewayQuickFilter(project, 'month')
+    ).length
   };
 }
 
@@ -9823,9 +9952,9 @@ function renderInspectionGatewayQuickFilters(projects) {
   const filters = [
     { key: 'all', label: 'All' },
     { key: 'inspection-attention', label: 'Needs Attention' },
-    { key: 'risk', label: 'Open Findings' },
-    { key: 'overdue', label: 'Overdue' },
-    { key: 'inspection-complete', label: 'Completed' },
+    { key: 'risk', label: 'Open Action Items' },
+    { key: 'overdue', label: 'Overdue Actions' },
+    { key: 'compliant', label: 'Compliant' },
     { key: 'month', label: 'This Month' }
   ];
 
@@ -9873,7 +10002,16 @@ function getInspectionCardVisualClass(project) {
   const inspectionStatus = getProjectInspectionStatus(project);
   const dataQuality = getProjectDataQuality(project);
 
-  if (followStatus.class === 'status-overdue' || expiryCounts.overdue > 0) {
+  const scheduleStatus =
+    typeof getProjectScheduleStatus === 'function'
+      ? getProjectScheduleStatus(project)
+      : { className: '' };
+
+  if (
+    followStatus.class === 'status-overdue' ||
+    scheduleStatus.className === 'schedule-overdue' ||
+    expiryCounts.overdue > 0
+  ) {
     return 'inspection-card-status-red';
   }
 
@@ -9881,10 +10019,7 @@ function getInspectionCardVisualClass(project) {
     return 'inspection-card-status-amber';
   }
 
-  if (
-    inspectionStatus.filter === 'inspection-complete' ||
-    inspectionStatus.filter === 'clear-completed'
-  ) {
+  if (isProjectCompliantForGateway(project)) {
     return 'inspection-card-status-green';
   }
 
@@ -9899,8 +10034,14 @@ function renderInspectionCardStatsHtml(project) {
     ? getProjectComplianceStats(project)
     : { compliancePercentage: null };
 
+  const scheduleStatus =
+    typeof getProjectScheduleStatus === 'function'
+      ? getProjectScheduleStatus(project)
+      : { className: '' };
+
   const overdueCount =
     (followStatus.class === 'status-overdue' ? 1 : 0) +
+    (scheduleStatus.className === 'schedule-overdue' ? 1 : 0) +
     (expiryCounts.overdue || 0);
 
   const scoreText =
@@ -9914,7 +10055,7 @@ function renderInspectionCardStatsHtml(project) {
 
   return `
     <div class="inspection-card-stat-grid">
-      <div><span>Findings</span><strong>${completion.noCount}</strong></div>
+      <div><span>Action Items</span><strong>${completion.noCount}</strong></div>
       <div><span>Overdue</span><strong>${overdueCount}</strong></div>
       <div><span>Compliance</span><strong>${escapeHtml(scoreText)}</strong></div>
       <div><span>Updated</span><strong>${escapeHtml(lastUpdatedText)}</strong></div>
@@ -9958,114 +10099,17 @@ function renderProjectsList() {
 
   container.innerHTML = '';
 
- const filteredProjects = projects.filter(project => {
-
-  const followStatus = getFollowUpStatus(project);
-
-  // Search filter
-  if (searchText) {
-    const placeName = (project.projectName || '').toLowerCase();
-    const organisationName = (project.organisationName || '').toLowerCase();
-    const siteName = (project.siteName || '').toLowerCase();
-    const address = (project.projectAddress || project.addressLine || '').toLowerCase();
-    const mallName = (project.mallName || '').toLowerCase();
-    const unitNumber = (project.unitNumber || '').toLowerCase();
-    const moduleName = normalizeProductType(project.productType).toLowerCase();
-    const inspectionType = (project.inspectionType || '').toLowerCase();
-    const inspectorName = (project.inspectorName || '').toLowerCase();
-    const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
-    const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
-
-    const matchesSearch =
-      placeName.includes(searchText) ||
-      organisationName.includes(searchText) ||
-      siteName.includes(searchText) ||
-      address.includes(searchText) ||
-      mallName.includes(searchText) ||
-      unitNumber.includes(searchText) ||
-      moduleName.includes(searchText) ||
-      inspectionType.includes(searchText) ||
-      inspectorName.includes(searchText) ||
-      inspectionNumber.includes(searchText) ||
-      inspectionDate.includes(searchText);
-
-    if (!matchesSearch) return false;
-  }
-
-  // Inspection date filter
-  if (!projectMatchesInspectionDateFilter(project)) {
-    return false;
-  }
-
-  // Follow-up filter
-  if (currentFilter === 'overdue') {
-    return followStatus.class === 'status-overdue';
-  }
-
-  if (currentFilter === 'soon') {
-    return followStatus.class === 'status-soon';
-  }
-
-  if (currentFilter === 'none') {
-    return followStatus.class === 'status-none';
-  }
-
-  if (currentFilter === 'followups') {
-    return project.followUpRequired === 'Yes';
-  }
-
-  if (currentFilter === 'scheduled-new') {
-  return (
-    project.scheduledStatus === 'scheduled' &&
-    project.scheduleType === 'new_site' &&
-    !project.completedAt
+ const baseFilteredProjects = projects.filter(project =>
+    projectMatchesGatewayBaseFilters(project, searchText)
   );
-}
 
-  if (currentFilter === 'clear-completed') {
-    return isCompletedAllClearInspection(project);
-  }
-
-  if (currentFilter === 'risk') {
-    return project.answers?.some(
-      a => a.answer === 'No'
-    );
-  }
-
-  if (currentFilter === 'month') {
-    return projectMatchesThisMonth(project);
-  }
-
-  if (currentFilter.startsWith('module-')) {
-    return getModuleFilterKey(normalizeProductType(project.productType)) === currentFilter;
-  }
-
-  if (currentFilter.startsWith('inspection-')) {
-    return getProjectInspectionStatus(project).filter === currentFilter;
-  }
-
-  if (currentFilter === 'expiry-overdue') {
-    return getProjectExpiryCounts(project).overdue > 0;
-  }
-
-  if (currentFilter === 'expiry-soon') {
-    return getProjectExpiryCounts(project).soon > 0;
-  }
-
-  if (currentFilter === 'expiry-scheduled') {
-    return getProjectExpiryCounts(project).scheduled > 0;
-  }
-
-  if (currentFilter === 'expiry-missing') {
-    return getProjectExpiryCounts(project).missing > 0;
-  }
-
-  return true; // default = all
-});
+  const filteredProjects = baseFilteredProjects.filter(project =>
+    projectMatchesInspectionGatewayQuickFilter(project, currentFilter)
+  );
 
   updateActiveFilterStatus(filteredProjects.length);
 
-  const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(projects);
+  const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(baseFilteredProjects);
 
   filteredProjects.sort((a, b) => {
       if (currentFilter === 'scheduled-new') {
@@ -10456,7 +10500,7 @@ function getInspectionCardActionHtml(project, index) {
               class="inspection-card-action danger"
               onclick='event.stopPropagation(); openProjectAndReviewFindings(${projectIdJs})'
             >
-              Review Findings
+              Review Action Items
             </button>
           `
           : ''
@@ -10591,7 +10635,7 @@ function getProjectPrimaryAction(project) {
 
   if (highRiskSummary.count > 0) {
     return {
-      label: 'Review Findings',
+      label: 'Review Action Items',
       focusMode: 'issues',
       className: 'action-danger'
     };
@@ -12291,7 +12335,7 @@ function createFollowUpInspection() {
   if (!followUpDate) return;
 
   const confirmed = confirm(
-  'Schedule a corrective follow-up for this same site? Use this only when open findings or corrective actions must be checked again. This will not create a duplicate card.'
+  'Schedule a corrective follow-up for this same site? Use this only when open action items or corrective actions must be checked again. This will not create a duplicate card.'
 );
   if (!confirmed) return;
 
@@ -12309,7 +12353,7 @@ scheduledStatus: 'scheduled',
 scheduleFreshInspection: true,
 scheduledReason: 'follow_up',
 scheduleType: 'follow_up',
-scheduledNote: 'Corrective follow-up for open findings / action items.',
+scheduledNote: 'Corrective follow-up for open action items / action items.',
 
     completedAt: null,
     archiveStatus: '',
@@ -13096,7 +13140,7 @@ const executiveSummaryHtml = `
     </div>
 
     <div class="executive-summary-card">
-      <span>Findings</span>
+      <span>Action Items</span>
       <strong>${noCount}</strong>
     </div>
 
@@ -13144,7 +13188,7 @@ const executiveSummaryHtml = `
         <strong>${highRiskCount}</strong>
       </div>
       <div class="report-summary-card summary-repeat">
-        <span>Repeat Findings</span>
+        <span>Repeat Action Items</span>
         <strong>${repeatCount}</strong>
       </div>
       <div class="report-summary-card summary-expired">
@@ -13243,7 +13287,7 @@ const executiveSummaryHtml = `
       ` : ''}
 
       <div>
-        <strong>Finding:</strong>
+        <strong>Action Item:</strong>
         ${escapeHtml(item.text)}
       </div>
 
@@ -14842,7 +14886,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
             </div>
 
             <div>
-              <strong>Finding:</strong>
+              <strong>Action Item:</strong>
               ${escapeHtml(item.text)}
             </div>
 
@@ -15596,7 +15640,7 @@ function renderInspectionArchive(project) {
         </div>
 
         <div>
-          <strong>Findings:</strong>
+          <strong>Action Items:</strong>
           ${findingCount}
         </div>
 
@@ -16132,14 +16176,14 @@ function buildCommandCentreCards(project, completion, expiryCounts, dataQuality,
       action: "handleCommandCentreCard('checklistCard')"
     },
     {
-      title: 'Findings',
+      title: 'Action Items',
       icon: '🚩',
       status: findingsStatus.label,
       className: findingsStatus.className,
       detail:
         noCount > 0
           ? `${noCount} NO answer${noCount === 1 ? '' : 's'} to review`
-          : 'No open open findings detected',
+          : 'No open open action items detected',
       action: noCount > 0
         ? "handleSmartQuickLink('finding')"
         : "handleCommandCentreCard('checklistCard')"
@@ -16558,6 +16602,8 @@ function getCompanyComplianceStats(projects) {
     reports: 0,
     sites: 0,
     sitesAtRisk: 0,
+    compliantSites: 0,
+    inspectionsThisMonth: 0,
     topAttentionSites: []
   };
 
@@ -16575,6 +16621,14 @@ function getCompanyComplianceStats(projects) {
 
     if (project?.completedAt || project?.archivedAt) {
       totals.reports += 1;
+    }
+
+    if (isProjectCompliantForGateway(project)) {
+      totals.compliantSites += 1;
+    }
+
+    if (projectMatchesThisMonth(project)) {
+      totals.inspectionsThisMonth += 1;
     }
 
     if (typeof isProjectOverdueForCommandCentre === 'function' && isProjectOverdueForCommandCentre(project)) {
@@ -16676,7 +16730,7 @@ function ensureExecutiveComplianceDashboardMarkup() {
     <div class="compliance-breakdown-grid">
       <button type="button" class="compliance-breakdown-card" id="cmdComplianceFindingsBtn">
         <span id="cmdComplianceOpenFindings">0</span>
-        <strong>Open Findings</strong>
+        <strong>Open Action Items</strong>
       </button>
       <button type="button" class="compliance-breakdown-card warning" id="cmdComplianceOverdueBtn">
         <span id="cmdComplianceOverdueActions">0</span>
@@ -16684,11 +16738,11 @@ function ensureExecutiveComplianceDashboardMarkup() {
       </button>
       <button type="button" class="compliance-breakdown-card" id="cmdComplianceSitesBtn">
         <span id="cmdComplianceSites">0</span>
-        <strong>Sites</strong>
+        <strong>Compliant Sites</strong>
       </button>
       <button type="button" class="compliance-breakdown-card" id="cmdComplianceInspectionsBtn">
         <span id="cmdComplianceInspections">0</span>
-        <strong>Inspections</strong>
+        <strong>Inspections This Month</strong>
       </button>
     </div>
 
@@ -16752,7 +16806,7 @@ function renderAttentionSites(projectsOrStats) {
 
     const title = fireSGetProjectDisplayName(project);
     const dateText = fireSFormatShortDate(fireSGetInspectionDisplayDate(project));
-    const meta = `${dateText} · ${noCount} finding${noCount === 1 ? '' : 's'}`;
+    const meta = `${dateText} · ${noCount} action item${noCount === 1 ? '' : 's'}`;
     const projectId = fireSHomeSafeText(project?.id || '');
 
     return `
@@ -16768,7 +16822,7 @@ function renderAttentionSites(projectsOrStats) {
 function openFindingsCommand() {
   showProjectList();
   setFilter('inspection-attention');
-  showMainCommandMessage('Findings view: showing inspections with attention items. Dedicated Findings Centre comes next.');
+  showMainCommandMessage('Action Items view: showing inspections with attention items. Dedicated Findings Centre comes next.');
 }
 
 function openOverdueCommand() {
@@ -16837,8 +16891,8 @@ function renderHomeCommandCentre() {
 
   if (openFindingsEl) openFindingsEl.textContent = stats.openFindings;
   if (overdueActionsEl) overdueActionsEl.textContent = stats.overdueActions;
-  if (sitesEl) sitesEl.textContent = stats.sites;
-  if (inspectionsEl) inspectionsEl.textContent = stats.inspections;
+  if (sitesEl) sitesEl.textContent = stats.compliantSites || 0;
+  if (inspectionsEl) inspectionsEl.textContent = stats.inspectionsThisMonth || 0;
 
   if (accessEl) {
     const companyName = currentUserProfile?.companyName || 'Local Workspace';
@@ -16848,8 +16902,8 @@ function renderHomeCommandCentre() {
 
   if (subtitleEl) {
     subtitleEl.textContent = isManagementLandingRole()
-      ? 'Monitor compliance, findings, overdue actions and inspections from one place.'
-      : 'Open your assigned inspections, continue drafts and capture findings quickly.';
+      ? 'Monitor compliance, action items, overdue actions and inspections from one place.'
+      : 'Open your assigned inspections, continue drafts and capture action items quickly.';
   }
 
   renderAttentionSites(stats);
@@ -16982,8 +17036,8 @@ function renderFindingsCentre() {
 
   if (subtitleEl) {
     subtitleEl.textContent = allFindings.length
-      ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
-      : 'No open findings found in the visible inspections.';
+      ? `${allFindings.length} open action item${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
+      : 'No open action items found in the visible inspections.';
   }
 
   document.querySelectorAll('[data-findings-filter]').forEach(button => {
@@ -16993,7 +17047,7 @@ function renderFindingsCentre() {
   if (filteredFindings.length === 0) {
     list.innerHTML = `
       <div class="findings-empty-state">
-        <strong>No findings to show.</strong>
+        <strong>No action items to show.</strong>
         <span>Try another filter or search term.</span>
       </div>
     `;
@@ -17284,8 +17338,8 @@ function renderFindingsCentre() {
 
   if (subtitleEl) {
     subtitleEl.textContent = allFindings.length
-      ? `${allFindings.length} open finding${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
-      : 'No open findings found in the visible inspections.';
+      ? `${allFindings.length} open action item${allFindings.length === 1 ? '' : 's'} found from NO answers across visible inspections.`
+      : 'No open action items found in the visible inspections.';
   }
 
   document.querySelectorAll('[data-findings-filter]').forEach(button => {
@@ -17297,7 +17351,7 @@ function renderFindingsCentre() {
   if (filteredFindings.length === 0) {
     list.innerHTML = `
       <div class="findings-empty-state">
-        <strong>No findings to show.</strong>
+        <strong>No action items to show.</strong>
         <span>Try another filter or search term.</span>
       </div>
     `;
@@ -17535,7 +17589,7 @@ function renderHomeRecentActivity(projects) {
     const projectId = fireSHomeSafeText(project?.id || '');
 
     const activityLabel = noCount > 0
-      ? `${noCount} finding${noCount === 1 ? '' : 's'} raised`
+      ? `${noCount} action item${noCount === 1 ? '' : 's'} raised`
       : 'Inspection activity';
 
     const complianceText = compliance === null || compliance === undefined
@@ -17570,7 +17624,7 @@ function cleanupDuplicateHomeKpiCards() {
   const centre = document.getElementById('mainCommandCentre');
   if (!centre) return;
 
-  // Hide the old duplicate row: Inspections / Open Findings / Overdue / Photos.
+  // Hide the old duplicate row: Inspections / Open Action Items / Overdue / Photos.
   const duplicateStats = centre.querySelector('.main-command-stats');
   if (duplicateStats) {
     duplicateStats.style.display = 'none';
@@ -17814,7 +17868,7 @@ function renderHomeCommandCentre() {
   if (heroSubtitle) {
     heroSubtitle.textContent = isManagementLandingRole()
       ? 'Compliance, findings and overdue actions from visible inspections.'
-      : 'Open inspections, continue drafts and capture findings quickly.';
+      : 'Open inspections, continue drafts and capture action items quickly.';
   }
 
   const openFindingsEl = document.getElementById('cmdComplianceOpenFindings');
@@ -17824,8 +17878,8 @@ function renderHomeCommandCentre() {
 
   if (openFindingsEl) openFindingsEl.textContent = stats.openFindings;
   if (overdueActionsEl) overdueActionsEl.textContent = stats.overdueActions;
-  if (sitesEl) sitesEl.textContent = stats.sites;
-  if (inspectionsEl) inspectionsEl.textContent = stats.inspections;
+  if (sitesEl) sitesEl.textContent = stats.compliantSites || 0;
+  if (inspectionsEl) inspectionsEl.textContent = stats.inspectionsThisMonth || 0;
 
   if (accessEl) {
     const companyName = currentUserProfile?.companyName || 'Local Workspace';
