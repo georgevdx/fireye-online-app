@@ -18092,3 +18092,390 @@ document.addEventListener('DOMContentLoaded', () => {
     bindFinalHomeNavigationTargets();
   }, 250);
 });
+
+// =====================================================
+// FIRE-S EXECUTIVE COMPLIANCE DASHBOARD STANDARD v1.0
+// Purpose:
+// - Official KPI model:
+//   Open Action Items | Overdue Inspections | Compliant Sites | Inspections This Month
+// - Overdue now means inspection overdue, not action/expiry overdue.
+// =====================================================
+
+function fireSIsInspectionClosed(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.archivedAt ||
+    project?.scheduledStatus === 'completed' ||
+    project?.archiveStatus === 'completed' ||
+    project?.inspectionStatus === 'closed' ||
+    project?.status === 'closed'
+  );
+}
+
+function fireSGetInspectionScheduledDate(project) {
+  return (
+    project?.scheduledDate ||
+    project?.followUpDate ||
+    ''
+  );
+}
+
+function fireSIsInspectionOverdue(project) {
+  const scheduledDate = normaliseDateString(
+    fireSGetInspectionScheduledDate(project)
+  );
+
+  if (!scheduledDate) return false;
+  if (fireSIsInspectionClosed(project)) return false;
+
+  return scheduledDate < getTodayDateString();
+}
+
+// Keep the older function name as a compatibility alias, but change its meaning
+// to the official Fire-S v1.0 definition: overdue inspection programme work.
+function hasProjectOverdueActions(project) {
+  return fireSIsInspectionOverdue(project);
+}
+
+function isProjectOverdueForCommandCentre(project) {
+  return fireSIsInspectionOverdue(project);
+}
+
+function isCommandCentreOverdue(project) {
+  return fireSIsInspectionOverdue(project);
+}
+
+function fireSIsProjectFullyAnswered(project) {
+  const completion = getProjectCompletionCounts(project);
+  return completion.total > 0 && completion.unanswered === 0;
+}
+
+function isProjectCompliantForGateway(project) {
+  return Boolean(
+    fireSIsInspectionClosed(project) &&
+    fireSIsProjectFullyAnswered(project) &&
+    getProjectOpenActionItemCount(project) === 0
+  );
+}
+
+function getCompanyComplianceStats(projects) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  const totals = {
+    yes: 0,
+    no: 0,
+    na: 0,
+    unanswered: 0,
+    scoredTotal: 0,
+    compliancePercentage: null,
+    openFindings: 0,
+    openActionItems: 0,
+    overdueActions: 0,
+    overdueInspections: 0,
+    inspections: safeProjects.length,
+    photos: 0,
+    reports: 0,
+    sites: 0,
+    sitesAtRisk: 0,
+    compliantSites: 0,
+    inspectionsThisMonth: 0,
+    topAttentionSites: []
+  };
+
+  const siteMap = new Map();
+
+  safeProjects.forEach(project => {
+    const stats = getProjectComplianceStats(project);
+
+    totals.yes += stats.yes;
+    totals.no += stats.no;
+    totals.na += stats.na;
+    totals.unanswered += stats.unanswered;
+    totals.scoredTotal += stats.scoredTotal;
+    totals.openFindings += stats.no;
+    totals.openActionItems += stats.no;
+    totals.photos += Array.isArray(project?.photos) ? project.photos.length : 0;
+
+    if (fireSIsInspectionClosed(project)) {
+      totals.reports += 1;
+    }
+
+    if (isProjectCompliantForGateway(project)) {
+      totals.compliantSites += 1;
+    }
+
+    if (projectMatchesThisMonth(project) && fireSIsInspectionClosed(project)) {
+      totals.inspectionsThisMonth += 1;
+    }
+
+    if (fireSIsInspectionOverdue(project)) {
+      totals.overdueInspections += 1;
+      totals.overdueActions += 1; // compatibility for existing DOM ids
+    }
+
+    const siteKey = getProjectSiteKey(project);
+    const existing = siteMap.get(siteKey) || {
+      key: siteKey,
+      label: getProjectSiteLabel(project),
+      yes: 0,
+      no: 0,
+      scoredTotal: 0,
+      inspections: 0,
+      latestDate: '',
+      percentage: null
+    };
+
+    existing.yes += stats.yes;
+    existing.no += stats.no;
+    existing.scoredTotal += stats.scoredTotal;
+    existing.inspections += 1;
+
+    const projectDate = getProjectLatestDate(project);
+    if (projectDate && (!existing.latestDate || String(projectDate) > String(existing.latestDate))) {
+      existing.latestDate = projectDate;
+    }
+
+    siteMap.set(siteKey, existing);
+  });
+
+  totals.compliancePercentage = totals.scoredTotal > 0
+    ? Math.round((totals.yes / totals.scoredTotal) * 100)
+    : null;
+
+  const sites = Array.from(siteMap.values()).map(site => {
+    const percentage = site.scoredTotal > 0
+      ? Math.round((site.yes / site.scoredTotal) * 100)
+      : null;
+
+    return {
+      ...site,
+      percentage,
+      findings: site.no
+    };
+  });
+
+  totals.sites = sites.length;
+  totals.sitesAtRisk = sites.filter(site => site.percentage !== null && site.percentage < 80).length;
+  totals.topAttentionSites = sites
+    .filter(site => site.scoredTotal > 0)
+    .sort((a, b) => {
+      if (a.percentage !== b.percentage) return a.percentage - b.percentage;
+      return b.findings - a.findings;
+    })
+    .slice(0, 5);
+
+  return totals;
+}
+
+function fireSApplyExecutiveDashboardStandardLabels() {
+  const overdueLabel = document.querySelector('#cmdComplianceOverdueBtn strong');
+  if (overdueLabel) overdueLabel.textContent = 'Overdue Inspections';
+
+  const actionLabel = document.querySelector('#cmdComplianceFindingsBtn strong');
+  if (actionLabel) actionLabel.textContent = 'Open Action Items';
+
+  const sitesLabel = document.querySelector('#cmdComplianceSitesBtn strong');
+  if (sitesLabel) sitesLabel.textContent = 'Compliant Sites';
+
+  const monthLabel = document.querySelector('#cmdComplianceInspectionsBtn strong');
+  if (monthLabel) monthLabel.textContent = 'Inspections This Month';
+
+  const heroSubtitle = document.getElementById('complianceHeroSubtitle');
+  if (heroSubtitle && isManagementLandingRole()) {
+    heroSubtitle.textContent = 'Open Action Items, Overdue Inspections, Compliant Sites and monthly inspection activity.';
+  }
+}
+
+function openOverdueCommand() {
+  showProjectList();
+  setFilter('overdue');
+  showMainCommandMessage('Overdue Inspections: scheduled inspection date has passed and the inspection is not closed.');
+}
+
+function projectMatchesInspectionGatewayQuickFilter(project, filter) {
+  const activeFilter = filter || 'all';
+  const followStatus = getFollowUpStatus(project);
+
+  if (activeFilter === 'all') return true;
+
+  if (activeFilter === 'overdue') {
+    return fireSIsInspectionOverdue(project);
+  }
+
+  if (activeFilter === 'soon') {
+    return followStatus.class === 'status-soon';
+  }
+
+  if (activeFilter === 'none') {
+    return followStatus.class === 'status-none';
+  }
+
+  if (activeFilter === 'followups') {
+    return project.followUpRequired === 'Yes';
+  }
+
+  if (activeFilter === 'scheduled-new') {
+    return (
+      project.scheduledStatus === 'scheduled' &&
+      project.scheduleType === 'new_site' &&
+      !fireSIsInspectionClosed(project)
+    );
+  }
+
+  if (activeFilter === 'risk') {
+    return hasProjectOpenActionItems(project);
+  }
+
+  if (activeFilter === 'inspection-attention') {
+    return (
+      getProjectInspectionStatus(project).filter === 'inspection-attention' ||
+      hasProjectOpenActionItems(project) ||
+      fireSIsInspectionOverdue(project)
+    );
+  }
+
+  if (activeFilter === 'compliant' || activeFilter === 'clear-completed') {
+    return isProjectCompliantForGateway(project);
+  }
+
+  if (activeFilter === 'month') {
+    return projectMatchesThisMonth(project) && fireSIsInspectionClosed(project);
+  }
+
+  if (activeFilter.startsWith('module-')) {
+    return getModuleFilterKey(normalizeProductType(project.productType)) === activeFilter;
+  }
+
+  if (activeFilter.startsWith('inspection-')) {
+    return getProjectInspectionStatus(project).filter === activeFilter;
+  }
+
+  if (activeFilter === 'expiry-overdue') {
+    return getProjectExpiryCounts(project).overdue > 0;
+  }
+
+  if (activeFilter === 'expiry-soon') {
+    return getProjectExpiryCounts(project).soon > 0;
+  }
+
+  if (activeFilter === 'expiry-scheduled') {
+    return getProjectExpiryCounts(project).scheduled > 0;
+  }
+
+  if (activeFilter === 'expiry-missing') {
+    return getProjectExpiryCounts(project).missing > 0;
+  }
+
+  return true;
+}
+
+function renderInspectionGatewayQuickFilters(projects) {
+  const counts = getInspectionGatewayQuickFilterCounts(projects);
+
+  const filters = [
+    { key: 'all', label: 'All' },
+    { key: 'inspection-attention', label: 'Needs Attention' },
+    { key: 'risk', label: 'Open Action Items' },
+    { key: 'overdue', label: 'Overdue Inspections' },
+    { key: 'compliant', label: 'Compliant' },
+    { key: 'month', label: 'This Month' }
+  ];
+
+  return `
+    <div class="gateway-quick-filter-bar" aria-label="Inspection quick filters">
+      ${filters.map(filter => `
+        <button
+          type="button"
+          class="${currentFilter === filter.key ? 'gateway-filter-active' : ''}"
+          onclick="setInspectionGatewayQuickFilter('${filter.key}')"
+        >
+          <strong>${counts[filter.key] || 0}</strong>
+          <span>${escapeHtml(filter.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function getInspectionCardVisualClass(project) {
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const dataQuality = getProjectDataQuality(project);
+
+  if (fireSIsInspectionOverdue(project)) {
+    return 'inspection-card-status-red';
+  }
+
+  if (completion.noCount > 0 || expiryCounts.overdue > 0 || expiryCounts.soon > 0 || dataQuality.count > 0) {
+    return 'inspection-card-status-amber';
+  }
+
+  if (isProjectCompliantForGateway(project)) {
+    return 'inspection-card-status-green';
+  }
+
+  return 'inspection-card-status-blue';
+}
+
+function renderInspectionCardStatsHtml(project) {
+  const completion = getProjectCompletionCounts(project);
+  const complianceStats = typeof getProjectComplianceStats === 'function'
+    ? getProjectComplianceStats(project)
+    : { compliancePercentage: null };
+
+  const inspectionOverdueText = fireSIsInspectionOverdue(project) ? 'Yes' : 'No';
+
+  const scoreText =
+    complianceStats.compliancePercentage === null ||
+    complianceStats.compliancePercentage === undefined
+      ? 'No score'
+      : `${complianceStats.compliancePercentage}%`;
+
+  const lastUpdated = project.lastSaved || project.updatedAt || project.completedAt || '';
+  const lastUpdatedText = lastUpdated ? formatInspectionDate(lastUpdated) : '-';
+
+  return `
+    <div class="inspection-card-stat-grid">
+      <div><span>Action Items</span><strong>${completion.noCount}</strong></div>
+      <div><span>Inspection Overdue</span><strong>${inspectionOverdueText}</strong></div>
+      <div><span>Compliance</span><strong>${escapeHtml(scoreText)}</strong></div>
+      <div><span>Updated</span><strong>${escapeHtml(lastUpdatedText)}</strong></div>
+    </div>
+  `;
+}
+
+const fireSOriginalRenderHomeCommandCentreExecStandard =
+  typeof renderHomeCommandCentre === 'function'
+    ? renderHomeCommandCentre
+    : null;
+
+if (fireSOriginalRenderHomeCommandCentreExecStandard) {
+  renderHomeCommandCentre = function renderHomeCommandCentreExecStandard() {
+    fireSOriginalRenderHomeCommandCentreExecStandard();
+    fireSApplyExecutiveDashboardStandardLabels();
+  };
+}
+
+const fireSOriginalShowHomeExecStandard =
+  typeof showHome === 'function'
+    ? showHome
+    : null;
+
+if (fireSOriginalShowHomeExecStandard) {
+  showHome = function showHomeExecStandard() {
+    fireSOriginalShowHomeExecStandard();
+    fireSApplyExecutiveDashboardStandardLabels();
+  };
+}
+
+window.fireSIsInspectionOverdue = fireSIsInspectionOverdue;
+window.fireSApplyExecutiveDashboardStandardLabels = fireSApplyExecutiveDashboardStandardLabels;
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    fireSApplyExecutiveDashboardStandardLabels();
+    if (typeof renderProjectsList === 'function') {
+      renderProjectsList();
+    }
+  }, 300);
+});
