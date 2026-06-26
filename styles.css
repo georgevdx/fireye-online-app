@@ -9689,15 +9689,14 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 
 
-/* FIRE-S New Inspection Cycle Draft v1.0 */
-.new-cycle-draft-banner {
-  margin: 0 0 14px 0;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px solid #60a5fa;
-  border-left: 6px solid #2563eb;
-  background: #eff6ff;
-  color: #1e3a8a;
+/* FIRE-S Premises Identity Lock v1.4 */
+.identity-lock-note {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #065f46;
+  border-left: 5px solid #10b981;
   font-size: 13px;
   font-weight: 800;
 }

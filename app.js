@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v92-new-inspection-cycle-draft-v1-0';
+const APP_VERSION = 'v93-premises-identity-lock-v1-4';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19574,3 +19574,200 @@ window.addEventListener('beforeunload', event => {
     event.returnValue = '';
   }
 });
+
+
+
+/* =====================================================
+   FIRE-S Premises Identity Lock v1.4
+   Hard data-layer duplicate prevention.
+   Any setProjects() save is cleaned so one premises identity = one visible card.
+   ===================================================== */
+
+function fireSIdNorm(value) {
+  return String(value || '')
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' and ')
+    .replace(/[.,;:()_\-\/\\]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function fireSIdAddress(value) {
+  return fireSIdNorm(value)
+    .replace(/\bstreet\b/g, 'st')
+    .replace(/\broad\b/g, 'rd')
+    .replace(/\bavenue\b/g, 'ave')
+    .replace(/\bdrive\b/g, 'dr')
+    .replace(/\bboulevard\b/g, 'blvd')
+    .replace(/\bcorner\b/g, 'cnr')
+    .replace(/\bshop\b/g, 'unit')
+    .trim();
+}
+
+function fireSIdName(project) {
+  const org = String(project?.organisationName || '').trim();
+  const site = String(project?.siteName || '').trim();
+  const pname = String(project?.projectName || '').trim();
+  const name = org && site ? `${org} ${site}` : site || pname || org;
+  return fireSIdNorm(name).replace(/\s+/g, '');
+}
+
+function fireSIdPremisesAddress(project) {
+  const combined =
+    typeof combineStreetAddress === 'function'
+      ? combineStreetAddress(project?.streetNumber, project?.addressLine)
+      : [project?.streetNumber, project?.addressLine].filter(Boolean).join(' ');
+
+  return fireSIdAddress(project?.projectAddress || combined || project?.addressLine || '');
+}
+
+function fireSIdUnit(project) {
+  return fireSIdNorm([project?.mallName, project?.unitNumber].filter(Boolean).join(' '));
+}
+
+function fireSIdKey(project) {
+  const name = fireSIdName(project);
+  if (!name) return '';
+  const address = fireSIdPremisesAddress(project);
+  const unit = fireSIdUnit(project);
+  return address ? `${name}|${address}|${unit}` : `${name}|no-address|${unit}`;
+}
+
+function fireSHasInspectionWork(project) {
+  return Boolean(
+    project?.completedAt ||
+    project?.archivedAt ||
+    project?.inspectionNumber ||
+    project?.finalComments ||
+    project?.followUpDate ||
+    project?.followUpNotes ||
+    (Array.isArray(project?.answers) && project.answers.length > 0) ||
+    (Array.isArray(project?.photos) && project.photos.length > 0)
+  );
+}
+
+function fireSArchiveDuplicateAsHistory(project) {
+  return {
+    archivedAt: new Date().toISOString(),
+    archiveReason: 'duplicate_premises_merged',
+    inspectionNumber: project?.inspectionNumber || '',
+    inspectionDate: project?.inspectionDate || '',
+    completedAt: project?.completedAt || '',
+    inspectorName: project?.inspectorName || '',
+    occupancy: project?.occupancy || '',
+    answers: Array.isArray(project?.answers) ? project.answers : [],
+    photos: Array.isArray(project?.photos) ? project.photos : [],
+    finalComments: project?.finalComments || '',
+    followUpRequired: project?.followUpRequired || '',
+    followUpDate: project?.followUpDate || '',
+    followUpNotes: project?.followUpNotes || '',
+    mergedFromDuplicateId: project?.id || '',
+    mergedFromDuplicateName: project?.projectName || ''
+  };
+}
+
+function fireSMergeDuplicateCards(existing, incoming) {
+  const existingHistory = Array.isArray(existing?.inspectionHistory) ? existing.inspectionHistory : [];
+  const incomingHistory = Array.isArray(incoming?.inspectionHistory) ? incoming.inspectionHistory : [];
+
+  const history = [...existingHistory, ...incomingHistory];
+
+  if (fireSHasInspectionWork(incoming)) {
+    history.push(fireSArchiveDuplicateAsHistory(incoming));
+  }
+
+  const existingTime = new Date(existing?.lastSaved || existing?.completedAt || existing?.createdAt || 0).getTime() || 0;
+  const incomingTime = new Date(incoming?.lastSaved || incoming?.completedAt || incoming?.createdAt || 0).getTime() || 0;
+
+  const active = incomingTime > existingTime && fireSHasInspectionWork(incoming) ? incoming : existing;
+  const passive = active === incoming ? existing : incoming;
+
+  return {
+    ...active,
+    id: existing.id || active.id,
+    organisationName: active.organisationName || existing.organisationName || passive.organisationName || '',
+    siteName: active.siteName || existing.siteName || passive.siteName || '',
+    projectName: active.projectName || existing.projectName || passive.projectName || '',
+    projectAddress: active.projectAddress || existing.projectAddress || passive.projectAddress || '',
+    addressLine: active.addressLine || existing.addressLine || passive.addressLine || '',
+    streetNumber: active.streetNumber || existing.streetNumber || passive.streetNumber || '',
+    mallName: active.mallName || existing.mallName || passive.mallName || '',
+    unitNumber: active.unitNumber || existing.unitNumber || passive.unitNumber || '',
+    inspectionHistory: history,
+    hasSiteHistory: history.length > 0,
+    previousInspectionCount: history.length,
+    duplicateMergedAt: new Date().toISOString(),
+    duplicateMergedIds: [
+      ...(existing.duplicateMergedIds || []),
+      ...(incoming.duplicateMergedIds || []),
+      incoming.id
+    ].filter(Boolean),
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+}
+
+function fireSCollapsePremisesDuplicates(projects) {
+  const safe = Array.isArray(projects) ? projects : [];
+  const byKey = new Map();
+  const output = [];
+  let mergedCount = 0;
+
+  safe.forEach(project => {
+    const key = fireSIdKey(project);
+    if (!key) {
+      output.push(project);
+      return;
+    }
+
+    if (!byKey.has(key)) {
+      byKey.set(key, project);
+      output.push(project);
+      return;
+    }
+
+    const existing = byKey.get(key);
+    const merged = fireSMergeDuplicateCards(existing, project);
+    const idx = output.findIndex(item => item.id === existing.id);
+    if (idx !== -1) output[idx] = merged;
+    byKey.set(key, merged);
+    mergedCount += 1;
+  });
+
+  if (mergedCount > 0) {
+    const msg = `${mergedCount} duplicate premises card${mergedCount === 1 ? '' : 's'} merged into existing card history.`;
+    window.fireSLastDuplicateMergeCount = mergedCount;
+    console.warn('Fire-S Premises Identity Lock:', msg);
+    const syncStatus = document.getElementById('syncStatus');
+    const saveMessage = document.getElementById('saveMessage');
+    if (syncStatus) syncStatus.textContent = msg;
+    if (saveMessage) saveMessage.textContent = msg;
+  }
+
+  return output;
+}
+
+if (typeof setProjects === 'function' && !window.fireSPremisesIdentityLockAppliedV14) {
+  window.fireSPremisesIdentityLockAppliedV14 = true;
+  const originalSetProjectsV14 = setProjects;
+
+  setProjects = function fireSSetProjectsWithIdentityLock(projects) {
+    return originalSetProjectsV14.call(this, fireSCollapsePremisesDuplicates(projects));
+  };
+}
+
+setTimeout(() => {
+  try {
+    const projects = typeof getProjects === 'function' ? getProjects() : [];
+    const collapsed = fireSCollapsePremisesDuplicates(projects);
+    if (collapsed.length !== projects.length) {
+      setProjects(collapsed);
+      if (typeof renderProjectsList === 'function') renderProjectsList();
+      if (typeof renderHomeCommandCentre === 'function') renderHomeCommandCentre();
+    }
+  } catch (error) {
+    console.warn('Premises Identity Lock cleanup failed:', error);
+  }
+}, 900);
