@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v87-premises-dropdown-flicker-fix-v1-1';
+const APP_VERSION = 'v89-duplicate-premises-guard-v1-1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19299,706 +19299,383 @@ setTimeout(refreshActivityDateFiltersAfterPatch, 500);
 
 
 /* =====================================================
-   FIRE-S Compact Inspection Cards + Premises Search v1.0
-   - Compact Gateway inspection cards
-   - Premises dropdown search
-   - Removes duplicated info from cards
+   FIRE-S Duplicate Premises Guard v1.1
+   Stronger duplicate prevention:
+   - Blocks duplicate Save / Finish / Autosave
+   - Blocks duplicate Schedule New Site
+   - Handles missing address and minor formatting differences
    ===================================================== */
 
-let fireSPremisesDropdownFilter = '';
-
-function fireSEscapeSelectValue(value) {
+function fireSNormalisePremisesText(value) {
   return String(value || '')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .toLowerCase()
+    .trim()
+    .replace(/&/g, ' and ')
+    .replace(/[.,;:()_\-\/\\]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function fireSGetProjectTitle(project) {
-  return (
-    project?.projectName ||
-    [project?.organisationName, project?.siteName]
-      .filter(Boolean)
-      .join(' - ') ||
-    'Untitled Premises'
-  );
+function fireSNormaliseAddressText(value) {
+  return fireSNormalisePremisesText(value)
+    .replace(/\bstreet\b/g, 'st')
+    .replace(/\broad\b/g, 'rd')
+    .replace(/\bavenue\b/g, 'ave')
+    .replace(/\bdrive\b/g, 'dr')
+    .replace(/\bboulevard\b/g, 'blvd')
+    .replace(/\bcorner\b/g, 'cnr')
+    .replace(/\bshop\b/g, 'unit')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
-function fireSGetProjectAddress(project) {
-  return (
-    project?.projectAddress ||
-    combineStreetAddress(project?.streetNumber, project?.addressLine) ||
-    project?.addressLine ||
-    'No address captured'
-  );
+function fireSCompactIdentityText(value) {
+  return fireSNormalisePremisesText(value).replace(/\s+/g, '');
 }
 
-function fireSGetPremisesKey(project) {
-  return [
-    fireSGetProjectTitle(project),
-    fireSGetProjectAddress(project)
-  ]
-    .map(value => String(value || '').trim().toLowerCase())
-    .join('|');
-}
+function fireSBuildPremisesName(organisationName, siteName, projectName) {
+  const organisation = String(organisationName || '').trim();
+  const site = String(siteName || '').trim();
+  const project = String(projectName || '').trim();
 
-function fireSGetPremisesLabel(project) {
-  const title = fireSGetProjectTitle(project);
-  const address = fireSGetProjectAddress(project);
-
-  if (!address || address === 'No address captured') {
-    return title;
-  }
-
-  return `${title} — ${address}`;
-}
-
-function fireSBuildPremisesOptions(projects) {
-  const map = new Map();
-
-  (projects || []).forEach(project => {
-    const key = fireSGetPremisesKey(project);
-    if (!key || map.has(key)) return;
-
-    map.set(key, fireSGetPremisesLabel(project));
-  });
-
-  return Array.from(map.entries())
-    .sort((a, b) => a[1].localeCompare(b[1]));
-}
-
-function fireSEnsurePremisesDropdown(projects) {
-  const searchField = document.getElementById('projectSearch');
-  if (!searchField) return;
-
-  let wrapper = document.getElementById('premisesSearchWrapper');
-
-  if (!wrapper) {
-    wrapper = document.createElement('div');
-    wrapper.id = 'premisesSearchWrapper';
-    wrapper.className = 'premises-search-wrapper';
-
-    wrapper.innerHTML = `
-      <label for="premisesQuickSelect">Quick premises lookup</label>
-      <select id="premisesQuickSelect">
-        <option value="">All premises</option>
-      </select>
-    `;
-
-    searchField.insertAdjacentElement('afterend', wrapper);
-  }
-
-  const select = document.getElementById('premisesQuickSelect');
-  if (!select) return;
-
-  const currentValue = fireSPremisesDropdownFilter || select.value || '';
-  const options = fireSBuildPremisesOptions(projects);
-
-  select.innerHTML = `
-    <option value="">All premises</option>
-    ${options.map(([key, label]) => `
-      <option value="${fireSEscapeSelectValue(key)}">
-        ${escapeHtml(label)}
-      </option>
-    `).join('')}
-  `;
-
-  if (currentValue && options.some(([key]) => key === currentValue)) {
-    select.value = currentValue;
-  } else {
-    select.value = '';
-    fireSPremisesDropdownFilter = '';
-  }
-
-  if (select.dataset.fireSBound !== 'true') {
-    select.dataset.fireSBound = 'true';
-
-    select.addEventListener('change', () => {
-      fireSPremisesDropdownFilter = select.value || '';
-      currentProjectPage = 1;
-      renderProjectsList();
-      updateDashboardSelection();
-    });
-  }
-}
-
-function projectMatchesGatewayBaseFilters(project, searchText) {
-  const normalizedSearch = String(searchText || '').trim().toLowerCase();
-
-  if (fireSPremisesDropdownFilter) {
-    if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) {
-      return false;
-    }
-  }
-
-  if (normalizedSearch) {
-    const placeName = (project.projectName || '').toLowerCase();
-    const organisationName = (project.organisationName || '').toLowerCase();
-    const siteName = (project.siteName || '').toLowerCase();
-    const address = (project.projectAddress || project.addressLine || '').toLowerCase();
-    const mallName = (project.mallName || '').toLowerCase();
-    const unitNumber = (project.unitNumber || '').toLowerCase();
-    const moduleName = normalizeProductType(project.productType).toLowerCase();
-    const inspectionType = (project.inspectionType || '').toLowerCase();
-    const inspectorName = (project.inspectorName || '').toLowerCase();
-    const inspectionNumber = (project.inspectionNumber || '').toLowerCase();
-    const inspectionDate = getProjectDateForFiltering(project).toLowerCase();
-
-    const matchesSearch =
-      placeName.includes(normalizedSearch) ||
-      organisationName.includes(normalizedSearch) ||
-      siteName.includes(normalizedSearch) ||
-      address.includes(normalizedSearch) ||
-      mallName.includes(normalizedSearch) ||
-      unitNumber.includes(normalizedSearch) ||
-      moduleName.includes(normalizedSearch) ||
-      inspectionType.includes(normalizedSearch) ||
-      inspectorName.includes(normalizedSearch) ||
-      inspectionNumber.includes(normalizedSearch) ||
-      inspectionDate.includes(normalizedSearch);
-
-    if (!matchesSearch) return false;
-  }
-
-  return projectMatchesInspectionDateFilter(project);
-}
-
-function fireSGetCompactCardStatus(project) {
-  const completion = getProjectCompletionCounts(project);
-  const scheduleStatus =
-    typeof getProjectScheduleStatus === 'function'
-      ? getProjectScheduleStatus(project)
-      : { className: '' };
-
-  if (scheduleStatus.className === 'schedule-overdue' || hasProjectOverdueActions(project)) {
-    return {
-      label: 'Overdue',
-      className: 'compact-status-overdue'
-    };
-  }
-
-  if (completion.noCount > 0) {
-    return {
-      label: 'Action Required',
-      className: 'compact-status-action'
-    };
-  }
-
-  if (isProjectCompliantForGateway(project)) {
-    return {
-      label: 'Compliant',
-      className: 'compact-status-compliant'
-    };
-  }
-
-  return {
-    label: 'In Progress',
-    className: 'compact-status-progress'
-  };
-}
-
-function fireSGetCompactCardFacts(project) {
-  const completion = getProjectCompletionCounts(project);
-  const dataQuality = getProjectDataQuality(project);
-  const expiryCounts = getProjectExpiryCounts(project);
-  const facts = [];
-
-  if (completion.noCount > 0) {
-    facts.push(`${completion.noCount} action${completion.noCount === 1 ? '' : 's'}`);
-  }
-
-  if (completion.unanswered > 0) {
-    facts.push(`${completion.unanswered} unanswered`);
-  }
-
-  if (dataQuality.count > 0) {
-    facts.push(`${dataQuality.count} missing info`);
-  }
-
-  if (expiryCounts.overdue > 0) {
-    facts.push(`${expiryCounts.overdue} expired`);
-  }
-
-  if (expiryCounts.soon > 0) {
-    facts.push(`${expiryCounts.soon} due soon`);
-  }
-
-  return facts.length ? facts.join(' · ') : 'No urgent flags';
-}
-
-function fireSGetCompactScheduleText(project) {
-  const scheduleDisplay =
-    typeof getProjectScheduleDisplay === 'function'
-      ? getProjectScheduleDisplay(project)
-      : { hasDisplay: false };
-
-  if (scheduleDisplay?.hasDisplay) {
-    return scheduleDisplay.chip || scheduleDisplay.title || '';
-  }
+  if (organisation && site) return `${organisation} ${site}`;
+  if (site) return site;
+  if (project) return project;
+  if (organisation) return organisation;
 
   return '';
 }
 
-function getInspectionCardActionHtml(project, index) {
-  const completion = getProjectCompletionCounts(project);
-  const hasFindings = completion.noCount > 0;
-  const projectIdJs = JSON.stringify(project?.id || '');
-
-  return `
-    <div class="compact-card-actions">
-      <button
-        type="button"
-        class="compact-card-btn primary"
-        onclick='event.stopPropagation(); openProject(${projectIdJs})'
-      >
-        Open
-      </button>
-
-      ${
-        hasFindings
-          ? `
-            <button
-              type="button"
-              class="compact-card-btn danger"
-              onclick='event.stopPropagation(); openProjectAndReviewFindings(${projectIdJs})'
-            >
-              Actions
-            </button>
-          `
-          : ''
-      }
-
-      <button
-        type="button"
-        class="compact-card-btn muted"
-        onclick="event.stopPropagation(); toggleInspectionCardMore(${index})"
-      >
-        More
-      </button>
-    </div>
-
-    <div
-      id="inspectionCardMore_${index}"
-      class="inspection-card-more-panel compact-more-panel"
-      style="display:none;"
-    >
-      <button
-        type="button"
-        onclick='event.stopPropagation(); openProject(${projectIdJs})'
-      >
-        Edit / Continue
-      </button>
-
-      <button
-        type="button"
-        onclick='event.stopPropagation(); openProjectAndGoToSchedule(${projectIdJs})'
-      >
-        Schedule / Cycle
-      </button>
-
-      <button
-        type="button"
-        onclick='event.stopPropagation(); openProjectAndGenerateReport(${projectIdJs})'
-      >
-        Report
-      </button>
-    </div>
-  `;
-}
-
-function renderProjectsList() {
-  const container = getEl('projectsList');
-
-  if (!currentUserProfile) {
-    currentUserProfile = {
-      id: 'local-user',
-      email: 'local@fire-s.app',
-      fullName: 'Local User',
-      role: 'super_admin',
-      companyId: null,
-      companyName: 'Local / Personal Workspace'
-    };
-
-    currentCompanyAccess = {
-      status: 'active',
-      plan: 'local',
-      source: 'local-fallback'
-    };
-  }
-
-  const allProjects = getProjects();
-  const projects = getVisibleProjectsForCurrentUser(allProjects);
-
-  fireSEnsurePremisesDropdown(projects);
-
-  updateAppInfo();
-  renderDashboardMetrics(projects);
-  updateOfflineReadinessBanner();
-  updateSiteReadyPreflightChecklist();
-  updatePostSiteSyncReminder();
-
-  const searchField = document.getElementById('projectSearch');
-  const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
-
-  container.innerHTML = '';
-
-  const baseFilteredProjects = projects.filter(project =>
-    projectMatchesGatewayBaseFilters(project, searchText)
+function fireSGetPremisesNameForDuplicateCheck(project) {
+  return fireSNormalisePremisesText(
+    fireSBuildPremisesName(project?.organisationName, project?.siteName, project?.projectName)
   );
+}
 
-  const filteredProjects = baseFilteredProjects.filter(project =>
-    projectMatchesInspectionGatewayQuickFilter(project, currentFilter)
+function fireSGetCompactPremisesNameForDuplicateCheck(project) {
+  return fireSCompactIdentityText(
+    fireSBuildPremisesName(project?.organisationName, project?.siteName, project?.projectName)
   );
+}
 
-  updateActiveFilterStatus(filteredProjects.length);
-
-  const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(baseFilteredProjects);
-
-  filteredProjects.sort((a, b) => {
-    if (currentFilter === 'scheduled-new') {
-      const aDate = a.scheduledDate || a.followUpDate || a.lastSaved || '';
-      const bDate = b.scheduledDate || b.followUpDate || b.lastSaved || '';
-
-      const aTime = aDate ? new Date(aDate).getTime() : Number.MAX_SAFE_INTEGER;
-      const bTime = bDate ? new Date(bDate).getTime() : Number.MAX_SAFE_INTEGER;
-
-      return aTime - bTime;
-    }
-
-    const getProjectPriority = project => {
-      const followStatus = getFollowUpStatus(project);
-      const expiryCounts = getProjectExpiryCounts(project);
-      const hasHighRisk = project.answers?.some(
-        answer => String(answer.answer || '').trim().toLowerCase() === 'no'
-      );
-
-      if (hasHighRisk) return 1;
-      if (expiryCounts.overdue > 0) return 2;
-      if (followStatus.class === 'status-overdue') return 3;
-      if (expiryCounts.soon > 0) return 4;
-      if (followStatus.class === 'status-soon') return 5;
-      return 6;
-    };
-
-    const priorityDiff = getProjectPriority(a) - getProjectPriority(b);
-    if (priorityDiff !== 0) return priorityDiff;
-
-    const aTime = a.lastSaved ? new Date(a.lastSaved).getTime() : 0;
-    const bTime = b.lastSaved ? new Date(b.lastSaved).getTime() : 0;
-
-    return bTime - aTime;
-  });
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE)
+function fireSGetAddressForDuplicateCheck(project) {
+  return fireSNormaliseAddressText(
+    project?.projectAddress ||
+    combineStreetAddress(project?.streetNumber, project?.addressLine) ||
+    project?.addressLine ||
+    ''
   );
+}
 
-  if (currentProjectPage > totalPages) {
-    currentProjectPage = totalPages;
-  }
-
-  const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
-  const visibleProjects = filteredProjects.slice(
-    startIndex,
-    startIndex + PROJECTS_PER_PAGE
+function fireSGetUnitForDuplicateCheck(project) {
+  return fireSNormalisePremisesText(
+    [project?.mallName, project?.unitNumber].filter(Boolean).join(' ')
   );
-
-  const pagingControls = document.getElementById('projectPagingControls');
-
-  if (pagingControls) {
-    pagingControls.innerHTML = `
-      <button
-        type="button"
-        onclick="previousProjectPage()"
-        ${currentProjectPage === 1 ? 'disabled' : ''}
-      >
-        Previous
-      </button>
-
-      <span>
-        Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1}
-        -
-        ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)}
-        of ${filteredProjects.length}
-      </span>
-
-      <button
-        type="button"
-        onclick="nextProjectPage()"
-        ${currentProjectPage >= totalPages ? 'disabled' : ''}
-      >
-        Next
-      </button>
-    `;
-  }
-
-  if (filteredProjects.length === 0) {
-    container.innerHTML = `
-      ${gatewayQuickFilterHtml}
-      <div class="empty-state">No matching inspections found.</div>
-    `;
-    return;
-  }
-
-  window.currentProjectsListView = visibleProjects;
-
-  container.innerHTML = `
-    ${gatewayQuickFilterHtml}
-    <div id="projectListView" class="inspection-project-list compact-inspection-list">
-      ${visibleProjects.map((project, index) => {
-        const projectTitle = fireSGetProjectTitle(project);
-        const projectAddress = fireSGetProjectAddress(project);
-        const inspectionDate = getProjectInspectionDate(project);
-        const status = fireSGetCompactCardStatus(project);
-        const facts = fireSGetCompactCardFacts(project);
-        const scheduleText = fireSGetCompactScheduleText(project);
-        const primaryAction = getProjectPrimaryAction(project);
-        const visualClass = getInspectionCardVisualClass(project);
-        const projectIdJs = JSON.stringify(project.id || '');
-
-        return `
-          <article
-            class="compact-inspection-card ${escapeHtml(visualClass)}"
-            role="button"
-            tabindex="0"
-            onclick='event.stopPropagation(); openProject(${projectIdJs})'
-            onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
-          >
-            <div class="compact-card-main">
-              <div class="compact-card-title-row">
-                <strong class="compact-card-title">${escapeHtml(projectTitle)}</strong>
-                <span class="compact-status-badge ${escapeHtml(status.className)}">
-                  ${escapeHtml(status.label)}
-                </span>
-              </div>
-
-              <div class="compact-card-address">
-                ${escapeHtml(projectAddress)}
-              </div>
-
-              <div class="compact-card-meta">
-                <span>${escapeHtml(project.inspectionNumber || 'No inspection number')}</span>
-                ${
-                  inspectionDate
-                    ? `<span>${escapeHtml(formatInspectionDate(inspectionDate))}</span>`
-                    : ''
-                }
-                ${
-                  scheduleText
-                    ? `<span>${escapeHtml(scheduleText)}</span>`
-                    : ''
-                }
-              </div>
-
-              <div class="compact-card-facts">
-                ${escapeHtml(facts)}
-              </div>
-            </div>
-
-            <div class="compact-card-side">
-              <span class="compact-primary-action ${escapeHtml(primaryAction.className)}">
-                ${escapeHtml(primaryAction.label)}
-              </span>
-
-              ${getInspectionCardActionHtml(project, index)}
-            </div>
-          </article>
-        `;
-      }).join('')}
-    </div>
-
-    <div
-      id="projectSummaryDetailCard"
-      class="project-summary-detail-card"
-      style="display:none;"
-    ></div>
-  `;
-
-  if (currentProjectSummaryId) {
-    const restoredIndex = visibleProjects.findIndex(
-      project => project.id === currentProjectSummaryId
-    );
-
-    if (restoredIndex !== -1) {
-      setTimeout(() => {
-        openProjectSummaryCard(restoredIndex, false);
-      }, 0);
-    }
-  }
 }
 
-setTimeout(() => {
-  try {
-    const projects = typeof getProjects === 'function' ? getProjects() : [];
-    fireSEnsurePremisesDropdown(projects);
-  } catch (error) {
-    console.warn('Premises dropdown init failed:', error);
-  }
-}, 500);
+function fireSGetSiteIdForDuplicateCheck(project) {
+  const siteId = String(project?.siteId || '').trim().toLowerCase();
 
+  if (siteId) return siteId;
 
-
-
-/* =====================================================
-   FIRE-S Premises Dropdown + Flicker Fix v1.1
-   - Dropdown now shows only premises / site name
-   - Dropdown no longer rebuilds on every render unless data changed
-   - Search input no longer triggers excessive full redraws while typing
-   ===================================================== */
-
-let fireSPremisesDropdownSignature = '';
-let fireSSearchRenderTimer = null;
-
-function fireSGetPremisesDropdownLabel(project) {
-  const organisation =
-    String(project?.organisationName || '').trim();
-
-  const site =
-    String(project?.siteName || '').trim();
-
-  const projectName =
-    String(project?.projectName || '').trim();
-
-  if (organisation && site) {
-    return `${organisation} - ${site}`;
-  }
-
-  if (site) {
-    return site;
-  }
-
-  if (projectName) {
-    return projectName;
-  }
-
-  return 'Untitled Premises';
+  return [
+    fireSGetAddressForDuplicateCheck(project),
+    fireSGetUnitForDuplicateCheck(project)
+  ].filter(Boolean).join('|');
 }
 
-function fireSBuildPremisesOptions(projects) {
-  const map = new Map();
+function fireSBuildDuplicateCheckCandidateFromInspectionForm() {
+  const organisationName = document.getElementById('organisationName')?.value || '';
+  const siteName = document.getElementById('siteName')?.value || '';
+  const streetNumber = document.getElementById('streetNumber')?.value || '';
+  const addressLine = document.getElementById('projectAddress')?.value || '';
+  const projectAddress = combineStreetAddress(streetNumber, addressLine);
 
-  (projects || []).forEach(project => {
-    const key = fireSGetPremisesKey(project);
-    if (!key || map.has(key)) return;
-
-    map.set(key, fireSGetPremisesDropdownLabel(project));
-  });
-
-  return Array.from(map.entries())
-    .sort((a, b) => a[1].localeCompare(b[1]));
-}
-
-function fireSEnsurePremisesDropdown(projects) {
-  const searchField = document.getElementById('projectSearch');
-  if (!searchField) return;
-
-  let wrapper = document.getElementById('premisesSearchWrapper');
-
-  if (!wrapper) {
-    wrapper = document.createElement('div');
-    wrapper.id = 'premisesSearchWrapper';
-    wrapper.className = 'premises-search-wrapper';
-
-    wrapper.innerHTML = `
-      <label for="premisesQuickSelect">Quick premises lookup</label>
-      <select id="premisesQuickSelect">
-        <option value="">All premises</option>
-      </select>
-    `;
-
-    searchField.insertAdjacentElement('afterend', wrapper);
-  }
-
-  const select = document.getElementById('premisesQuickSelect');
-  if (!select) return;
-
-  const options = fireSBuildPremisesOptions(projects);
-  const signature = JSON.stringify(options);
-
-  // Important flicker fix:
-  // Do not rebuild the select on every render. Rebuilding causes visible flicker
-  // and can reset the dropdown while the user is interacting with the Gateway.
-  if (signature !== fireSPremisesDropdownSignature) {
-    const currentValue = fireSPremisesDropdownFilter || select.value || '';
-
-    select.innerHTML = `
-      <option value="">All premises</option>
-      ${options.map(([key, label]) => `
-        <option value="${fireSEscapeSelectValue(key)}">
-          ${escapeHtml(label)}
-        </option>
-      `).join('')}
-    `;
-
-    if (currentValue && options.some(([key]) => key === currentValue)) {
-      select.value = currentValue;
-    } else {
-      select.value = '';
-      fireSPremisesDropdownFilter = '';
-    }
-
-    fireSPremisesDropdownSignature = signature;
-  }
-
-  if (select.dataset.fireSBound !== 'true') {
-    select.dataset.fireSBound = 'true';
-
-    select.addEventListener('change', () => {
-      fireSPremisesDropdownFilter = select.value || '';
-      currentProjectPage = 1;
-      renderProjectsList();
-      updateDashboardSelection();
-    });
-  }
-
-  // Replace older immediate search redraw with a calmer debounced redraw.
-  if (searchField.dataset.fireSSearchDebounced !== 'true') {
-    searchField.dataset.fireSSearchDebounced = 'true';
-
-    searchField.addEventListener('input', () => {
-      clearTimeout(fireSSearchRenderTimer);
-
-      fireSSearchRenderTimer = setTimeout(() => {
-        currentProjectPage = 1;
-        renderProjectsList();
-        updateDashboardSelection();
-      }, 180);
-    });
-  }
-}
-
-// Reduce visible flicker during autosave:
-// When the user is inside an inspection form, autosave must not keep rebuilding
-// the hidden Gateway list in the background.
-if (typeof autoSaveProject === 'function' && !window.fireSAutoSaveFlickerFixApplied) {
-  window.fireSAutoSaveFlickerFixApplied = true;
-
-  const fireSOriginalAutoSaveProject = autoSaveProject;
-
-  autoSaveProject = function fireSAutoSaveProjectNoGatewayFlicker() {
-    const originalRenderProjectsList = renderProjectsList;
-
-    const formIsOpen =
-      document.getElementById('projectFormSection')?.style.display !== 'none';
-
-    if (formIsOpen) {
-      renderProjectsList = function fireSSkipHiddenGatewayRender() {};
-    }
-
-    try {
-      return fireSOriginalAutoSaveProject.apply(this, arguments);
-    } finally {
-      renderProjectsList = originalRenderProjectsList;
-    }
+  return {
+    id: currentProjectId || '',
+    organisationName,
+    siteName,
+    projectName: [organisationName, siteName].filter(Boolean).join(' '),
+    streetNumber,
+    addressLine,
+    projectAddress,
+    mallName: document.getElementById('mallName')?.value || '',
+    unitNumber: document.getElementById('unitNumber')?.value || ''
   };
 }
 
+function fireSBuildDuplicateCheckCandidateFromScheduleForm() {
+  const organisationName = document.getElementById('scheduleOrganisationName')?.value || '';
+  const siteName = document.getElementById('scheduleSiteName')?.value || '';
+  const addressLine = document.getElementById('scheduleAddress')?.value || '';
+
+  return {
+    id: '',
+    organisationName,
+    siteName,
+    projectName: [organisationName, siteName].filter(Boolean).join(' '),
+    streetNumber: '',
+    addressLine,
+    projectAddress: addressLine,
+    mallName: '',
+    unitNumber: ''
+  };
+}
+
+function fireSProjectsForDuplicateCheck() {
+  const projects = typeof getProjects === 'function' ? getProjects() : [];
+
+  if (typeof getVisibleProjectsForCurrentUser === 'function' && currentUserProfile) {
+    return getVisibleProjectsForCurrentUser(projects);
+  }
+
+  return projects;
+}
+
+function fireSIsDuplicatePremises(existingProject, candidate) {
+  if (!existingProject || !candidate) return false;
+  if (candidate.id && existingProject.id === candidate.id) return false;
+
+  const candidateName = fireSGetPremisesNameForDuplicateCheck(candidate);
+  const existingName = fireSGetPremisesNameForDuplicateCheck(existingProject);
+  const candidateCompactName = fireSGetCompactPremisesNameForDuplicateCheck(candidate);
+  const existingCompactName = fireSGetCompactPremisesNameForDuplicateCheck(existingProject);
+  const candidateAddress = fireSGetAddressForDuplicateCheck(candidate);
+  const existingAddress = fireSGetAddressForDuplicateCheck(existingProject);
+  const candidateUnit = fireSGetUnitForDuplicateCheck(candidate);
+  const existingUnit = fireSGetUnitForDuplicateCheck(existingProject);
+  const candidateSiteId = fireSGetSiteIdForDuplicateCheck(candidate);
+  const existingSiteId = fireSGetSiteIdForDuplicateCheck(existingProject);
+
+  const sameName = !!candidateName && !!existingName && candidateName === existingName;
+  const sameCompactName = !!candidateCompactName && !!existingCompactName && candidateCompactName === existingCompactName;
+  const sameAddress = !!candidateAddress && !!existingAddress && candidateAddress === existingAddress;
+  const sameUnit = candidateUnit === existingUnit;
+  const sameSiteId = !!candidateSiteId && !!existingSiteId && candidateSiteId === existingSiteId;
+
+  if ((sameSiteId || sameAddress) && sameUnit && (sameName || sameCompactName)) return true;
+
+  // If both have no address, same name is enough to prevent duplicate "No address captured" cards.
+  if (!candidateAddress && !existingAddress && (sameName || sameCompactName)) return true;
+
+  // If one address is missing but the premises name is the same, block and force user to open existing card.
+  if ((sameName || sameCompactName) && (!candidateAddress || !existingAddress)) return true;
+
+  return false;
+}
+
+function fireSFindDuplicatePremises(candidate) {
+  const candidateName = fireSGetPremisesNameForDuplicateCheck(candidate);
+  const candidateCompactName = fireSGetCompactPremisesNameForDuplicateCheck(candidate);
+
+  if (!candidateName && !candidateCompactName) return null;
+
+  return fireSProjectsForDuplicateCheck().find(project =>
+    fireSIsDuplicatePremises(project, candidate)
+  ) || null;
+}
+
+function fireSExplainDuplicatePremises(existingProject) {
+  const existingTitle =
+    existingProject?.projectName ||
+    [existingProject?.organisationName, existingProject?.siteName].filter(Boolean).join(' ') ||
+    'Existing premises';
+
+  const existingAddress =
+    existingProject?.projectAddress ||
+    existingProject?.addressLine ||
+    'No address captured';
+
+  const existingInspection = existingProject?.inspectionNumber || 'No inspection number';
+
+  alert([
+    'This premises already exists in Fire-S.',
+    '',
+    `Existing premises: ${existingTitle}`,
+    `Address: ${existingAddress}`,
+    `Inspection: ${existingInspection}`,
+    '',
+    'Open the existing premises card and continue from there.',
+    '',
+    'This keeps the history, action items, follow-ups and reports together.'
+  ].join('\n'));
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent = 'Duplicate premises found. Open the existing premises card instead.';
+  }
+}
+
+function fireSOpenExistingDuplicatePremises(existingProject) {
+  if (!existingProject?.id) return;
+
+  showProjectList();
+
+  setTimeout(() => {
+    const search = document.getElementById('projectSearch');
+
+    if (search) {
+      search.value =
+        existingProject.projectName ||
+        existingProject.siteName ||
+        existingProject.organisationName ||
+        '';
+    }
+
+    currentFilter = 'all';
+    currentProjectPage = 1;
+
+    if (typeof renderProjectsList === 'function') renderProjectsList();
+
+    const projects = window.currentProjectsListView || [];
+    const index = projects.findIndex(project => project.id === existingProject.id);
+
+    if (index !== -1 && typeof openProjectSummaryCard === 'function') {
+      openProjectSummaryCard(index, true);
+    }
+  }, 150);
+}
+
+function fireSGuardDuplicatePremises(candidate) {
+  const duplicate = fireSFindDuplicatePremises(candidate);
+
+  if (!duplicate) return true;
+
+  fireSExplainDuplicatePremises(duplicate);
+  fireSOpenExistingDuplicatePremises(duplicate);
+
+  return false;
+}
+
+function fireSGuardDuplicatePremisesBeforeInspectionSave() {
+  return fireSGuardDuplicatePremises(fireSBuildDuplicateCheckCandidateFromInspectionForm());
+}
+
+function fireSGuardDuplicatePremisesBeforeScheduleSave() {
+  return fireSGuardDuplicatePremises(fireSBuildDuplicateCheckCandidateFromScheduleForm());
+}
+
+if (typeof saveProject === 'function' && !window.fireSDuplicateSaveGuardV11Applied) {
+  window.fireSDuplicateSaveGuardV11Applied = true;
+  const originalSaveProjectV11 = saveProject;
+  saveProject = function fireSSaveProjectWithDuplicateGuardV11() {
+    if (!fireSGuardDuplicatePremisesBeforeInspectionSave()) return;
+    return originalSaveProjectV11.apply(this, arguments);
+  };
+}
+
+if (typeof finishInspection === 'function' && !window.fireSDuplicateFinishGuardV11Applied) {
+  window.fireSDuplicateFinishGuardV11Applied = true;
+  const originalFinishInspectionV11 = finishInspection;
+  finishInspection = function fireSFinishInspectionWithDuplicateGuardV11() {
+    if (!fireSGuardDuplicatePremisesBeforeInspectionSave()) return;
+    return originalFinishInspectionV11.apply(this, arguments);
+  };
+}
+
+if (typeof autoSaveProject === 'function' && !window.fireSDuplicateAutoSaveGuardV11Applied) {
+  window.fireSDuplicateAutoSaveGuardV11Applied = true;
+  const originalAutoSaveProjectV11 = autoSaveProject;
+  autoSaveProject = function fireSAutoSaveProjectWithDuplicateGuardV11() {
+    if (!fireSGuardDuplicatePremisesBeforeInspectionSave()) return;
+    return originalAutoSaveProjectV11.apply(this, arguments);
+  };
+}
+
+if (typeof saveScheduledNewInspection === 'function' && !window.fireSDuplicateScheduleGuardV11Applied) {
+  window.fireSDuplicateScheduleGuardV11Applied = true;
+  const originalSaveScheduledNewInspectionV11 = saveScheduledNewInspection;
+  saveScheduledNewInspection = function fireSSaveScheduledNewInspectionWithDuplicateGuardV11() {
+    if (!fireSGuardDuplicatePremisesBeforeScheduleSave()) return;
+    return originalSaveScheduledNewInspectionV11.apply(this, arguments);
+  };
+}
+
+function fireSShowDuplicatePremisesLiveWarning() {
+  const duplicate = fireSFindDuplicatePremises(fireSBuildDuplicateCheckCandidateFromInspectionForm());
+  let panel = document.getElementById('duplicatePremisesWarning');
+
+  if (!panel) {
+    const detailsCard = document.getElementById('projectDetailsCard');
+    if (!detailsCard) return;
+
+    panel = document.createElement('div');
+    panel.id = 'duplicatePremisesWarning';
+    panel.className = 'duplicate-premises-warning';
+    panel.style.display = 'none';
+
+    const toolbar = detailsCard.querySelector('.toolbar');
+    if (toolbar) toolbar.insertAdjacentElement('afterend', panel);
+    else detailsCard.insertBefore(panel, detailsCard.firstChild);
+  }
+
+  if (!duplicate) {
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <strong>Possible duplicate premises found.</strong>
+    <span>${escapeHtml(duplicate.projectName || duplicate.siteName || 'This premises')} already exists. Open the existing premises card instead.</span>
+  `;
+}
+
+function fireSShowDuplicateScheduleLiveWarning() {
+  const duplicate = fireSFindDuplicatePremises(fireSBuildDuplicateCheckCandidateFromScheduleForm());
+  let panel = document.getElementById('duplicateSchedulePremisesWarning');
+
+  if (!panel) {
+    const schedulePanel = document.getElementById('scheduleNewPanel');
+    if (!schedulePanel) return;
+
+    panel = document.createElement('div');
+    panel.id = 'duplicateSchedulePremisesWarning';
+    panel.className = 'duplicate-premises-warning';
+    panel.style.display = 'none';
+
+    schedulePanel.insertAdjacentElement('afterbegin', panel);
+  }
+
+  if (!duplicate) {
+    panel.style.display = 'none';
+    panel.innerHTML = '';
+    return;
+  }
+
+  panel.style.display = 'block';
+  panel.innerHTML = `
+    <strong>Possible duplicate premises found.</strong>
+    <span>${escapeHtml(duplicate.projectName || duplicate.siteName || 'This premises')} already exists. Open the existing premises card instead of scheduling a duplicate.</span>
+  `;
+}
+
+function fireSBindDuplicatePremisesLiveWarningV11() {
+  if (window.fireSDuplicateLiveWarningV11Bound) return;
+  window.fireSDuplicateLiveWarningV11Bound = true;
+
+  ['organisationName', 'siteName', 'streetNumber', 'projectAddress', 'mallName', 'unitNumber'].forEach(id => {
+    const field = document.getElementById(id);
+    if (!field) return;
+    field.addEventListener('input', fireSShowDuplicatePremisesLiveWarning);
+    field.addEventListener('blur', fireSShowDuplicatePremisesLiveWarning);
+    field.addEventListener('change', fireSShowDuplicatePremisesLiveWarning);
+  });
+
+  ['scheduleOrganisationName', 'scheduleSiteName', 'scheduleAddress'].forEach(id => {
+    const field = document.getElementById(id);
+    if (!field) return;
+    field.addEventListener('input', fireSShowDuplicateScheduleLiveWarning);
+    field.addEventListener('blur', fireSShowDuplicateScheduleLiveWarning);
+    field.addEventListener('change', fireSShowDuplicateScheduleLiveWarning);
+  });
+}
+
 setTimeout(() => {
   try {
-    const projects = typeof getProjects === 'function' ? getProjects() : [];
-    fireSEnsurePremisesDropdown(projects);
+    fireSBindDuplicatePremisesLiveWarningV11();
   } catch (error) {
-    console.warn('Premises dropdown flicker fix init failed:', error);
+    console.warn('Duplicate premises guard v1.1 init failed:', error);
   }
-}, 500);
+}, 700);
