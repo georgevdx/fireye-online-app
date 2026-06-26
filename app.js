@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v89-duplicate-premises-guard-v1-1';
+const APP_VERSION = 'v91-duplicate-name-enforcement-v1-3';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19297,27 +19297,25 @@ setTimeout(refreshActivityDateFiltersAfterPatch, 500);
 
 
 
-
 /* =====================================================
-   FIRE-S Duplicate Premises Guard v1.1
-   Stronger duplicate prevention:
-   - Blocks duplicate Save / Finish / Autosave
-   - Blocks duplicate Schedule New Site
-   - Handles missing address and minor formatting differences
+   FIRE-S Duplicate Name Enforcement v1.3
+
+   Rule:
+   - Same name + same address = existing premises. User may open existing, but may not save duplicate.
+   - Same name + different address = allowed only after site/name is made unique.
+   - Autosave silently skips duplicates. Save/Finish forces a naming change.
    ===================================================== */
 
-function fireSNormalisePremisesText(value) {
-  return String(value || '')
-    .toLowerCase()
-    .trim()
+function fireSNorm(value) {
+  return String(value || '').toLowerCase().trim()
     .replace(/&/g, ' and ')
     .replace(/[.,;:()_\-\/\\]+/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-function fireSNormaliseAddressText(value) {
-  return fireSNormalisePremisesText(value)
+function fireSNormAddress(value) {
+  return fireSNorm(value)
     .replace(/\bstreet\b/g, 'st')
     .replace(/\broad\b/g, 'rd')
     .replace(/\bavenue\b/g, 'ave')
@@ -19325,41 +19323,42 @@ function fireSNormaliseAddressText(value) {
     .replace(/\bboulevard\b/g, 'blvd')
     .replace(/\bcorner\b/g, 'cnr')
     .replace(/\bshop\b/g, 'unit')
-    .replace(/\s+/g, ' ')
     .trim();
 }
 
-function fireSCompactIdentityText(value) {
-  return fireSNormalisePremisesText(value).replace(/\s+/g, '');
+function fireSProjectDisplayName(project) {
+  return (
+    project?.projectName ||
+    [project?.organisationName, project?.siteName].filter(Boolean).join(' ') ||
+    project?.siteName ||
+    project?.organisationName ||
+    'Existing premises'
+  );
 }
 
-function fireSBuildPremisesName(organisationName, siteName, projectName) {
-  const organisation = String(organisationName || '').trim();
-  const site = String(siteName || '').trim();
-  const project = String(projectName || '').trim();
+function fireSProjectDisplayAddress(project) {
+  return project?.projectAddress || project?.addressLine || 'No address captured';
+}
 
-  if (organisation && site) return `${organisation} ${site}`;
-  if (site) return site;
-  if (project) return project;
-  if (organisation) return organisation;
+function fireSPremisesName(project) {
+  const org = String(project?.organisationName || '').trim();
+  const site = String(project?.siteName || '').trim();
+  const pname = String(project?.projectName || '').trim();
+
+  if (org && site) return fireSNorm(`${org} ${site}`);
+  if (site) return fireSNorm(site);
+  if (pname) return fireSNorm(pname);
+  if (org) return fireSNorm(org);
 
   return '';
 }
 
-function fireSGetPremisesNameForDuplicateCheck(project) {
-  return fireSNormalisePremisesText(
-    fireSBuildPremisesName(project?.organisationName, project?.siteName, project?.projectName)
-  );
+function fireSPremisesNameCompact(project) {
+  return fireSPremisesName(project).replace(/\s+/g, '');
 }
 
-function fireSGetCompactPremisesNameForDuplicateCheck(project) {
-  return fireSCompactIdentityText(
-    fireSBuildPremisesName(project?.organisationName, project?.siteName, project?.projectName)
-  );
-}
-
-function fireSGetAddressForDuplicateCheck(project) {
-  return fireSNormaliseAddressText(
+function fireSPremisesAddress(project) {
+  return fireSNormAddress(
     project?.projectAddress ||
     combineStreetAddress(project?.streetNumber, project?.addressLine) ||
     project?.addressLine ||
@@ -19367,29 +19366,15 @@ function fireSGetAddressForDuplicateCheck(project) {
   );
 }
 
-function fireSGetUnitForDuplicateCheck(project) {
-  return fireSNormalisePremisesText(
-    [project?.mallName, project?.unitNumber].filter(Boolean).join(' ')
-  );
+function fireSPremisesUnit(project) {
+  return fireSNorm([project?.mallName, project?.unitNumber].filter(Boolean).join(' '));
 }
 
-function fireSGetSiteIdForDuplicateCheck(project) {
-  const siteId = String(project?.siteId || '').trim().toLowerCase();
-
-  if (siteId) return siteId;
-
-  return [
-    fireSGetAddressForDuplicateCheck(project),
-    fireSGetUnitForDuplicateCheck(project)
-  ].filter(Boolean).join('|');
-}
-
-function fireSBuildDuplicateCheckCandidateFromInspectionForm() {
+function fireSInspectionDuplicateCandidate() {
   const organisationName = document.getElementById('organisationName')?.value || '';
   const siteName = document.getElementById('siteName')?.value || '';
   const streetNumber = document.getElementById('streetNumber')?.value || '';
   const addressLine = document.getElementById('projectAddress')?.value || '';
-  const projectAddress = combineStreetAddress(streetNumber, addressLine);
 
   return {
     id: currentProjectId || '',
@@ -19398,13 +19383,13 @@ function fireSBuildDuplicateCheckCandidateFromInspectionForm() {
     projectName: [organisationName, siteName].filter(Boolean).join(' '),
     streetNumber,
     addressLine,
-    projectAddress,
+    projectAddress: combineStreetAddress(streetNumber, addressLine),
     mallName: document.getElementById('mallName')?.value || '',
     unitNumber: document.getElementById('unitNumber')?.value || ''
   };
 }
 
-function fireSBuildDuplicateCheckCandidateFromScheduleForm() {
+function fireSScheduleDuplicateCandidate() {
   const organisationName = document.getElementById('scheduleOrganisationName')?.value || '';
   const siteName = document.getElementById('scheduleSiteName')?.value || '';
   const addressLine = document.getElementById('scheduleAddress')?.value || '';
@@ -19422,7 +19407,7 @@ function fireSBuildDuplicateCheckCandidateFromScheduleForm() {
   };
 }
 
-function fireSProjectsForDuplicateCheck() {
+function fireSDuplicateProjectPool() {
   const projects = typeof getProjects === 'function' ? getProjects() : [];
 
   if (typeof getVisibleProjectsForCurrentUser === 'function' && currentUserProfile) {
@@ -19432,94 +19417,55 @@ function fireSProjectsForDuplicateCheck() {
   return projects;
 }
 
-function fireSIsDuplicatePremises(existingProject, candidate) {
-  if (!existingProject || !candidate) return false;
-  if (candidate.id && existingProject.id === candidate.id) return false;
+function fireSClassifyDuplicateName(existing, candidate) {
+  if (!existing || !candidate) return 'none';
+  if (candidate.id && existing.id === candidate.id) return 'none';
 
-  const candidateName = fireSGetPremisesNameForDuplicateCheck(candidate);
-  const existingName = fireSGetPremisesNameForDuplicateCheck(existingProject);
-  const candidateCompactName = fireSGetCompactPremisesNameForDuplicateCheck(candidate);
-  const existingCompactName = fireSGetCompactPremisesNameForDuplicateCheck(existingProject);
-  const candidateAddress = fireSGetAddressForDuplicateCheck(candidate);
-  const existingAddress = fireSGetAddressForDuplicateCheck(existingProject);
-  const candidateUnit = fireSGetUnitForDuplicateCheck(candidate);
-  const existingUnit = fireSGetUnitForDuplicateCheck(existingProject);
-  const candidateSiteId = fireSGetSiteIdForDuplicateCheck(candidate);
-  const existingSiteId = fireSGetSiteIdForDuplicateCheck(existingProject);
+  const sameName =
+    fireSPremisesName(existing) &&
+    fireSPremisesName(candidate) &&
+    fireSPremisesName(existing) === fireSPremisesName(candidate);
 
-  const sameName = !!candidateName && !!existingName && candidateName === existingName;
-  const sameCompactName = !!candidateCompactName && !!existingCompactName && candidateCompactName === existingCompactName;
-  const sameAddress = !!candidateAddress && !!existingAddress && candidateAddress === existingAddress;
-  const sameUnit = candidateUnit === existingUnit;
-  const sameSiteId = !!candidateSiteId && !!existingSiteId && candidateSiteId === existingSiteId;
+  const sameCompactName =
+    fireSPremisesNameCompact(existing) &&
+    fireSPremisesNameCompact(candidate) &&
+    fireSPremisesNameCompact(existing) === fireSPremisesNameCompact(candidate);
 
-  if ((sameSiteId || sameAddress) && sameUnit && (sameName || sameCompactName)) return true;
+  if (!sameName && !sameCompactName) return 'none';
 
-  // If both have no address, same name is enough to prevent duplicate "No address captured" cards.
-  if (!candidateAddress && !existingAddress && (sameName || sameCompactName)) return true;
+  const existingAddress = fireSPremisesAddress(existing);
+  const candidateAddress = fireSPremisesAddress(candidate);
+  const sameAddress = existingAddress && candidateAddress && existingAddress === candidateAddress;
+  const bothNoAddress = !existingAddress && !candidateAddress;
+  const sameUnit = fireSPremisesUnit(existing) === fireSPremisesUnit(candidate);
 
-  // If one address is missing but the premises name is the same, block and force user to open existing card.
-  if ((sameName || sameCompactName) && (!candidateAddress || !existingAddress)) return true;
+  if ((sameAddress || bothNoAddress) && sameUnit) return 'same_address';
 
-  return false;
+  return 'different_address';
 }
 
-function fireSFindDuplicatePremises(candidate) {
-  const candidateName = fireSGetPremisesNameForDuplicateCheck(candidate);
-  const candidateCompactName = fireSGetCompactPremisesNameForDuplicateCheck(candidate);
+function fireSFindDuplicateNameMatches(candidate) {
+  const sameAddress = [];
+  const differentAddress = [];
 
-  if (!candidateName && !candidateCompactName) return null;
+  fireSDuplicateProjectPool().forEach(project => {
+    const type = fireSClassifyDuplicateName(project, candidate);
+    if (type === 'same_address') sameAddress.push(project);
+    if (type === 'different_address') differentAddress.push(project);
+  });
 
-  return fireSProjectsForDuplicateCheck().find(project =>
-    fireSIsDuplicatePremises(project, candidate)
-  ) || null;
+  return { sameAddress, differentAddress };
 }
 
-function fireSExplainDuplicatePremises(existingProject) {
-  const existingTitle =
-    existingProject?.projectName ||
-    [existingProject?.organisationName, existingProject?.siteName].filter(Boolean).join(' ') ||
-    'Existing premises';
-
-  const existingAddress =
-    existingProject?.projectAddress ||
-    existingProject?.addressLine ||
-    'No address captured';
-
-  const existingInspection = existingProject?.inspectionNumber || 'No inspection number';
-
-  alert([
-    'This premises already exists in Fire-S.',
-    '',
-    `Existing premises: ${existingTitle}`,
-    `Address: ${existingAddress}`,
-    `Inspection: ${existingInspection}`,
-    '',
-    'Open the existing premises card and continue from there.',
-    '',
-    'This keeps the history, action items, follow-ups and reports together.'
-  ].join('\n'));
-
-  const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    saveMessage.textContent = 'Duplicate premises found. Open the existing premises card instead.';
-  }
-}
-
-function fireSOpenExistingDuplicatePremises(existingProject) {
-  if (!existingProject?.id) return;
+function fireSOpenExistingPremisesCard(project) {
+  if (!project?.id) return;
 
   showProjectList();
 
   setTimeout(() => {
     const search = document.getElementById('projectSearch');
-
     if (search) {
-      search.value =
-        existingProject.projectName ||
-        existingProject.siteName ||
-        existingProject.organisationName ||
-        '';
+      search.value = project.projectName || project.siteName || project.organisationName || '';
     }
 
     currentFilter = 'all';
@@ -19527,8 +19473,8 @@ function fireSOpenExistingDuplicatePremises(existingProject) {
 
     if (typeof renderProjectsList === 'function') renderProjectsList();
 
-    const projects = window.currentProjectsListView || [];
-    const index = projects.findIndex(project => project.id === existingProject.id);
+    const visible = window.currentProjectsListView || [];
+    const index = visible.findIndex(item => item.id === project.id);
 
     if (index !== -1 && typeof openProjectSummaryCard === 'function') {
       openProjectSummaryCard(index, true);
@@ -19536,146 +19482,231 @@ function fireSOpenExistingDuplicatePremises(existingProject) {
   }, 150);
 }
 
-function fireSGuardDuplicatePremises(candidate) {
-  const duplicate = fireSFindDuplicatePremises(candidate);
+function fireSFocusNameFields(isSchedule) {
+  const siteField = document.getElementById(isSchedule ? 'scheduleSiteName' : 'siteName');
+  const orgField = document.getElementById(isSchedule ? 'scheduleOrganisationName' : 'organisationName');
 
-  if (!duplicate) return true;
+  const target = siteField || orgField;
 
-  fireSExplainDuplicatePremises(duplicate);
-  fireSOpenExistingDuplicatePremises(duplicate);
+  if (!target) return;
+
+  target.classList.add('field-focus');
+
+  setTimeout(() => {
+    target.classList.remove('field-focus');
+  }, 4500);
+
+  target.focus();
+}
+
+function fireSShowDuplicatePanel(html, soft) {
+  let panel = document.getElementById('duplicatePremisesWarning');
+  const parent =
+    document.getElementById('projectDetailsCard') ||
+    document.getElementById('scheduleNewPanel');
+
+  if (!parent) return;
+
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'duplicatePremisesWarning';
+    parent.insertAdjacentElement('afterbegin', panel);
+  }
+
+  panel.className = soft
+    ? 'duplicate-premises-warning soft-premises-warning'
+    : 'duplicate-premises-warning';
+
+  panel.style.display = 'block';
+  panel.innerHTML = html;
+}
+
+function fireSHideDuplicatePanel() {
+  const panel = document.getElementById('duplicatePremisesWarning');
+  if (!panel) return;
+
+  panel.style.display = 'none';
+  panel.innerHTML = '';
+}
+
+function fireSBlockDuplicateAndExplain(match, type, isSchedule) {
+  const title = fireSProjectDisplayName(match);
+  const address = fireSProjectDisplayAddress(match);
+
+  const reason =
+    type === 'same_address'
+      ? 'This premises already exists at the same address.'
+      : 'This premises name already exists at another address. To prevent confusion, this site needs a more specific name.';
+
+  const actionText =
+    type === 'same_address'
+      ? 'You can open the existing card, or cancel and change the site name/details.'
+      : 'Change the site / premises name before saving. Example: add branch, suburb, unit number, or centre name.';
+
+  const openExisting =
+    type === 'same_address'
+      ? confirm([
+          reason,
+          '',
+          `Existing premises: ${title}`,
+          `Address: ${address}`,
+          `Inspection: ${match?.inspectionNumber || 'No inspection number'}`,
+          '',
+          'OK = Open existing card',
+          'Cancel = stay here and change the site name/details'
+        ].join('\n'))
+      : false;
+
+  if (openExisting) {
+    fireSOpenExistingPremisesCard(match);
+    return false;
+  }
+
+  alert([
+    reason,
+    '',
+    `Existing premises: ${title}`,
+    `Address: ${address}`,
+    '',
+    actionText
+  ].join('\n'));
+
+  fireSShowDuplicatePanel(`
+    <strong>${escapeHtml(reason)}</strong>
+    <span>${escapeHtml(actionText)}</span>
+  `, type === 'different_address');
+
+  fireSFocusNameFields(isSchedule);
+
+  const msg = document.getElementById('saveMessage');
+  if (msg) {
+    msg.textContent = 'Not saved. Change the premises / site name to make it unique.';
+  }
 
   return false;
 }
 
-function fireSGuardDuplicatePremisesBeforeInspectionSave() {
-  return fireSGuardDuplicatePremises(fireSBuildDuplicateCheckCandidateFromInspectionForm());
-}
+function fireSGuardDuplicateNameBeforeSave(candidate, isSchedule) {
+  const matches = fireSFindDuplicateNameMatches(candidate);
 
-function fireSGuardDuplicatePremisesBeforeScheduleSave() {
-  return fireSGuardDuplicatePremises(fireSBuildDuplicateCheckCandidateFromScheduleForm());
-}
-
-if (typeof saveProject === 'function' && !window.fireSDuplicateSaveGuardV11Applied) {
-  window.fireSDuplicateSaveGuardV11Applied = true;
-  const originalSaveProjectV11 = saveProject;
-  saveProject = function fireSSaveProjectWithDuplicateGuardV11() {
-    if (!fireSGuardDuplicatePremisesBeforeInspectionSave()) return;
-    return originalSaveProjectV11.apply(this, arguments);
-  };
-}
-
-if (typeof finishInspection === 'function' && !window.fireSDuplicateFinishGuardV11Applied) {
-  window.fireSDuplicateFinishGuardV11Applied = true;
-  const originalFinishInspectionV11 = finishInspection;
-  finishInspection = function fireSFinishInspectionWithDuplicateGuardV11() {
-    if (!fireSGuardDuplicatePremisesBeforeInspectionSave()) return;
-    return originalFinishInspectionV11.apply(this, arguments);
-  };
-}
-
-if (typeof autoSaveProject === 'function' && !window.fireSDuplicateAutoSaveGuardV11Applied) {
-  window.fireSDuplicateAutoSaveGuardV11Applied = true;
-  const originalAutoSaveProjectV11 = autoSaveProject;
-  autoSaveProject = function fireSAutoSaveProjectWithDuplicateGuardV11() {
-    if (!fireSGuardDuplicatePremisesBeforeInspectionSave()) return;
-    return originalAutoSaveProjectV11.apply(this, arguments);
-  };
-}
-
-if (typeof saveScheduledNewInspection === 'function' && !window.fireSDuplicateScheduleGuardV11Applied) {
-  window.fireSDuplicateScheduleGuardV11Applied = true;
-  const originalSaveScheduledNewInspectionV11 = saveScheduledNewInspection;
-  saveScheduledNewInspection = function fireSSaveScheduledNewInspectionWithDuplicateGuardV11() {
-    if (!fireSGuardDuplicatePremisesBeforeScheduleSave()) return;
-    return originalSaveScheduledNewInspectionV11.apply(this, arguments);
-  };
-}
-
-function fireSShowDuplicatePremisesLiveWarning() {
-  const duplicate = fireSFindDuplicatePremises(fireSBuildDuplicateCheckCandidateFromInspectionForm());
-  let panel = document.getElementById('duplicatePremisesWarning');
-
-  if (!panel) {
-    const detailsCard = document.getElementById('projectDetailsCard');
-    if (!detailsCard) return;
-
-    panel = document.createElement('div');
-    panel.id = 'duplicatePremisesWarning';
-    panel.className = 'duplicate-premises-warning';
-    panel.style.display = 'none';
-
-    const toolbar = detailsCard.querySelector('.toolbar');
-    if (toolbar) toolbar.insertAdjacentElement('afterend', panel);
-    else detailsCard.insertBefore(panel, detailsCard.firstChild);
+  if (matches.sameAddress.length > 0) {
+    return fireSBlockDuplicateAndExplain(matches.sameAddress[0], 'same_address', isSchedule);
   }
 
-  if (!duplicate) {
-    panel.style.display = 'none';
-    panel.innerHTML = '';
+  if (matches.differentAddress.length > 0) {
+    return fireSBlockDuplicateAndExplain(matches.differentAddress[0], 'different_address', isSchedule);
+  }
+
+  fireSHideDuplicatePanel();
+  return true;
+}
+
+function fireSLiveDuplicateNameCheck(isSchedule) {
+  const candidate = isSchedule
+    ? fireSScheduleDuplicateCandidate()
+    : fireSInspectionDuplicateCandidate();
+
+  const matches = fireSFindDuplicateNameMatches(candidate);
+
+  if (matches.sameAddress.length > 0) {
+    const match = matches.sameAddress[0];
+
+    fireSShowDuplicatePanel(`
+      <strong>Existing premises found at the same address.</strong>
+      <span>
+        ${escapeHtml(fireSProjectDisplayName(match))} already exists.
+        Save/Finish will not create a duplicate. Open the existing card or change the site name/details.
+      </span>
+    `, false);
+
     return;
   }
 
-  panel.style.display = 'block';
-  panel.innerHTML = `
-    <strong>Possible duplicate premises found.</strong>
-    <span>${escapeHtml(duplicate.projectName || duplicate.siteName || 'This premises')} already exists. Open the existing premises card instead.</span>
-  `;
-}
+  if (matches.differentAddress.length > 0) {
+    const match = matches.differentAddress[0];
 
-function fireSShowDuplicateScheduleLiveWarning() {
-  const duplicate = fireSFindDuplicatePremises(fireSBuildDuplicateCheckCandidateFromScheduleForm());
-  let panel = document.getElementById('duplicateSchedulePremisesWarning');
+    fireSShowDuplicatePanel(`
+      <strong>Same premises name found at another address.</strong>
+      <span>
+        ${escapeHtml(fireSProjectDisplayName(match))} exists elsewhere.
+        Before Save/Finish, change the site name to make this premises unique.
+      </span>
+    `, true);
 
-  if (!panel) {
-    const schedulePanel = document.getElementById('scheduleNewPanel');
-    if (!schedulePanel) return;
-
-    panel = document.createElement('div');
-    panel.id = 'duplicateSchedulePremisesWarning';
-    panel.className = 'duplicate-premises-warning';
-    panel.style.display = 'none';
-
-    schedulePanel.insertAdjacentElement('afterbegin', panel);
-  }
-
-  if (!duplicate) {
-    panel.style.display = 'none';
-    panel.innerHTML = '';
     return;
   }
 
-  panel.style.display = 'block';
-  panel.innerHTML = `
-    <strong>Possible duplicate premises found.</strong>
-    <span>${escapeHtml(duplicate.projectName || duplicate.siteName || 'This premises')} already exists. Open the existing premises card instead of scheduling a duplicate.</span>
-  `;
+  fireSHideDuplicatePanel();
 }
 
-function fireSBindDuplicatePremisesLiveWarningV11() {
-  if (window.fireSDuplicateLiveWarningV11Bound) return;
-  window.fireSDuplicateLiveWarningV11Bound = true;
+if (typeof saveProject === 'function' && !window.fireSDuplicateNameSaveV13) {
+  window.fireSDuplicateNameSaveV13 = true;
+  const originalSaveProjectV13 = saveProject;
+
+  saveProject = function fireSSaveProjectWithDuplicateNameEnforcement() {
+    if (!fireSGuardDuplicateNameBeforeSave(fireSInspectionDuplicateCandidate(), false)) return;
+    return originalSaveProjectV13.apply(this, arguments);
+  };
+}
+
+if (typeof finishInspection === 'function' && !window.fireSDuplicateNameFinishV13) {
+  window.fireSDuplicateNameFinishV13 = true;
+  const originalFinishInspectionV13 = finishInspection;
+
+  finishInspection = function fireSFinishWithDuplicateNameEnforcement() {
+    if (!fireSGuardDuplicateNameBeforeSave(fireSInspectionDuplicateCandidate(), false)) return;
+    return originalFinishInspectionV13.apply(this, arguments);
+  };
+}
+
+if (typeof autoSaveProject === 'function' && !window.fireSDuplicateNameAutoV13) {
+  window.fireSDuplicateNameAutoV13 = true;
+  const originalAutoSaveProjectV13 = autoSaveProject;
+
+  autoSaveProject = function fireSAutoSaveWithDuplicateNameEnforcement() {
+    const matches = fireSFindDuplicateNameMatches(fireSInspectionDuplicateCandidate());
+
+    // Autosave must not pop alerts, but it must not save duplicates.
+    if (matches.sameAddress.length || matches.differentAddress.length) {
+      fireSLiveDuplicateNameCheck(false);
+      return;
+    }
+
+    return originalAutoSaveProjectV13.apply(this, arguments);
+  };
+}
+
+if (typeof saveScheduledNewInspection === 'function' && !window.fireSDuplicateNameScheduleV13) {
+  window.fireSDuplicateNameScheduleV13 = true;
+  const originalScheduleV13 = saveScheduledNewInspection;
+
+  saveScheduledNewInspection = function fireSScheduleWithDuplicateNameEnforcement() {
+    if (!fireSGuardDuplicateNameBeforeSave(fireSScheduleDuplicateCandidate(), true)) return;
+    return originalScheduleV13.apply(this, arguments);
+  };
+}
+
+function fireSBindDuplicateNameEnforcementV13() {
+  if (window.fireSDuplicateNameBoundV13) return;
+  window.fireSDuplicateNameBoundV13 = true;
 
   ['organisationName', 'siteName', 'streetNumber', 'projectAddress', 'mallName', 'unitNumber'].forEach(id => {
-    const field = document.getElementById(id);
-    if (!field) return;
-    field.addEventListener('input', fireSShowDuplicatePremisesLiveWarning);
-    field.addEventListener('blur', fireSShowDuplicatePremisesLiveWarning);
-    field.addEventListener('change', fireSShowDuplicatePremisesLiveWarning);
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('input', () => fireSLiveDuplicateNameCheck(false));
+    el.addEventListener('change', () => fireSLiveDuplicateNameCheck(false));
+    el.addEventListener('blur', () => fireSLiveDuplicateNameCheck(false));
   });
 
   ['scheduleOrganisationName', 'scheduleSiteName', 'scheduleAddress'].forEach(id => {
-    const field = document.getElementById(id);
-    if (!field) return;
-    field.addEventListener('input', fireSShowDuplicateScheduleLiveWarning);
-    field.addEventListener('blur', fireSShowDuplicateScheduleLiveWarning);
-    field.addEventListener('change', fireSShowDuplicateScheduleLiveWarning);
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.addEventListener('input', () => fireSLiveDuplicateNameCheck(true));
+    el.addEventListener('change', () => fireSLiveDuplicateNameCheck(true));
+    el.addEventListener('blur', () => fireSLiveDuplicateNameCheck(true));
   });
 }
 
-setTimeout(() => {
-  try {
-    fireSBindDuplicatePremisesLiveWarningV11();
-  } catch (error) {
-    console.warn('Duplicate premises guard v1.1 init failed:', error);
-  }
-}, 700);
+setTimeout(fireSBindDuplicateNameEnforcementV13, 700);
