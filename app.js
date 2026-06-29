@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v96-filter-drawer-master';
+const APP_VERSION = 'v97-professional-filter-experience';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19650,49 +19650,271 @@ if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRenderer
 }
 
 
-/* FIRE-S Filter Drawer Master v96
-   Keeps the v95 compact cards/layout and moves the date filter into the existing Filters drawer.
+/* FIRE-S Professional Filter Experience v97
+   Improves the existing filter section only:
+   - cleaner date filter card
+   - no duplicate headings
+   - better status filter grouping
+   - active filter summary chips
+   - keeps v95/v96 compact cards and dashboard unchanged
 */
 
-function fireSEnsureDateFilterInsideDrawerV96() {
-  const filterPanel = document.getElementById('filterPanel');
-  const datePanel = document.getElementById('inspectionDateFilterPanel');
-  const dashboardMetrics = document.getElementById('dashboardMetrics');
+function fireSGetFilterLabelV97(filterValue) {
+  const labels = {
+    all: 'All',
+    'follow-up': 'Follow-ups',
+    'scheduled-new': 'Scheduled New',
+    'clear-completed': 'Clear Completed',
+    'due-soon': 'Due Soon',
+    overdue: 'Overdue',
+    'high-risk': 'High Risk',
+    'inspection-attention': 'Attention',
+    'inspection-warning': 'Warning',
+    'inspection-progress': 'In Progress',
+    'inspection-complete': 'Completed',
+    'inspection-draft': 'Draft',
+    'expiry-overdue': 'Expired',
+    'expiry-soon': 'Expiry Due Soon',
+    'expiry-scheduled': 'Valid Expiry',
+    'expiry-missing': 'Date Missing'
+  };
 
-  if (!filterPanel || !datePanel || !dashboardMetrics) return;
-
-  if (datePanel.parentElement !== filterPanel) {
-    let dateTitle = filterPanel.querySelector('.filter-panel-section-title-date');
-
-    if (!dateTitle) {
-      dateTitle = document.createElement('div');
-      dateTitle.className = 'filter-panel-section-title filter-panel-section-title-date';
-      dateTitle.textContent = 'Date Filters';
-    }
-
-    filterPanel.insertBefore(dateTitle, dashboardMetrics);
-    filterPanel.insertBefore(datePanel, dashboardMetrics);
-  }
-
-  let statusTitle = filterPanel.querySelector('.filter-panel-section-title-status');
-
-  if (!statusTitle) {
-    statusTitle = document.createElement('div');
-    statusTitle.className = 'filter-panel-section-title filter-panel-section-title-status';
-    statusTitle.textContent = 'Status Filters';
-    filterPanel.insertBefore(statusTitle, dashboardMetrics);
-  }
-
-  const toggleBtn = document.getElementById('toggleFiltersBtn');
-  if (toggleBtn && !toggleBtn.dataset.fireSDateFilterLabelApplied) {
-    toggleBtn.dataset.fireSDateFilterLabelApplied = 'true';
-
-    const originalText = toggleBtn.textContent || 'Show Filters';
-    if (originalText.trim().toLowerCase() === 'show filters') {
-      toggleBtn.textContent = 'Show Filters / Date';
-    }
-  }
+  return labels[filterValue] || String(filterValue || '').replace(/-/g, ' ');
 }
 
-setTimeout(fireSEnsureDateFilterInsideDrawerV96, 250);
-setTimeout(fireSEnsureDateFilterInsideDrawerV96, 1000);
+function fireSGetDateFilterLabelV97() {
+  const datePanel =
+    document.getElementById('inspectionDateFilterPanel');
+
+  if (!datePanel) return '';
+
+  const activeButton =
+    datePanel.querySelector('.active-date-filter');
+
+  if (activeButton) {
+    const text = activeButton.textContent.trim();
+    if (text && text.toLowerCase() !== 'all') return text;
+  }
+
+  const from =
+    document.getElementById('inspectionDateFrom')?.value || '';
+
+  const to =
+    document.getElementById('inspectionDateTo')?.value || '';
+
+  if (from && to) return `${from} to ${to}`;
+  if (from) return `From ${from}`;
+  if (to) return `To ${to}`;
+
+  return '';
+}
+
+function fireSRenderActiveFilterChipsV97() {
+  const filterPanel = document.getElementById('filterPanel');
+  if (!filterPanel) return;
+
+  let chipsBox =
+    document.getElementById('fireSActiveFilterChipsV97');
+
+  if (!chipsBox) {
+    chipsBox = document.createElement('div');
+    chipsBox.id = 'fireSActiveFilterChipsV97';
+    chipsBox.className = 'fire-s-active-filter-chips-v97';
+    filterPanel.insertBefore(chipsBox, filterPanel.firstChild);
+  }
+
+  const chips = [];
+
+  if (typeof currentFilter !== 'undefined' && currentFilter && currentFilter !== 'all') {
+    chips.push({
+      label: fireSGetFilterLabelV97(currentFilter),
+      clear: "setFilter('all')"
+    });
+  }
+
+  const dateLabel = fireSGetDateFilterLabelV97();
+  if (dateLabel) {
+    chips.push({
+      label: dateLabel,
+      clear: "fireSClearDateFilterV97()"
+    });
+  }
+
+  if (!chips.length) {
+    chipsBox.innerHTML = `
+      <div class="fire-s-active-filter-title-v97">Active Filters</div>
+      <span class="fire-s-filter-empty-v97">No active filters</span>
+    `;
+    return;
+  }
+
+  chipsBox.innerHTML = `
+    <div class="fire-s-active-filter-title-v97">Active Filters</div>
+    <div class="fire-s-chip-row-v97">
+      ${chips.map(chip => `
+        <button type="button" class="fire-s-filter-chip-v97" onclick="${chip.clear}">
+          ${escapeHtml(chip.label)} <span>×</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function fireSClearDateFilterV97() {
+  const from =
+    document.getElementById('inspectionDateFrom');
+
+  const to =
+    document.getElementById('inspectionDateTo');
+
+  if (from) from.value = '';
+  if (to) to.value = '';
+
+  document
+    .querySelectorAll('#inspectionDateFilterPanel .active-date-filter')
+    .forEach(button => button.classList.remove('active-date-filter'));
+
+  if (typeof clearInspectionDateFilter === 'function') {
+    clearInspectionDateFilter();
+  } else if (typeof renderProjectsList === 'function') {
+    renderProjectsList();
+  }
+
+  setTimeout(fireSRenderActiveFilterChipsV97, 100);
+}
+
+function fireSImproveDatePanelV97() {
+  const datePanel =
+    document.getElementById('inspectionDateFilterPanel');
+
+  if (!datePanel || datePanel.dataset.fireSProFilterV97 === 'true') return;
+
+  datePanel.dataset.fireSProFilterV97 = 'true';
+  datePanel.classList.add('fire-s-date-card-v97');
+
+  const title =
+    datePanel.querySelector('.inspection-date-filter-title');
+
+  if (title) {
+    title.innerHTML = '<span class="fire-s-filter-icon-v97">📅</span> Date Filters';
+  }
+
+  const status =
+    datePanel.querySelector('.inspection-date-filter-status');
+
+  if (status) {
+    status.classList.add('fire-s-date-status-v97');
+    status.textContent =
+      status.textContent
+        .replace('Showing ', '')
+        .replace('inspection dates.', 'inspection dates');
+  }
+
+  const quickButtons =
+    datePanel.querySelectorAll('.inspection-quick-date-row button');
+
+  quickButtons.forEach(button => {
+    const text = button.textContent.trim();
+
+    if (text === 'Today') button.innerHTML = '<span>📅</span> Today';
+    if (text === 'This Week') button.innerHTML = '<span>📆</span> This Week';
+    if (text === 'This Month') button.innerHTML = '<span>🗓️</span> This Month';
+    if (text === 'This Quarter') button.innerHTML = '<span>◔</span> This Quarter';
+    if (text === 'This Year') button.innerHTML = '<span>📅</span> This Year';
+    if (text === 'All') button.innerHTML = '<span>∞</span> All Dates';
+
+    button.addEventListener('click', () => {
+      setTimeout(fireSRenderActiveFilterChipsV97, 100);
+    });
+  });
+
+  ['inspectionDateFrom', 'inspectionDateTo'].forEach(id => {
+    const field = document.getElementById(id);
+    if (field) {
+      field.addEventListener('change', () => {
+        setTimeout(fireSRenderActiveFilterChipsV97, 100);
+      });
+    }
+  });
+}
+
+function fireSImproveStatusFiltersV97() {
+  const filterPanel = document.getElementById('filterPanel');
+  const dashboardMetrics = document.getElementById('dashboardMetrics');
+
+  if (!filterPanel || !dashboardMetrics) return;
+
+  filterPanel.classList.add('fire-s-filter-panel-v97');
+  dashboardMetrics.classList.add('fire-s-dashboard-metrics-v97');
+
+  // Remove duplicate adjacent "Status Filters" headings created by earlier patches
+  const titles = Array.from(filterPanel.querySelectorAll('.filter-panel-section-title'));
+  let seenStatus = false;
+
+  titles.forEach(title => {
+    const text = title.textContent.trim().toLowerCase();
+
+    if (text === 'status filters') {
+      if (seenStatus) {
+        title.remove();
+      } else {
+        seenStatus = true;
+        title.innerHTML = '<span class="fire-s-filter-icon-v97">⚡</span> Status Filters';
+      }
+    }
+
+    if (text === 'date filters') {
+      title.innerHTML = '<span class="fire-s-filter-icon-v97">📅</span> Date Filters';
+    }
+  });
+
+  const metricCards =
+    dashboardMetrics.querySelectorAll('.metric-card');
+
+  metricCards.forEach(card => {
+    if (card.dataset.fireSV97Bound === 'true') return;
+    card.dataset.fireSV97Bound = 'true';
+
+    card.addEventListener('click', () => {
+      setTimeout(fireSRenderActiveFilterChipsV97, 120);
+    });
+  });
+}
+
+function fireSEnhanceFilterToggleV97() {
+  const toggle =
+    document.getElementById('toggleFiltersBtn');
+
+  if (!toggle || toggle.dataset.fireSV97Toggle === 'true') return;
+
+  toggle.dataset.fireSV97Toggle = 'true';
+  toggle.classList.add('fire-s-filter-toggle-v97');
+
+  const setLabel = () => {
+    const filterPanel = document.getElementById('filterPanel');
+    const isOpen = filterPanel && filterPanel.style.display !== 'none';
+    toggle.innerHTML = isOpen
+      ? '<span>⚙</span> Hide Filters <b>⌃</b>'
+      : '<span>⚙</span> Show Filters <b>⌄</b>';
+  };
+
+  toggle.addEventListener('click', () => {
+    setTimeout(() => {
+      fireSRunFilterExperienceV97();
+      setLabel();
+    }, 80);
+  });
+
+  setLabel();
+}
+
+function fireSRunFilterExperienceV97() {
+  fireSImproveDatePanelV97();
+  fireSImproveStatusFiltersV97();
+  fireSEnhanceFilterToggleV97();
+  fireSRenderActiveFilterChipsV97();
+}
+
+setTimeout(fireSRunFilterExperienceV97, 250);
+setTimeout(fireSRunFilterExperienceV97, 900);
+setInterval(fireSRunFilterExperienceV97, 2500);

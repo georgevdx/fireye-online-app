@@ -1,6 +1,9 @@
-# Fire-S v96 Filter Drawer Master
+# Fire-S v97 Professional Filter Experience
 
-- Built directly from the uploaded v95 master layout.
-- Moves Inspection Date Filter into the existing Filters drawer.
+- Built from the uploaded Master Build files.
+- Improves only the filter section.
+- Adds active filter chips.
+- Cleans Date Filters into a professional card.
+- Improves status filter chip spacing.
 - Keeps compact inspection cards unchanged.
-- Keeps dashboard layout unchanged.
+- Keeps Executive Dashboard unchanged.
