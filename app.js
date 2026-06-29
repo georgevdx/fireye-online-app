@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v96-premises-workspace-v1-0';
+const APP_VERSION = 'v97-premises-workspace-timeline-actions-v1-1';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19455,3 +19455,196 @@ setTimeout(() => {
   const search = document.getElementById('projectSearch');
   if (search) search.placeholder = 'Search premises, client, address, inspector or inspection number';
 }, 500);
+
+
+
+/* FIRE-S Premises Workspace Timeline + Actions v1.1
+   Adds real inline panels for Inspection History and Action Register.
+*/
+
+function fireSWorkspaceRenderTimelineHtml(project) {
+  const history = Array.isArray(project?.inspectionHistory) ? project.inspectionHistory.slice().reverse() : [];
+  const currentInspection = {
+    inspectionNumber: project?.inspectionNumber || 'Current inspection',
+    inspectionDate: project?.completedAt || project?.inspectionDate || project?.lastSaved || '',
+    completedAt: project?.completedAt || '',
+    archiveReason: project?.completedAt ? 'completed' : 'current'
+  };
+
+  const items = [currentInspection, ...history].filter(item =>
+    item?.inspectionNumber || item?.inspectionDate || item?.completedAt || item?.archivedAt
+  );
+
+  if (!items.length) {
+    return '<div class="workspace-empty-panel">No inspection history yet.</div>';
+  }
+
+  return `
+    <div class="workspace-timeline-list">
+      ${items.map((item, index) => {
+        const date = fireSWorkspaceDateText(item.completedAt || item.inspectionDate || item.archivedAt);
+        const title = item.inspectionNumber || `Inspection ${index + 1}`;
+        const status = item.completedAt ? 'Completed' : (index === 0 ? 'Current' : 'Archived');
+        return `
+          <div class="workspace-timeline-item">
+            <div class="workspace-timeline-dot"></div>
+            <div class="workspace-timeline-content">
+              <strong>${escapeHtml(date)}</strong>
+              <span>${escapeHtml(title)}</span>
+              <small>${escapeHtml(status)}</small>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function fireSWorkspaceRenderActionsHtml(project) {
+  const actions = Array.isArray(project?.answers)
+    ? project.answers.filter(answer =>
+        String(answer?.answer || '').trim().toLowerCase() === 'no'
+      )
+    : [];
+
+  if (!actions.length) {
+    return '<div class="workspace-empty-panel workspace-empty-good">No open actions for this premises.</div>';
+  }
+
+  return `
+    <div class="workspace-action-list">
+      ${actions.map((answer, index) => {
+        const title = answer.question || answer.requirement || `Action ${index + 1}`;
+        const note = answer.note || answer.comment || answer.comments || '';
+        const expiry = answer.expiryDate || answer.dueDate || answer.followUpDate || '';
+        return `
+          <div class="workspace-action-item">
+            <div class="workspace-action-priority">ACTION</div>
+            <div class="workspace-action-body">
+              <strong>${escapeHtml(title)}</strong>
+              ${note ? `<span>${escapeHtml(note)}</span>` : ''}
+              ${expiry ? `<small>Due: ${escapeHtml(fireSWorkspaceDateText(expiry))}</small>` : '<small>No due date captured</small>'}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function fireSWorkspaceShowPanel(panelName) {
+  const project = fireSWorkspaceProject(fireSWorkspacePremisesId);
+  if (!project) return;
+
+  const panel = document.getElementById('premisesWorkspacePanel');
+  if (!panel) return;
+
+  if (panelName === 'overview') {
+    panel.innerHTML = `
+      <div class="workspace-panel-header">
+        <h3>Overview</h3>
+        <p>Core premises snapshot and compliance position.</p>
+      </div>
+      <div class="workspace-overview-grid">
+        <div><span>Premises</span><strong>${escapeHtml(fireSWorkspaceTitle(project))}</strong></div>
+        <div><span>Address</span><strong>${escapeHtml(fireSWorkspaceAddress(project))}</strong></div>
+        <div><span>Inspection Type</span><strong>${escapeHtml(project.inspectionType || 'General Fire Inspection')}</strong></div>
+        <div><span>Occupancy</span><strong>${escapeHtml(project.occupancy || project.occupancyClass || 'Not set')}</strong></div>
+        <div><span>Responsible Person</span><strong>${escapeHtml(project.contactPerson || 'Not set')}</strong></div>
+        <div><span>Telephone</span><strong>${escapeHtml(project.contactTel || 'Not set')}</strong></div>
+      </div>
+    `;
+    return;
+  }
+
+  if (panelName === 'history') {
+    panel.innerHTML = `
+      <div class="workspace-panel-header">
+        <h3>Inspection History</h3>
+        <p>Previous inspections are kept as a timeline for this premises.</p>
+      </div>
+      ${fireSWorkspaceRenderTimelineHtml(project)}
+    `;
+    return;
+  }
+
+  if (panelName === 'actions') {
+    panel.innerHTML = `
+      <div class="workspace-panel-header">
+        <h3>Action Register</h3>
+        <p>Open NO items requiring attention for this premises.</p>
+      </div>
+      ${fireSWorkspaceRenderActionsHtml(project)}
+    `;
+    return;
+  }
+
+  if (panelName === 'documents') {
+    panel.innerHTML = `
+      <div class="workspace-panel-header">
+        <h3>Documents</h3>
+        <p>Reports, certificates, drawings and compliance documents will live here.</p>
+      </div>
+      <div class="workspace-empty-panel">Documents module coming next.</div>
+    `;
+    return;
+  }
+
+  if (panelName === 'equipment') {
+    panel.innerHTML = `
+      <div class="workspace-panel-header">
+        <h3>Equipment</h3>
+        <p>Fire equipment register will live here.</p>
+      </div>
+      <div class="workspace-empty-panel">Equipment module coming next.</div>
+    `;
+  }
+}
+
+function fireSWorkspaceSetActiveTab(tab) {
+  document.querySelectorAll('.premises-tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.workspaceTab === tab);
+  });
+  fireSWorkspaceShowPanel(tab);
+}
+
+if (typeof fireSRenderPremisesWorkspace === 'function' && !window.fireSWorkspaceV11Applied) {
+  window.fireSWorkspaceV11Applied = true;
+  const originalWorkspaceRender = fireSRenderPremisesWorkspace;
+
+  fireSRenderPremisesWorkspace = function fireSRenderPremisesWorkspaceV11(id) {
+    const result = originalWorkspaceRender.apply(this, arguments);
+
+    setTimeout(() => {
+      const shell = document.querySelector('.premises-workspace-shell');
+      if (!shell || document.getElementById('premisesWorkspaceTabs')) return;
+
+      const actionGrid = shell.querySelector('.premises-action-grid');
+      if (!actionGrid) return;
+
+      actionGrid.insertAdjacentHTML('beforebegin', `
+        <div id="premisesWorkspaceTabs" class="premises-workspace-tabs">
+          <button type="button" class="premises-tab-btn active" data-workspace-tab="overview" onclick="fireSWorkspaceSetActiveTab('overview')">Overview</button>
+          <button type="button" class="premises-tab-btn" data-workspace-tab="history" onclick="fireSWorkspaceSetActiveTab('history')">History</button>
+          <button type="button" class="premises-tab-btn" data-workspace-tab="actions" onclick="fireSWorkspaceSetActiveTab('actions')">Actions</button>
+          <button type="button" class="premises-tab-btn" data-workspace-tab="documents" onclick="fireSWorkspaceSetActiveTab('documents')">Documents</button>
+          <button type="button" class="premises-tab-btn" data-workspace-tab="equipment" onclick="fireSWorkspaceSetActiveTab('equipment')">Equipment</button>
+        </div>
+        <div id="premisesWorkspacePanel" class="premises-workspace-panel"></div>
+      `);
+
+      fireSWorkspaceSetActiveTab('overview');
+    }, 80);
+
+    return result;
+  };
+}
+
+// Replace old popup buttons with inline tabs where possible.
+setTimeout(() => {
+  try {
+    if (fireSWorkspacePremisesId) fireSWorkspaceShowPanel('overview');
+  } catch (error) {
+    console.warn('Workspace v1.1 panel init failed:', error);
+  }
+}, 800);
