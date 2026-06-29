@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v101-premises-workspace-lite';
+const APP_VERSION = 'v102-premises-quick-actions';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -20310,3 +20310,86 @@ function fireSInjectPremisesHeaderV101() {
 
 setTimeout(fireSInjectPremisesHeaderV101, 400);
 setInterval(fireSInjectPremisesHeaderV101, 1500);
+
+
+/* FIRE-S Premises Quick Actions v102
+   Safe enhancement built on v101:
+   - Adds quick action buttons to the Premises Workspace Lite header.
+   - Does not change dashboard, filters, compact cards or inspection workflow.
+*/
+
+function fireSGenerateReportFromWorkspaceV102() {
+  if (typeof generateReport === 'function') {
+    generateReport();
+    return;
+  }
+
+  const reportBtn = document.getElementById('reportBtn');
+  if (reportBtn) {
+    reportBtn.click();
+    return;
+  }
+
+  alert('Report function not available on this screen yet.');
+}
+
+function fireSScrollToPhotosV102() {
+  const target =
+    document.getElementById('photoSection') ||
+    document.getElementById('photoPreview') ||
+    document.querySelector('.photo-item') ||
+    document.getElementById('photos');
+
+  if (target) {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
+
+  alert('Photos section not found on this inspection.');
+}
+
+function fireSScrollToActionsV102() {
+  const firstNo =
+    Array.from(document.querySelectorAll('.answer-select'))
+      .find(field => String(field.value || '').trim().toLowerCase() === 'no');
+
+  if (firstNo) {
+    const row = firstNo.closest('.checklist-row') || firstNo;
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.classList.add('issue-focus');
+
+    setTimeout(() => {
+      row.classList.remove('issue-focus');
+    }, 2500);
+
+    return;
+  }
+
+  alert('No open action items found in this inspection.');
+}
+
+function fireSInjectQuickActionsV102() {
+  const workspace =
+    document.getElementById('fireSPremisesWorkspaceLiteV101');
+
+  if (!workspace || workspace.dataset.quickActionsV102 === 'true') return;
+
+  workspace.dataset.quickActionsV102 = 'true';
+
+  const stats =
+    workspace.querySelector('.fire-s-premises-stats-v101');
+
+  if (!stats) return;
+
+  stats.insertAdjacentHTML('afterend', `
+    <div class="fire-s-premises-actions-v102">
+      <button type="button" onclick="fireSScrollToActionsV102()">🚨 Actions</button>
+      <button type="button" onclick="fireSScrollToPhotosV102()">📷 Photos</button>
+      <button type="button" onclick="fireSGenerateReportFromWorkspaceV102()">📄 Report</button>
+      <button type="button" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })">↑ Top</button>
+    </div>
+  `);
+}
+
+setTimeout(fireSInjectQuickActionsV102, 500);
+setInterval(fireSInjectQuickActionsV102, 1500);

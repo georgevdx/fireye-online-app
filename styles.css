@@ -10290,3 +10290,44 @@ body > #actionDropdown.action-dropdown button:last-child {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+
+/* FIRE-S Premises Quick Actions v102 */
+.fire-s-premises-actions-v102 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.fire-s-premises-actions-v102 button {
+  width: 100%;
+  max-width: none;
+  min-height: 42px;
+  padding: 10px 8px;
+  border-radius: 0;
+  background: #ffffff;
+  color: #334155;
+  border: 0;
+  font-size: 12px;
+  font-weight: 900;
+  box-shadow: none;
+}
+
+.fire-s-premises-actions-v102 button:hover {
+  background: #f8fafc;
+  color: #b71c1c;
+  opacity: 1;
+}
+
+@media (max-width: 640px) {
+  .fire-s-premises-actions-v102 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .fire-s-premises-actions-v102 button {
+    min-height: 40px;
+    font-size: 12px;
+  }
+}

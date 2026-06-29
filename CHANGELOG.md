@@ -1,6 +1,6 @@
-# Fire-S v101 Premises Workspace Lite
+# Fire-S v102 Premises Quick Actions
 
-- Built from v100 clean master.
-- Adds a lightweight Premises Workspace header inside the existing inspection form.
-- Shows Premises Score, Last Inspection, Next Inspection, Open Actions and History count.
+- Built from v101 Premises Workspace Lite.
+- Adds quick action buttons to the Premises Workspace header.
+- Actions: Open Actions, Photos, Report, Top.
 - Does not change dashboard, filters or compact inspection cards.
