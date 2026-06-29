@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v95-card-keyword-mobile-status-fix-v1-1';
+const APP_VERSION = 'v96-premises-workspace-v1-0';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19297,354 +19297,161 @@ setTimeout(refreshActivityDateFiltersAfterPatch, 500);
 
 
 
-/* =====================================================
-   FIRE-S Ultra Compact Premises Cards v1.0
-   Colour status + Premises name + Last Inspection + Next Inspection only.
-   ===================================================== */
+/* FIRE-S Premises Workspace v1.0 */
+let fireSWorkspacePremisesId = null;
 
-function fireSUltraCardTitle(project) {
-  return project?.projectName ||
-    [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') ||
-    project?.siteName ||
-    'Untitled Premises';
+function fireSWorkspaceProject(id) {
+  return (typeof getProjects === 'function' ? getProjects() : []).find(p => p.id === id) || null;
 }
-
-function fireSUltraDateText(value) {
-  if (!value) return 'Not set';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10) || 'Not set';
-  return date.toLocaleDateString();
+function fireSWorkspaceTitle(p) {
+  return p?.projectName || [p?.organisationName, p?.siteName].filter(Boolean).join(' - ') || p?.siteName || 'Untitled Premises';
 }
-
-function fireSUltraDateKey(value) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
-  return date.toISOString().slice(0, 10);
+function fireSWorkspaceAddress(p) {
+  return p?.projectAddress || (typeof combineStreetAddress === 'function' ? combineStreetAddress(p?.streetNumber, p?.addressLine) : [p?.streetNumber, p?.addressLine].filter(Boolean).join(' ')) || p?.addressLine || 'No address captured';
 }
-
-function fireSUltraLastInspectionDate(project) {
-  const historyDates = Array.isArray(project?.inspectionHistory)
-    ? project.inspectionHistory.map(item => item?.completedAt || item?.inspectionDate || item?.archivedAt || '').filter(Boolean)
-    : [];
-
-  const dates = [
-    project?.completedAt,
-    project?.inspectionDate,
-    project?.lastSaved,
-    ...historyDates
-  ].map(fireSUltraDateKey).filter(Boolean).sort();
-
+function fireSWorkspaceDateKey(v) {
+  if (!v) return '';
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? String(v).slice(0, 10) : d.toISOString().slice(0, 10);
+}
+function fireSWorkspaceDateText(v) {
+  const k = fireSWorkspaceDateKey(v);
+  if (!k) return 'Not set';
+  const d = new Date(k + 'T00:00:00');
+  return Number.isNaN(d.getTime()) ? k : d.toLocaleDateString();
+}
+function fireSWorkspaceLastDate(p) {
+  if (typeof fireSUltraLastInspectionDate === 'function') return fireSUltraLastInspectionDate(p);
+  const history = Array.isArray(p?.inspectionHistory) ? p.inspectionHistory.map(x => x.completedAt || x.inspectionDate || x.archivedAt || '') : [];
+  const dates = [p?.completedAt, p?.inspectionDate, p?.lastSaved, ...history].map(fireSWorkspaceDateKey).filter(Boolean).sort();
   return dates.length ? dates[dates.length - 1] : '';
 }
-
-function fireSUltraNextInspectionDate(project) {
-  if (project?.scheduledDate) return project.scheduledDate;
-  if (project?.followUpDate) return project.followUpDate;
-
-  if (project?.recurringCycleEnabled === true && typeof getNextRecurringCycleDate === 'function') {
-    return getNextRecurringCycleDate(project);
-  }
-
-  return '';
+function fireSWorkspaceNextDate(p) {
+  if (typeof fireSUltraNextInspectionDate === 'function') return fireSUltraNextInspectionDate(p);
+  return p?.scheduledDate || p?.followUpDate || '';
 }
-
-function fireSUltraHasActions(project) {
-  return Array.isArray(project?.answers) &&
-    project.answers.some(answer => String(answer?.answer || '').trim().toLowerCase() === 'no');
+function fireSWorkspaceOpenActionCount(p) {
+  return Array.isArray(p?.answers) ? p.answers.filter(a => String(a?.answer || '').trim().toLowerCase() === 'no').length : 0;
 }
-
-function fireSUltraStatus(project) {
-  const nextDate = fireSUltraDateKey(fireSUltraNextInspectionDate(project));
-  const today = new Date().toISOString().slice(0, 10);
-
-  if (nextDate && nextDate < today) return { label: 'Overdue', className: 'ultra-status-overdue', priority: 1 };
-  if (fireSUltraHasActions(project)) return { label: 'Action Required', className: 'ultra-status-action', priority: 2 };
-
-  if (nextDate) {
-    const next = new Date(nextDate + 'T00:00:00');
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-    const days = Math.ceil((next - now) / (1000 * 60 * 60 * 24));
-    if (!Number.isNaN(days) && days >= 0 && days <= 30) {
-      return { label: 'Due Soon', className: 'ultra-status-due', priority: 3 };
-    }
-  }
-
-  return { label: 'Compliant', className: 'ultra-status-compliant', priority: 4 };
+function fireSWorkspaceStatus(p) {
+  if (typeof fireSUltraStatus === 'function') return fireSUltraStatus(p);
+  return fireSWorkspaceOpenActionCount(p) ? { label:'Action Required', className:'ultra-status-action' } : { label:'Compliant', className:'ultra-status-compliant' };
 }
-
-function renderProjectsList() {
-  const container = getEl('projectsList');
-
-  if (!currentUserProfile) {
-    currentUserProfile = {
-      id: 'local-user',
-      email: 'local@fire-s.app',
-      fullName: 'Local User',
-      role: 'super_admin',
-      companyId: null,
-      companyName: 'Local / Personal Workspace'
-    };
-    currentCompanyAccess = { status: 'active', plan: 'local', source: 'local-fallback' };
-  }
-
-  const allProjects = getProjects();
-  const projects = getVisibleProjectsForCurrentUser(allProjects);
-
-  if (typeof fireSEnsurePremisesDropdown === 'function') fireSEnsurePremisesDropdown(projects);
-
-  updateAppInfo();
-  renderDashboardMetrics(projects);
-  updateOfflineReadinessBanner();
-  updateSiteReadyPreflightChecklist();
-  updatePostSiteSyncReminder();
-
-  const searchField = document.getElementById('projectSearch');
-  const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
-
-  const baseFilteredProjects = projects.filter(project => {
-    if (typeof fireSPremisesDropdownFilter !== 'undefined' && fireSPremisesDropdownFilter && typeof fireSGetPremisesKey === 'function') {
-      if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) return false;
-    }
-
-    if (searchText) {
-      const haystack = [
-        project?.projectName,
-        project?.organisationName,
-        project?.siteName,
-        project?.projectAddress,
-        project?.addressLine,
-        project?.inspectionNumber,
-        project?.inspectorName
-      ].join(' ').toLowerCase();
-
-      if (!haystack.includes(searchText)) return false;
-    }
-
-    return typeof projectMatchesInspectionDateFilter === 'function'
-      ? projectMatchesInspectionDateFilter(project)
-      : true;
+function fireSWorkspaceScore(p) {
+  const s = fireSWorkspaceStatus(p);
+  let score = 100 - Math.min(fireSWorkspaceOpenActionCount(p) * 5, 35);
+  if (s.label === 'Overdue') score -= 30;
+  if (s.label === 'Action Required') score -= 15;
+  if (s.label === 'Due Soon') score -= 5;
+  return Math.max(0, Math.min(100, score));
+}
+function fireSWorkspaceHealth(score) {
+  if (score >= 90) return 'Healthy';
+  if (score >= 75) return 'Attention';
+  if (score >= 55) return 'At Risk';
+  return 'Critical';
+}
+function fireSEnsureWorkspace() {
+  let s = document.getElementById('premisesWorkspaceSection');
+  if (s) return s;
+  s = document.createElement('section');
+  s.id = 'premisesWorkspaceSection';
+  s.className = 'card premises-workspace-section';
+  s.style.display = 'none';
+  s.innerHTML = '<div id="premisesWorkspaceContent"></div>';
+  const after = document.getElementById('projectListSection');
+  if (after) after.insertAdjacentElement('afterend', s);
+  else (document.querySelector('.app') || document.body).appendChild(s);
+  return s;
+}
+function fireSShowWorkspaceOnly() {
+  ['homeSection','projectListSection','projectFormSection','servicesSection'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
   });
-
-  const filteredProjects = baseFilteredProjects.filter(project =>
-    projectMatchesInspectionGatewayQuickFilter(project, currentFilter)
-  );
-
-  updateActiveFilterStatus(filteredProjects.length);
-  const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(baseFilteredProjects);
-
-  filteredProjects.sort((a, b) => {
-    const statusDiff = fireSUltraStatus(a).priority - fireSUltraStatus(b).priority;
-    if (statusDiff !== 0) return statusDiff;
-
-    const aNext = fireSUltraDateKey(fireSUltraNextInspectionDate(a)) || '9999-12-31';
-    const bNext = fireSUltraDateKey(fireSUltraNextInspectionDate(b)) || '9999-12-31';
-    if (aNext !== bNext) return aNext.localeCompare(bNext);
-
-    return (fireSUltraLastInspectionDate(b) || '').localeCompare(fireSUltraLastInspectionDate(a) || '');
-  });
-
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE));
-  if (currentProjectPage > totalPages) currentProjectPage = totalPages;
-
-  const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
-  const visibleProjects = filteredProjects.slice(startIndex, startIndex + PROJECTS_PER_PAGE);
-  window.currentProjectsListView = visibleProjects;
-
-  const pagingControls = document.getElementById('projectPagingControls');
-  if (pagingControls) {
-    pagingControls.innerHTML = `
-      <button type="button" onclick="previousProjectPage()" ${currentProjectPage === 1 ? 'disabled' : ''}>Previous</button>
-      <span>Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1} - ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)} of ${filteredProjects.length}</span>
-      <button type="button" onclick="nextProjectPage()" ${currentProjectPage >= totalPages ? 'disabled' : ''}>Next</button>
-    `;
-  }
-
-  if (filteredProjects.length === 0) {
-    container.innerHTML = `${gatewayQuickFilterHtml}<div class="empty-state">No matching premises found.</div>`;
-    return;
-  }
-
-  container.innerHTML = `
-    ${gatewayQuickFilterHtml}
-    <div id="projectListView" class="ultra-premises-list">
-      ${visibleProjects.map(project => {
-        const status = fireSUltraStatus(project);
-        const projectIdJs = JSON.stringify(project.id || '');
-        return `
-          <article
-            class="ultra-premises-card ${escapeHtml(status.className)}"
-            role="button"
-            tabindex="0"
-            title="${escapeHtml(status.label)}"
-            onclick='event.stopPropagation(); openProject(${projectIdJs})'
-            onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
-          >
-            <div class="ultra-status-strip"></div>
-            <div class="ultra-premises-body">
-              <strong class="ultra-premises-title">${escapeHtml(fireSUltraCardTitle(project))}</strong>
-              <div class="ultra-premises-dates">
-                <span><small>Last inspection</small><b>${escapeHtml(fireSUltraDateText(fireSUltraLastInspectionDate(project)))}</b></span>
-                <span><small>Next inspection</small><b>${escapeHtml(fireSUltraDateText(fireSUltraNextInspectionDate(project)))}</b></span>
-              </div>
-            </div>
-          </article>
-        `;
-      }).join('')}
-    </div>
-    <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>
-  `;
+  const ws = fireSEnsureWorkspace();
+  ws.style.display = 'block';
+  ws.scrollIntoView({ behavior:'smooth', block:'start' });
 }
-
-
-
-/* =====================================================
-   FIRE-S Card Keyword + Mobile Status Fix v1.1
-   Adds a small status keyword to each ultra compact premises card.
-   ===================================================== */
-
-function fireSUltraStatusKeyword(statusLabel) {
-  if (statusLabel === 'Overdue') return 'OVERDUE';
-  if (statusLabel === 'Action Required') return 'ACTION';
-  if (statusLabel === 'Due Soon') return 'DUE SOON';
-  return 'COMPLIANT';
+function fireSBackToPremisesGateway() {
+  const ws = document.getElementById('premisesWorkspaceSection');
+  if (ws) ws.style.display = 'none';
+  showProjectList();
 }
-
-// Override ultra compact renderer with keyword support
-if (typeof renderProjectsList === 'function' && !window.fireSCardKeywordRendererApplied) {
-  window.fireSCardKeywordRendererApplied = true;
-
-  const fireSOriginalRenderProjectsListForKeyword = renderProjectsList;
-
-  renderProjectsList = function fireSRenderProjectsListWithStatusKeyword() {
-    const container = getEl('projectsList');
-
-    if (!currentUserProfile) {
-      currentUserProfile = {
-        id: 'local-user',
-        email: 'local@fire-s.app',
-        fullName: 'Local User',
-        role: 'super_admin',
-        companyId: null,
-        companyName: 'Local / Personal Workspace'
-      };
-      currentCompanyAccess = { status: 'active', plan: 'local', source: 'local-fallback' };
-    }
-
-    const allProjects = getProjects();
-    const projects = getVisibleProjectsForCurrentUser(allProjects);
-
-    if (typeof fireSEnsurePremisesDropdown === 'function') fireSEnsurePremisesDropdown(projects);
-
-    updateAppInfo();
-    renderDashboardMetrics(projects);
-    updateOfflineReadinessBanner();
-    updateSiteReadyPreflightChecklist();
-    updatePostSiteSyncReminder();
-
-    const searchField = document.getElementById('projectSearch');
-    const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
-
-    const baseFilteredProjects = projects.filter(project => {
-      if (
-        typeof fireSPremisesDropdownFilter !== 'undefined' &&
-        fireSPremisesDropdownFilter &&
-        typeof fireSGetPremisesKey === 'function'
-      ) {
-        if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) return false;
-      }
-
-      if (searchText) {
-        const haystack = [
-          project?.projectName,
-          project?.organisationName,
-          project?.siteName,
-          project?.projectAddress,
-          project?.addressLine,
-          project?.inspectionNumber,
-          project?.inspectorName
-        ].join(' ').toLowerCase();
-
-        if (!haystack.includes(searchText)) return false;
-      }
-
-      return typeof projectMatchesInspectionDateFilter === 'function'
-        ? projectMatchesInspectionDateFilter(project)
-        : true;
-    });
-
-    const filteredProjects = baseFilteredProjects.filter(project =>
-      projectMatchesInspectionGatewayQuickFilter(project, currentFilter)
-    );
-
-    updateActiveFilterStatus(filteredProjects.length);
-    const gatewayQuickFilterHtml = renderInspectionGatewayQuickFilters(baseFilteredProjects);
-
-    filteredProjects.sort((a, b) => {
-      const statusDiff = fireSUltraStatus(a).priority - fireSUltraStatus(b).priority;
-      if (statusDiff !== 0) return statusDiff;
-
-      const aNext = fireSUltraDateKey(fireSUltraNextInspectionDate(a)) || '9999-12-31';
-      const bNext = fireSUltraDateKey(fireSUltraNextInspectionDate(b)) || '9999-12-31';
-      if (aNext !== bNext) return aNext.localeCompare(bNext);
-
-      return (fireSUltraLastInspectionDate(b) || '').localeCompare(fireSUltraLastInspectionDate(a) || '');
-    });
-
-    const totalPages = Math.max(1, Math.ceil(filteredProjects.length / PROJECTS_PER_PAGE));
-    if (currentProjectPage > totalPages) currentProjectPage = totalPages;
-
-    const startIndex = (currentProjectPage - 1) * PROJECTS_PER_PAGE;
-    const visibleProjects = filteredProjects.slice(startIndex, startIndex + PROJECTS_PER_PAGE);
-    window.currentProjectsListView = visibleProjects;
-
-    const pagingControls = document.getElementById('projectPagingControls');
-    if (pagingControls) {
-      pagingControls.innerHTML = `
-        <button type="button" onclick="previousProjectPage()" ${currentProjectPage === 1 ? 'disabled' : ''}>Previous</button>
-        <span>Showing ${filteredProjects.length === 0 ? 0 : startIndex + 1} - ${Math.min(startIndex + PROJECTS_PER_PAGE, filteredProjects.length)} of ${filteredProjects.length}</span>
-        <button type="button" onclick="nextProjectPage()" ${currentProjectPage >= totalPages ? 'disabled' : ''}>Next</button>
-      `;
-    }
-
-    if (filteredProjects.length === 0) {
-      container.innerHTML = `${gatewayQuickFilterHtml}<div class="empty-state">No matching premises found.</div>`;
-      return;
-    }
-
-    container.innerHTML = `
-      ${gatewayQuickFilterHtml}
-      <div id="projectListView" class="ultra-premises-list">
-        ${visibleProjects.map(project => {
-          const status = fireSUltraStatus(project);
-          const projectIdJs = JSON.stringify(project.id || '');
-          return `
-            <article
-              class="ultra-premises-card ${escapeHtml(status.className)}"
-              role="button"
-              tabindex="0"
-              title="${escapeHtml(status.label)}"
-              onclick='event.stopPropagation(); openProject(${projectIdJs})'
-              onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openProject(${projectIdJs}); }'
-            >
-              <div class="ultra-status-strip"></div>
-              <div class="ultra-premises-body">
-                <div class="ultra-premises-title-row">
-                  <strong class="ultra-premises-title">${escapeHtml(fireSUltraCardTitle(project))}</strong>
-                  <span class="ultra-status-keyword">${escapeHtml(fireSUltraStatusKeyword(status.label))}</span>
-                </div>
-
-                <div class="ultra-premises-dates">
-                  <span><small>Last inspection</small><b>${escapeHtml(fireSUltraDateText(fireSUltraLastInspectionDate(project)))}</b></span>
-                  <span><small>Next inspection</small><b>${escapeHtml(fireSUltraDateText(fireSUltraNextInspectionDate(project)))}</b></span>
-                </div>
-              </div>
-            </article>
-          `;
-        }).join('')}
+function fireSStartInspectionFromWorkspace(id) {
+  const ws = document.getElementById('premisesWorkspaceSection');
+  if (ws) ws.style.display = 'none';
+  return window.fireSOpenProjectOriginalForWorkspace ? window.fireSOpenProjectOriginalForWorkspace(id) : openProject(id);
+}
+function fireSWorkspaceOpenHistory(id) {
+  const p = fireSWorkspaceProject(id);
+  const h = Array.isArray(p?.inspectionHistory) ? p.inspectionHistory : [];
+  if (!h.length) return alert('No previous inspection history found for this premises yet.');
+  alert('Inspection History\n\n' + h.slice().reverse().map((x,i) => `${i+1}. ${fireSWorkspaceDateText(x.completedAt || x.inspectionDate || x.archivedAt)} - ${x.inspectionNumber || 'Inspection'}`).join('\n'));
+}
+function fireSWorkspaceOpenActions(id) {
+  const p = fireSWorkspaceProject(id);
+  const a = Array.isArray(p?.answers) ? p.answers.filter(x => String(x?.answer || '').trim().toLowerCase() === 'no') : [];
+  if (!a.length) return alert('No open action items for this premises.');
+  alert('Open Actions\n\n' + a.slice(0,20).map((x,i) => `${i+1}. ${x.question || x.requirement || 'Action item'}`).join('\n'));
+}
+function fireSWorkspaceOpenReports(id) {
+  const ws = document.getElementById('premisesWorkspaceSection');
+  if (ws) ws.style.display = 'none';
+  (window.fireSOpenProjectOriginalForWorkspace || openProject)(id);
+  setTimeout(() => { if (typeof generateReport === 'function') generateReport(); else if (typeof showReport === 'function') showReport(); }, 350);
+}
+function fireSRenderPremisesWorkspace(id) {
+  const p = fireSWorkspaceProject(id);
+  if (!p) return alert('Premises not found.');
+  fireSWorkspacePremisesId = id;
+  const ws = fireSEnsureWorkspace();
+  const c = ws.querySelector('#premisesWorkspaceContent');
+  const st = fireSWorkspaceStatus(p);
+  const score = fireSWorkspaceScore(p);
+  const hist = Array.isArray(p.inspectionHistory) ? p.inspectionHistory.length : 0;
+  c.innerHTML = `
+    <div class="premises-workspace-shell ${escapeHtml(st.className || '')}">
+      <div class="premises-workspace-top">
+        <button type="button" class="premises-back-btn" onclick="fireSBackToPremisesGateway()">Back to Premises</button>
+        <span class="premises-workspace-status">${escapeHtml(st.label || 'Status')}</span>
       </div>
-      <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>
-    `;
+      <div class="premises-workspace-hero">
+        <div>
+          <div class="premises-kicker">Digital Building Passport</div>
+          <h2>${escapeHtml(fireSWorkspaceTitle(p))}</h2>
+          <p>${escapeHtml(fireSWorkspaceAddress(p))}</p>
+        </div>
+        <div class="premises-health-card"><span>${escapeHtml(fireSWorkspaceHealth(score))}</span><strong>${score}%</strong></div>
+      </div>
+      <div class="premises-snapshot-grid">
+        <div><span>Last Inspection</span><strong>${escapeHtml(fireSWorkspaceDateText(fireSWorkspaceLastDate(p)))}</strong></div>
+        <div><span>Next Inspection</span><strong>${escapeHtml(fireSWorkspaceDateText(fireSWorkspaceNextDate(p)))}</strong></div>
+        <div><span>Open Actions</span><strong>${fireSWorkspaceOpenActionCount(p)}</strong></div>
+        <div><span>History</span><strong>${hist}</strong></div>
+      </div>
+      <div class="premises-action-grid">
+        <button type="button" class="premises-action-primary" onclick='fireSStartInspectionFromWorkspace(${JSON.stringify(id)})'>▶ Start Inspection</button>
+        <button type="button" onclick='fireSWorkspaceOpenHistory(${JSON.stringify(id)})'>📋 Inspection History</button>
+        <button type="button" onclick='fireSWorkspaceOpenActions(${JSON.stringify(id)})'>🚨 Action Register</button>
+        <button type="button" onclick='fireSWorkspaceOpenReports(${JSON.stringify(id)})'>📄 Reports</button>
+        <button type="button" onclick="alert('Documents module coming next.')">📁 Documents</button>
+        <button type="button" onclick="alert('Equipment module coming next.')">⚙ Equipment</button>
+      </div>
+    </div>`;
+  fireSShowWorkspaceOnly();
+}
+if (typeof openProject === 'function' && !window.fireSPremisesWorkspaceOpenApplied) {
+  window.fireSPremisesWorkspaceOpenApplied = true;
+  window.fireSOpenProjectOriginalForWorkspace = openProject;
+  openProject = function(id, focusMode) {
+    if (focusMode) return window.fireSOpenProjectOriginalForWorkspace.apply(this, arguments);
+    return fireSRenderPremisesWorkspace(id);
   };
 }
+setTimeout(() => {
+  const h = document.querySelector('#projectListSection h2');
+  if (h && h.textContent.trim().toLowerCase() === 'projects') h.textContent = 'Premises';
+  const search = document.getElementById('projectSearch');
+  if (search) search.placeholder = 'Search premises, client, address, inspector or inspection number';
+}, 500);
