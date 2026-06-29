@@ -10104,3 +10104,25 @@ body > #actionDropdown.action-dropdown button:last-child {
     max-width: none;
   }
 }
+
+
+/* FIRE-S Date Filter Below Filters v98 */
+.fire-s-date-below-filters-v98 {
+  margin: 12px 0 14px;
+}
+
+.fire-s-date-below-filters-v98 .inspection-date-filter-panel,
+.fire-s-date-below-filters-v98 .fire-s-date-card-v97 {
+  margin: 0 !important;
+}
+
+/* The drawer now focuses on active chips + status filters only */
+.fire-s-filter-panel-v97 .fire-s-active-filter-chips-v97 {
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .fire-s-date-below-filters-v98 {
+    margin-top: 10px;
+  }
+}

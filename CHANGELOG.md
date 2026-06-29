@@ -1,9 +1,7 @@
-# Fire-S v97 Professional Filter Experience
+# Fire-S v98 Date Filter Below Filters
 
-- Built from the uploaded Master Build files.
-- Improves only the filter section.
-- Adds active filter chips.
-- Cleans Date Filters into a professional card.
-- Improves status filter chip spacing.
-- Keeps compact inspection cards unchanged.
-- Keeps Executive Dashboard unchanged.
+- Built from v97 Professional Filter Experience.
+- Moves the Date Filter back below the Filters drawer.
+- Keeps the improved professional Date Filter styling.
+- Status filters remain inside the Filters drawer.
+- Compact inspection cards remain unchanged.

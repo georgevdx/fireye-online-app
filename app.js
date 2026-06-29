@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v97-professional-filter-experience';
+const APP_VERSION = 'v98-date-filter-below-filters';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -19918,3 +19918,83 @@ function fireSRunFilterExperienceV97() {
 setTimeout(fireSRunFilterExperienceV97, 250);
 setTimeout(fireSRunFilterExperienceV97, 900);
 setInterval(fireSRunFilterExperienceV97, 2500);
+
+
+/* FIRE-S Date Filter Below Filters v98
+   User preference:
+   - Status filters stay in the drawer.
+   - Date filter must sit below the filters section again.
+   - Keep v97 professional styling.
+*/
+
+function fireSMoveDateFilterBelowFiltersV98() {
+  const filterPanel =
+    document.getElementById('filterPanel');
+
+  const datePanel =
+    document.getElementById('inspectionDateFilterPanel');
+
+  const pagingControls =
+    document.getElementById('projectPagingControls');
+
+  if (!filterPanel || !datePanel) return;
+
+  let wrapper =
+    document.getElementById('fireSDateFilterBelowFiltersV98');
+
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.id = 'fireSDateFilterBelowFiltersV98';
+    wrapper.className = 'fire-s-date-below-filters-v98';
+
+    if (pagingControls) {
+      pagingControls.insertAdjacentElement('afterend', wrapper);
+    } else {
+      filterPanel.insertAdjacentElement('afterend', wrapper);
+    }
+  }
+
+  if (datePanel.parentElement !== wrapper) {
+    wrapper.appendChild(datePanel);
+  }
+
+  // Remove duplicate date headings from inside the status filter drawer.
+  Array.from(filterPanel.querySelectorAll('.filter-panel-section-title')).forEach(title => {
+    const text = title.textContent.trim().toLowerCase();
+    if (text.includes('date filter')) {
+      title.remove();
+    }
+  });
+
+  // Keep the status heading only once.
+  const statusTitles =
+    Array.from(filterPanel.querySelectorAll('.filter-panel-section-title'))
+      .filter(title => title.textContent.trim().toLowerCase().includes('status'));
+
+  statusTitles.forEach((title, index) => {
+    if (index > 0) {
+      title.remove();
+    } else {
+      title.innerHTML = '<span class="fire-s-filter-icon-v97">⚡</span> Status Filters';
+    }
+  });
+
+  wrapper.style.display = 'block';
+
+  if (typeof fireSImproveDatePanelV97 === 'function') {
+    fireSImproveDatePanelV97();
+  }
+
+  if (typeof fireSRenderActiveFilterChipsV97 === 'function') {
+    fireSRenderActiveFilterChipsV97();
+  }
+}
+
+// Override the v96 behaviour that previously moved date filters into the drawer.
+function fireSEnsureDateFilterInsideDrawerV96() {
+  fireSMoveDateFilterBelowFiltersV98();
+}
+
+setTimeout(fireSMoveDateFilterBelowFiltersV98, 200);
+setTimeout(fireSMoveDateFilterBelowFiltersV98, 900);
+setInterval(fireSMoveDateFilterBelowFiltersV98, 2500);
