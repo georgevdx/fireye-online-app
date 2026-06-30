@@ -10397,3 +10397,102 @@ body > #actionDropdown.action-dropdown button:last-child {
 .fire-s-action-editor-summary-v1034 p{margin:6px 0 0;color:#475569;font-size:13px}
 .fire-s-action-modal-actions-v1034{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .fire-s-action-modal-actions-v1034 button{max-width:none}
+
+
+
+
+/* FIRE-S Sprint 103.5 Action Dashboard */
+.fire-s-action-dashboard-v1035 {
+  margin: 12px 0 14px;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.07);
+}
+
+.fire-s-action-dashboard-head-v1035 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  background: #111827;
+  color: #ffffff;
+}
+
+.fire-s-action-dashboard-head-v1035 span {
+  display: block;
+  color: #fca5a5;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.fire-s-action-dashboard-head-v1035 strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 16px;
+}
+
+.fire-s-action-dashboard-head-v1035 button {
+  width: auto;
+  max-width: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #b71c1c;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fire-s-action-dashboard-grid-v1035 {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1px;
+  background: #e2e8f0;
+}
+
+.fire-s-action-dashboard-grid-v1035 button {
+  width: 100%;
+  max-width: none;
+  min-height: 64px;
+  padding: 10px 6px;
+  border-radius: 0;
+  background: #ffffff;
+  color: #334155;
+  box-shadow: none;
+}
+
+.fire-s-action-dashboard-grid-v1035 span {
+  display: block;
+  color: #b71c1c;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.fire-s-action-dashboard-grid-v1035 small {
+  display: block;
+  margin-top: 5px;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .fire-s-action-dashboard-head-v1035 {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .fire-s-action-dashboard-head-v1035 button {
+    width: 100%;
+  }
+
+  .fire-s-action-dashboard-grid-v1035 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

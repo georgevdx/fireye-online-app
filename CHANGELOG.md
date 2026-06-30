@@ -1,7 +1,6 @@
-# Fire-S v103.4 Resolve Actions
+# Fire-S v103.5 Action Dashboard
 
-- Adds Update / Resolve button on each Action.
-- Allows status changes: Open, In Progress, Waiting, Closed.
-- Allows responsible person, due date, completed by, completed date and comment updates.
-- Saves updates back to project.actions.
-- Closed actions move to Closed filter.
+- Adds Action Centre summary to the Home Command Centre.
+- Shows Open, Critical, High, Overdue and Closed actions.
+- Uses actions created and managed by Sprint 103.2 to 103.4.
+- Does not change inspection cards, filters, or report layout.
