@@ -10792,3 +10792,5 @@ body > #actionDropdown.action-dropdown button:last-child {
 .fire-s-building-passport-complete-v1041 .fire-s-passport-grid-v104 div:nth-child(5) strong {
   color: #b71c1c;
 }
+
+.fire-s-assets-v1042{margin:14px 0;padding:14px;border:1px solid #dbe3ef;border-radius:16px;background:#fff}.asset-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.asset-grid div{padding:10px;border:1px solid #e2e8f0;border-radius:10px;text-align:center}.asset-grid strong{display:block;font-size:20px}
