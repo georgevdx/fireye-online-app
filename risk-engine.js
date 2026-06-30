@@ -1,6 +1,6 @@
 /* =====================================================
-   FIRE-S Sprint 108.1
-   Intelligent Risk Engine v1.0
+   FIRE-S Sprint 108.2
+   Intelligence Dashboard v1.1
    Safe add-on module: weighted compliance + health + risk.
    ===================================================== */
 (function () {
@@ -223,6 +223,134 @@
     };
   }
 
+
+  function getCategoryStatusClass(percentage) {
+    if (percentage === null || percentage === undefined) return 'unknown';
+    if (percentage >= 90) return 'strong';
+    if (percentage >= 75) return 'watch';
+    if (percentage >= 60) return 'risk';
+    return 'critical';
+  }
+
+  function getCategoryStatusLabel(percentage) {
+    if (percentage === null || percentage === undefined) return 'No scored items';
+    if (percentage >= 90) return 'Strong';
+    if (percentage >= 75) return 'Watch';
+    if (percentage >= 60) return 'Risk';
+    return 'Critical';
+  }
+
+  function buildPortfolioCategorySummary(projects) {
+    const merged = {};
+    const safeProjects = Array.isArray(projects) ? projects : [];
+
+    safeProjects.forEach(project => {
+      const risk = calculateProjectRisk(project);
+      (risk.categories || []).forEach(category => {
+        if (!merged[category.category]) {
+          merged[category.category] = {
+            category: category.category,
+            maxScore: 0,
+            achievedScore: 0,
+            yes: 0,
+            no: 0,
+            na: 0,
+            unanswered: 0,
+            percentage: null
+          };
+        }
+        merged[category.category].maxScore += Number(category.maxScore || 0);
+        merged[category.category].achievedScore += Number(category.achievedScore || 0);
+        merged[category.category].yes += Number(category.yes || 0);
+        merged[category.category].no += Number(category.no || 0);
+        merged[category.category].na += Number(category.na || 0);
+        merged[category.category].unanswered += Number(category.unanswered || 0);
+      });
+    });
+
+    return Object.values(merged)
+      .map(category => ({
+        ...category,
+        percentage: category.maxScore > 0
+          ? Math.round((category.achievedScore / category.maxScore) * 100)
+          : null
+      }))
+      .sort((a, b) => {
+        const av = a.percentage === null ? 999 : a.percentage;
+        const bv = b.percentage === null ? 999 : b.percentage;
+        return av - bv;
+      });
+  }
+
+  function renderCategoryIntelligence(projects) {
+    const heroCard = document.getElementById('complianceHeroCard');
+    if (!heroCard) return;
+
+    const categories = buildPortfolioCategorySummary(projects);
+    let panel = document.getElementById('fireSCategoryIntelligence');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.id = 'fireSCategoryIntelligence';
+      panel.className = 'fire-s-category-intelligence';
+      heroCard.appendChild(panel);
+    }
+
+    const scored = categories.filter(category => category.percentage !== null);
+    if (!scored.length) {
+      panel.innerHTML = `
+        <div class="fire-s-intel-title-row">
+          <div>
+            <strong>Category Intelligence</strong>
+            <span>No scored checklist data yet</span>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const weakest = scored.slice(0, 4);
+    const strongest = scored.slice().reverse()[0];
+    const weakestLabel = weakest[0]?.category || 'Not available';
+
+    panel.innerHTML = `
+      <div class="fire-s-intel-title-row">
+        <div>
+          <strong>Category Intelligence</strong>
+          <span>Weakest area: ${escapeHtml(weakestLabel)}</span>
+        </div>
+        <div class="fire-s-intel-badge">Best: ${escapeHtml(strongest.category)} · ${strongest.percentage}%</div>
+      </div>
+      <div class="fire-s-category-bars">
+        ${weakest.map(category => {
+          const statusClass = getCategoryStatusClass(category.percentage);
+          const statusLabel = getCategoryStatusLabel(category.percentage);
+          const percentage = category.percentage === null ? 0 : category.percentage;
+          return `
+            <div class="fire-s-category-row ${statusClass}">
+              <div class="fire-s-category-row-head">
+                <strong>${escapeHtml(category.category)}</strong>
+                <span>${category.percentage === null ? '--' : category.percentage + '%'} · ${statusLabel}</span>
+              </div>
+              <div class="fire-s-category-bar-track" aria-label="${escapeHtml(category.category)} compliance">
+                <div class="fire-s-category-bar-fill" style="width:${Math.max(0, Math.min(100, percentage))}%"></div>
+              </div>
+              <small>${category.no} open risk item${category.no === 1 ? '' : 's'} · ${category.yes} compliant</small>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   function decorateExecutiveDashboard() {
     const projects = typeof window.fsExecutiveGetProjects === 'function'
       ? window.fsExecutiveGetProjects()
@@ -259,6 +387,8 @@
         <span><strong>Overall Risk</strong> ${portfolio.riskLevel}</span>
         <span><strong>Critical</strong> ${portfolio.criticalFailures}</span>
       `;
+
+      renderCategoryIntelligence(projects);
     }
   }
 
@@ -282,7 +412,8 @@
     calculatePortfolioRisk,
     getHealthRating,
     getRiskLevel,
-    decorateExecutiveDashboard
+    decorateExecutiveDashboard,
+    buildPortfolioCategorySummary
   };
 
   installCompatibilityOverrides();

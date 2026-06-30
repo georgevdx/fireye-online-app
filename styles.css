@@ -11171,3 +11171,121 @@ body > #actionDropdown.action-dropdown button:last-child {
     grid-template-columns: 1fr;
   }
 }
+
+/* FIRE-S Sprint 108.2 - Category Intelligence Dashboard */
+.fire-s-category-intelligence {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.fire-s-intel-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fire-s-intel-title-row strong {
+  display: block;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.fire-s-intel-title-row span {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.fire-s-intel-badge {
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #bbf7d0;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fire-s-category-bars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.fire-s-category-row {
+  padding: 11px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.fire-s-category-row-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.fire-s-category-row-head strong {
+  color: #0f172a;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.fire-s-category-row-head span {
+  color: #334155;
+  font-size: 0.74rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fire-s-category-bar-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.fire-s-category-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #64748b;
+}
+
+.fire-s-category-row.strong .fire-s-category-bar-fill { background: #16a34a; }
+.fire-s-category-row.watch .fire-s-category-bar-fill { background: #f59e0b; }
+.fire-s-category-row.risk .fire-s-category-bar-fill { background: #f97316; }
+.fire-s-category-row.critical .fire-s-category-bar-fill { background: #dc2626; }
+
+.fire-s-category-row small {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .fire-s-intel-title-row,
+  .fire-s-category-row-head {
+    flex-direction: column;
+  }
+
+  .fire-s-category-bars {
+    grid-template-columns: 1fr;
+  }
+
+  .fire-s-intel-badge {
+    white-space: normal;
+  }
+}
