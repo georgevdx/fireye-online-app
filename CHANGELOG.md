@@ -1,7 +1,8 @@
-# Fire-S v104.4 Passport Stability Fix
+# Fire-S v105.0 Premises Workspace Redesign
 
-- Fixes Building Passport jumping/resetting on the page.
-- Removes constant interval re-rendering from Building Passport.
-- Stops repeated DOM moving of the Action Register.
-- Building Passport now updates only when the underlying premises data changes.
-- Keeps duplicate Premises Workspace hidden.
+- Adds `premises-workspace.js`.
+- Creates one unified Premises Workspace.
+- Hides duplicate old Premises Workspace and Building Passport blocks.
+- Adds tabs: Overview, Actions, Equipment, Photos, Reports, History.
+- Moves Action Register into the Actions tab.
+- Keeps existing action creation and resolve functionality.
