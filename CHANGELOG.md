@@ -1,9 +1,6 @@
-# Fire-S v103.2 Auto Action Creation
+# Fire-S v103.3 Action Register
 
-- Added complete `action-engine.js`.
-- Added automatic Action creation when a checklist answer is `No`.
-- Added duplicate protection: one open Action per checklist question.
-- Added automatic Action closure when the answer is changed away from `No`.
-- Actions are saved on the Premises/Project object as `project.actions`.
-- Added `rules.json` smart defaults for priority, responsible person and due date.
-- Dashboard, filters and compact inspection cards are unchanged.
+- Adds action-register.js.
+- Shows Premises Actions below the Premises Workspace header.
+- Filters by Open, Critical, High, Medium, Low and Closed.
+- Dashboard, filters and compact inspection cards unchanged.

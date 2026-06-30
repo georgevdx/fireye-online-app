@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fireyesa-offline-v103-2';
+const CACHE_NAME = 'fireyesa-offline-v103-3';
 
 const APP_SHELL = [
   './',
@@ -6,6 +6,7 @@ const APP_SHELL = [
   './styles.css',
   './app.js',
   './action-engine.js',
+  './action-register.js',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
