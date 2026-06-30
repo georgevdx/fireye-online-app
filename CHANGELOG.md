@@ -4,3 +4,10 @@
 - Permanently writes generated actions to `project.actions`.
 - Replaces the Action Register render source so counters no longer stay at 0.
 - Keeps Update / Resolve buttons for saved actions.
+
+
+## Sprint 109.0 - Multi-Inspection Core Fix
+- Added Start New Inspection workflow for existing premises.
+- Archives previous inspection cycle before resetting answers/photos.
+- Keeps premises and Building Passport information intact.
+- Clears stale checklist DOM fields before opening inspections.

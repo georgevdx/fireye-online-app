@@ -5052,6 +5052,7 @@ clearInputValue('finalComments');
   }
 
   updateDisplay();
+  clearChecklistResponseFields();
 
   showProjectForm();
 }
@@ -10883,6 +10884,14 @@ detailCard.innerHTML = `
         Open Inspection
       </button>
 
+      <button
+        type="button"
+        class="inspection-card-action secondary-action"
+        onclick="startNewInspectionForPremises('${escapeHtml(project.id)}')"
+      >
+        Start New Inspection
+      </button>
+
       ${reviewActionHtml}
 
       <button
@@ -11138,6 +11147,117 @@ function resolveProjectOpenIdentifier(projectIdentifier) {
   return null;
 }
 
+
+function clearChecklistResponseFields() {
+  document.querySelectorAll('.answer-select').forEach(field => {
+    field.value = '';
+  });
+
+  document.querySelectorAll('[id^="note_"]').forEach(field => {
+    field.value = '';
+  });
+
+  document.querySelectorAll('.expiry-date').forEach(field => {
+    field.value = '';
+  });
+}
+
+function startNewInspectionForPremises(projectId) {
+  if (!canCreateInspection()) {
+    alert(
+      'Your company access does not allow new inspections. Please contact your company admin or Fire-S support.'
+    );
+    return;
+  }
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) {
+    alert('Could not find this premises. Please refresh and try again.');
+    return;
+  }
+
+  const existing = projects[index];
+  const hasCurrentInspectionData =
+    (existing.answers || []).length > 0 ||
+    (existing.photos || []).length > 0 ||
+    existing.finalComments ||
+    existing.followUpNotes ||
+    existing.completedAt;
+
+  const confirmed = confirm(
+    'Start a new inspection for this existing premises?\n\nThe Building Passport and premises details will remain. Previous checklist answers, photos and action items will be moved to Inspection History and the new inspection will start blank.'
+  );
+
+  if (!confirmed) return;
+
+  const inspectionHistory = hasCurrentInspectionData
+    ? archiveCurrentInspectionCycle(existing, 'new_inspection_started')
+    : (existing.inspectionHistory || []);
+
+  const newInspectionDate = new Date().toISOString().slice(0, 10);
+
+  projects[index] = {
+    ...existing,
+
+    inspectionHistory,
+
+    inspectionNumber: generateInspectionNumber(),
+    inspectionDate: newInspectionDate,
+    completedAt: null,
+    archiveStatus: '',
+    archivedAt: null,
+    scheduledDate: '',
+    scheduledStatus: 'in_progress',
+    scheduleFreshInspection: false,
+    scheduledReason: '',
+    scheduleType: 'new_inspection',
+    scheduledNote: '',
+
+    answers: [],
+    photos: [],
+    finalComments: '',
+
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+
+    repeatFindings: [],
+    followUpFindingMode: false,
+    followUpFindingIndexes: [],
+    followUpSourceInspectionNumber: '',
+
+    currentInspectionStatus: 'Draft',
+    currentInspectionStartedAt: new Date().toISOString(),
+
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+
+  setProjects(projects);
+  currentProjectId = projects[index].id;
+  currentProject = projects[index];
+  currentPhotos = [];
+
+  renderProjectsList();
+
+  if (navigator.onLine) {
+    uploadSingleInspection(projects[index]).catch(error => {
+      console.warn('New inspection upload failed:', error);
+    });
+  }
+
+  openProject(projects[index].id, '');
+
+  const saveMessage = document.getElementById('saveMessage');
+  if (saveMessage) {
+    saveMessage.textContent =
+      'New inspection started. Premises details kept; checklist answers are blank.';
+  }
+}
+
 function openProject(projectId, focusMode) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
@@ -11293,6 +11413,7 @@ getEl('finalComments').value = project.finalComments || '';
   currentPhotos = project.photos || [];
   renderPhotos();
   updateDisplay();
+  clearChecklistResponseFields();
 
   if (project.answers) {
    project.answers.forEach(item => {
@@ -15963,6 +16084,7 @@ function renderSiteHistory(project) {
   form.prepend(panel);
 }
 loadData();
+window.startNewInspectionForPremises = startNewInspectionForPremises;
 window.openProject = openProject;
 window.viewArchivedInspection = viewArchivedInspection;
 window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
