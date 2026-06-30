@@ -11,3 +11,12 @@
 - Archives previous inspection cycle before resetting answers/photos.
 - Keeps premises and Building Passport information intact.
 - Clears stale checklist DOM fields before opening inspections.
+
+
+## Sprint 110.0 - AI Assist Foundation
+
+- Added offline AI Assist panel.
+- Added draft executive summary generation.
+- Added rule-based recommended next actions.
+- Added priority guidance for open No-items.
+- Added weakest category and trend signal support.
