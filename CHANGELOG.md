@@ -1,6 +1,8 @@
-# Fire-S v103.5 Action Dashboard
+# Fire-S v104.0 Building Passport Foundation
 
-- Adds Action Centre summary to the Home Command Centre.
-- Shows Open, Critical, High, Overdue and Closed actions.
-- Uses actions created and managed by Sprint 103.2 to 103.4.
-- Does not change inspection cards, filters, or report layout.
+- Added `building-passport.js`.
+- Adds Building Passport Overview inside each open Premises.
+- Shows Compliance, Last Inspection, Next Inspection, Open Actions, Critical/High, Findings, Photos and History.
+- Adds Overview tabs that scroll to Actions, Inspection, Photos and Reports.
+- Adds Premises Summary and Building Health sections.
+- Built directly from uploaded GitHub Master ZIP.
