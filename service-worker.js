@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-0-3-inspection-workflow-gate';
+const CACHE_NAME = 'fire-s-rc-1-0-4-workflow-gate-no-data-loss';
 
 const APP_SHELL = [
   './',

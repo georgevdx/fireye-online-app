@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.0.3 - Inspection Workflow Gate';
+const APP_VERSION = 'RC 1.0.4 - Workflow Gate No Data Loss';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -200,8 +200,19 @@ function clearInputValue(id) {
 }
 
 let autoSaveTimer = null;
+let workflowGateNoWriteLock = false;
+
+function setWorkflowGateNoWriteLock(isLocked) {
+  workflowGateNoWriteLock = Boolean(isLocked);
+  window.workflowGateNoWriteLock = workflowGateNoWriteLock;
+}
 
 function scheduleAutoSave() {
+  if (workflowGateNoWriteLock) {
+    clearTimeout(autoSaveTimer);
+    return;
+  }
+
   clearTimeout(autoSaveTimer);
   updateProjectReadinessPanel();
 
@@ -211,6 +222,9 @@ function scheduleAutoSave() {
 }
 
 function autoSaveProject() {
+  if (workflowGateNoWriteLock) {
+    return;
+  }
   
   const inspectorNameField = document.getElementById('inspectorName');
   const occupancyField = document.getElementById('occupancySelect');
@@ -11311,6 +11325,45 @@ function ensureInspectionOpenGateStyles() {
   document.head.appendChild(style);
 }
 
+
+function cloneInspectionProjectForWorkflow(project) {
+  return JSON.parse(JSON.stringify(project || {}));
+}
+
+function restoreWorkflowProjectSnapshot(projectId, snapshot) {
+  if (!projectId || !snapshot) return;
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) return;
+
+  projects[index] = cloneInspectionProjectForWorkflow(snapshot);
+  setProjects(projects);
+
+  if (currentProjectId === projectId) {
+    currentProject = projects[index];
+    currentPhotos = projects[index].photos || [];
+    if (typeof renderPhotos === 'function') {
+      renderPhotos();
+    }
+  }
+}
+
+function runWorkflowReadOnlyAction(action, unlockDelay = 1200) {
+  clearTimeout(autoSaveTimer);
+  setWorkflowGateNoWriteLock(true);
+
+  try {
+    action();
+  } finally {
+    window.setTimeout(() => {
+      clearTimeout(autoSaveTimer);
+      setWorkflowGateNoWriteLock(false);
+    }, unlockDelay);
+  }
+}
+
 function closeInspectionOpenGate() {
   const existing = document.getElementById('inspectionOpenGateBackdrop');
   if (existing) existing.remove();
@@ -11401,7 +11454,7 @@ function showInspectionOpenGate(projectId, focusMode) {
       </div>
 
       <div class="inspection-open-gate-safe-note">
-        <strong>Safety note:</strong> No data will be deleted from this screen. Delete remains locked until it is rebuilt as a separate tested function.
+        <strong>Safety note:</strong> No data will be deleted or cleared from this screen. History and Cancel are read-only actions. Only Start New Inspection can create a blank inspection, and only after confirmation.
       </div>
 
       <div class="inspection-open-gate-actions">
@@ -11441,8 +11494,17 @@ function showInspectionOpenGate(projectId, focusMode) {
   const continueBtn = document.getElementById('openGateContinueBtn');
   if (continueBtn) {
     continueBtn.addEventListener('click', () => {
+      const snapshot = cloneInspectionProjectForWorkflow(
+        getProjects().find(item => item.id === project.id) || project
+      );
+
       closeInspectionOpenGate();
       openProject(project.id, focusMode, { bypassOpenGate: true });
+
+      // Continue/Edit is the only editable path. It must preserve the current
+      // inspection exactly as stored before opening. This protects photos and
+      // answers from UI reset code during the open transition.
+      restoreWorkflowProjectSnapshot(project.id, snapshot);
     });
   }
 
@@ -11467,13 +11529,23 @@ function showInspectionOpenGate(projectId, focusMode) {
   const historyBtn = document.getElementById('openGateHistoryBtn');
   if (historyBtn) {
     historyBtn.addEventListener('click', () => {
+      const snapshot = cloneInspectionProjectForWorkflow(
+        getProjects().find(item => item.id === project.id) || project
+      );
+
       closeInspectionOpenGate();
-      openProject(project.id, focusMode, { bypassOpenGate: true });
-      setTimeout(() => {
-        if (typeof openInspectionArchiveFromMore === 'function') {
-          openInspectionArchiveFromMore();
-        }
-      }, 250);
+
+      runWorkflowReadOnlyAction(() => {
+        openProject(project.id, focusMode, { bypassOpenGate: true });
+
+        window.setTimeout(() => {
+          restoreWorkflowProjectSnapshot(project.id, snapshot);
+
+          if (typeof openInspectionArchiveFromMore === 'function') {
+            openInspectionArchiveFromMore();
+          }
+        }, 250);
+      }, 1600);
     });
   }
 
