@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-0-2-open-gate-polish';
+const CACHE_NAME = 'fire-s-rc-1-0-3-inspection-workflow-gate';
 
 const APP_SHELL = [
   './',
