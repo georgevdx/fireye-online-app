@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v95-card-keyword-mobile-status-fix-v1-1';
+const APP_VERSION = 'RC 1.0.1 - Inspection Open Gate';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -11138,7 +11138,312 @@ function resolveProjectOpenIdentifier(projectIdentifier) {
   return null;
 }
 
-function openProject(projectId, focusMode) {
+
+// =====================================================
+// RC 1.0.1 - INSPECTION OPEN GATE
+// Purpose: when an existing inspection is opened, Fire-S asks the user
+// whether to archive the current cycle as history or continue editing.
+// Delete remains disabled until a safe delete module is rebuilt.
+// =====================================================
+function hasActiveInspectionDataForOpenGate(project) {
+  if (!project) return false;
+
+  const answers = Array.isArray(project.answers) ? project.answers : [];
+  const hasAnsweredQa = answers.some(answer =>
+    String(answer?.answer || '').trim() ||
+    String(answer?.note || '').trim() ||
+    String(answer?.expiryDate || '').trim()
+  );
+
+  return Boolean(
+    hasAnsweredQa ||
+    (Array.isArray(project.photos) && project.photos.length > 0) ||
+    String(project.finalComments || '').trim() ||
+    String(project.followUpNotes || '').trim() ||
+    String(project.inspectionNumber || '').trim() ||
+    String(project.completedAt || '').trim() ||
+    String(project.lastSaved || '').trim()
+  );
+}
+
+function shouldShowInspectionOpenGate(project, focusMode) {
+  if (!project) return false;
+
+  // Specialist jump modes must open directly so Findings / Dashboard routing stays usable.
+  if (focusMode) return false;
+
+  // Scheduled fresh inspections already have a specific workflow.
+  if (project.scheduleFreshInspection === true) return false;
+
+  return hasActiveInspectionDataForOpenGate(project);
+}
+
+function ensureInspectionOpenGateStyles() {
+  if (document.getElementById('inspectionOpenGateStyles')) return;
+
+  const style = document.createElement('style');
+  style.id = 'inspectionOpenGateStyles';
+  style.textContent = `
+    .inspection-open-gate-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 20, 20, 0.58);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50000;
+    }
+
+    .inspection-open-gate-modal {
+      width: min(560px, 100%);
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 24px 70px rgba(0,0,0,0.35);
+      padding: 22px;
+      color: #222222;
+    }
+
+    .inspection-open-gate-kicker {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #b71c1c;
+      margin-bottom: 6px;
+    }
+
+    .inspection-open-gate-modal h3 {
+      margin: 0 0 8px;
+      font-size: 1.25rem;
+    }
+
+    .inspection-open-gate-modal p {
+      margin: 0 0 14px;
+      color: #555555;
+      line-height: 1.45;
+    }
+
+    .inspection-open-gate-summary {
+      background: #f7f7f7;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin: 12px 0 16px;
+      font-size: 0.92rem;
+    }
+
+    .inspection-open-gate-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .inspection-open-gate-actions button {
+      width: 100%;
+      text-align: left;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 13px 14px;
+      background: #ffffff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .inspection-open-gate-actions button small {
+      display: block;
+      margin-top: 4px;
+      font-weight: 400;
+      color: #666666;
+      line-height: 1.35;
+    }
+
+    .inspection-open-gate-actions .primary-choice {
+      background: #b71c1c;
+      border-color: #b71c1c;
+      color: #ffffff;
+    }
+
+    .inspection-open-gate-actions .primary-choice small {
+      color: rgba(255,255,255,0.88);
+    }
+
+    .inspection-open-gate-actions .danger-choice[disabled] {
+      opacity: 0.55;
+      cursor: not-allowed;
+      background: #fafafa;
+    }
+
+    .inspection-open-gate-footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+
+    .inspection-open-gate-footer button {
+      border: 0;
+      background: transparent;
+      color: #666666;
+      cursor: pointer;
+      padding: 8px;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+function closeInspectionOpenGate() {
+  const existing = document.getElementById('inspectionOpenGateBackdrop');
+  if (existing) existing.remove();
+}
+
+function archiveProjectCurrentInspectionAndStartBlank(projectId) {
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) {
+    alert('Inspection could not be found. Please refresh and try again.');
+    return false;
+  }
+
+  const original = projects[index];
+  const inspectionHistory = archiveCurrentInspectionCycle(
+    original,
+    'manual_archive_from_open_gate'
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  projects[index] = {
+    ...original,
+    inspectionHistory,
+    answers: [],
+    photos: [],
+    finalComments: '',
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+    recurringCycleEnabled: false,
+    recurringCycleNumber: '',
+    recurringCycleUnit: '',
+    recurringCycleNotes: '',
+    completedAt: null,
+    archiveStatus: '',
+    archivedAt: null,
+    scheduledStatus: 'in_progress',
+    scheduleFreshInspection: false,
+    inspectionNumber: generateInspectionNumber(),
+    inspectionDate: today,
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+
+  setProjects(projects);
+  return true;
+}
+
+function showInspectionOpenGate(projectId, focusMode) {
+  const project = resolveProjectOpenIdentifier(projectId);
+  if (!project) return;
+
+  ensureInspectionOpenGateStyles();
+  closeInspectionOpenGate();
+
+  const historyCount = Array.isArray(project.inspectionHistory)
+    ? project.inspectionHistory.length
+    : 0;
+
+  const answersCount = Array.isArray(project.answers)
+    ? project.answers.filter(answer => String(answer?.answer || '').trim()).length
+    : 0;
+
+  const photosCount = Array.isArray(project.photos)
+    ? project.photos.length
+    : 0;
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'inspectionOpenGateBackdrop';
+  backdrop.className = 'inspection-open-gate-backdrop';
+
+  backdrop.innerHTML = `
+    <div class="inspection-open-gate-modal" role="dialog" aria-modal="true" aria-labelledby="inspectionOpenGateTitle">
+      <div class="inspection-open-gate-kicker">Inspection Open Choice</div>
+      <h3 id="inspectionOpenGateTitle">Previous inspection found</h3>
+      <p>
+        Choose how Fire-S must handle this inspection before it opens.
+        This prevents old inspection data from being mixed with a new cycle.
+      </p>
+
+      <div class="inspection-open-gate-summary">
+        <strong>${escapeHtml(project.projectName || project.siteName || 'Selected premises')}</strong><br>
+        Inspection: ${escapeHtml(project.inspectionNumber || 'Not numbered')} ·
+        Answers: ${answersCount} · Photos: ${photosCount} · History: ${historyCount}
+      </div>
+
+      <div class="inspection-open-gate-actions">
+        <button type="button" class="primary-choice" id="openGateArchiveBtn">
+          1. Archive as History + Start New Inspection
+          <small>Moves the current inspection cycle into history and opens a clean new inspection for this same premises.</small>
+        </button>
+
+        <button type="button" id="openGateContinueBtn">
+          2. Continue / Edit Current Inspection
+          <small>Opens this inspection exactly as it is now, with Q&amp;A, photos, comments and actions still editable.</small>
+        </button>
+
+        <button type="button" class="danger-choice" id="openGateDeleteBtn" disabled>
+          3. Delete Inspection — Temporarily Disabled
+          <small>Disabled for data safety until Delete is rebuilt as a separate, tested module.</small>
+        </button>
+      </div>
+
+      <div class="inspection-open-gate-footer">
+        <button type="button" id="openGateCancelBtn">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(backdrop);
+
+  const continueBtn = document.getElementById('openGateContinueBtn');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => {
+      closeInspectionOpenGate();
+      openProject(project.id, focusMode, { bypassOpenGate: true });
+    });
+  }
+
+  const archiveBtn = document.getElementById('openGateArchiveBtn');
+  if (archiveBtn) {
+    archiveBtn.addEventListener('click', () => {
+      const confirmed = confirm(
+        'Archive the current inspection as history and start a clean new inspection for this same premises?'
+      );
+
+      if (!confirmed) return;
+
+      const archived = archiveProjectCurrentInspectionAndStartBlank(project.id);
+      if (!archived) return;
+
+      closeInspectionOpenGate();
+      renderProjectsList();
+      openProject(project.id, focusMode, { bypassOpenGate: true });
+    });
+  }
+
+  const cancelBtn = document.getElementById('openGateCancelBtn');
+  if (cancelBtn) {
+    cancelBtn.addEventListener('click', closeInspectionOpenGate);
+  }
+
+  backdrop.addEventListener('click', event => {
+    if (event.target === backdrop) {
+      closeInspectionOpenGate();
+    }
+  });
+}
+
+function openProject(projectId, focusMode, options = {}) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
   const projects = getProjects();
@@ -11149,7 +11454,15 @@ function openProject(projectId, focusMode) {
     return;
   }
 
+  if (!options.bypassOpenGate && shouldShowInspectionOpenGate(project, focusMode)) {
+    showInspectionOpenGate(project.id, focusMode);
+    return;
+  }
+
   currentProjectId = project.id;
+  currentProject = null;
+  currentPhotos = [];
+  archivedReportContext = null;
   followUpFindingModeActive = false;
 followUpFindingNavIndexes = [];
 followUpFindingNavPosition = 0;
