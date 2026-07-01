@@ -6,7 +6,7 @@
   <title>Fire-S Fire Safety App</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=120-recovery-import-integrity">
+  <link rel="stylesheet" href="styles.css?v=103-4-resolve-actions">
   <link rel="icon" href="data:,">
 </head>
 <body>
@@ -628,10 +628,6 @@
       Photo Evidence
     </button>
 
-    <button type="button" id="analyticsMenuBtn">
-      Analytics
-    </button>
-
     <button type="button" data-section-target="inspectorCommentsCard">
       Inspector Comments
     </button>
@@ -772,10 +768,6 @@
     Finish
   </button>
 
-  <button id="analyticsBtn" type="button" class="secondary-btn">
-    Analytics
-  </button>
-
   <div class="action-menu">
 
     <button id="actionMenuBtn" type="button">
@@ -815,23 +807,6 @@
 </div>
 
         <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
-      </section>
-
-      <section class="card analytics-section" id="analyticsSection" style="display:none;">
-        <div class="analytics-header">
-          <div>
-            <div class="analytics-kicker">Management View</div>
-            <h2>Analytics</h2>
-            <p>Statistical, trend and executive data is kept here so the inspection pages stay clean.</p>
-          </div>
-          <div class="analytics-header-actions">
-            <button id="refreshAnalyticsBtn" type="button">Refresh</button>
-            <button id="closeAnalyticsBtn" type="button" class="secondary-btn">Close</button>
-          </div>
-        </div>
-        <div id="analyticsContent" class="analytics-content">
-          Open an inspection and press Refresh to view Analytics.
-        </div>
       </section>
 
       <div class="card" id="requirementsSection">
@@ -976,29 +951,13 @@
   </div>
 
   <script src="supabase-js-v2.js?v=1"></script>
-  <script src="action-engine.js?v=103-5-action-dashboard"></script>
-  <script src="action-register.js?v=103-5-action-dashboard"></script>
-  <script src="building-passport.js?v=104-4-passport-stability-fix"></script>
-  <script src="building-passport-assets.js"></script>
-  <script src="passport-consolidation.js?v=104-4-passport-stability-fix"></script>
-  <script src="premises-workspace.js?v=105-0-premises-workspace-redesign"></script>
-  <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
-  <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
-  <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
-  <script src="app.js?v=120-recovery-import-integrity"></script>
-  <script src="risk-engine.js?v=108-2-category-intelligence"></script>
-  <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
-  <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>
-  <script src="sprint-109-2-comparison.js?v=109-2-inspection-comparison"></script>
-  <script src="sprint-109-3-trends.js?v=109-3-trend-analytics"></script>
-  <script src="sprint-110-0-ai-assist.js?v=110-0-ai-assist-foundation"></script>
-  <script src="sprint-110-1-dashboard-data-consolidation.js?v=110-1-dashboard-data-consolidation"></script>
-  <script src="sprint-111-0-analytics-tab.js?v=111-0-analytics-tab"></script>
-  <script src="sprint-111-3-analytics-isolation.js?v=111-3-analytics-isolation"></script>
+  <script src="action-engine.js?v=103-4-resolve-actions"></script>
+  <script src="action-register.js?v=103-4-resolve-actions"></script>
+  <script src="app.js?v=95-card-keyword-mobile-status-fix-v1-1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=120')
+        navigator.serviceWorker.register('./service-worker.js')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })

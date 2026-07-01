@@ -1,19 +1,80 @@
-const FIRE_S_CACHE = 'fire-s-v120-recovery-import-integrity';
+const CACHE_NAME = 'fireyesa-offline-v103-4';
+
+const APP_SHELL = [
+  './',
+  './index.html',
+  './styles.css',
+  './app.js',
+  './action-engine.js',
+  './action-register.js',
+  './occupancies.json',
+  './requirements.json',
+  './checklists.json',
+  './templates.json',
+  './rules.json',
+  './manifest.json',
+  './icon-192.png',
+  './supabase-js-v2.js'
+];
+
 self.addEventListener('install', event => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
+      .catch(error => {
+        console.warn('Service worker install cache failed:', error);
+      })
+  );
 });
+
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(key => key !== FIRE_S_CACHE ? caches.delete(key) : Promise.resolve())))
+    caches.keys()
+      .then(cacheNames =>
+        Promise.all(
+          cacheNames
+            .filter(cacheName => cacheName !== CACHE_NAME)
+            .map(cacheName => caches.delete(cacheName))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
+
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (url.pathname.endsWith('.js') || url.pathname.endsWith('.css') || url.pathname.endsWith('.html')) {
-    event.respondWith(fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request)));
-    return;
-  }
-  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
+  const request = event.request;
+
+  if (request.method !== 'GET') return;
+
+  event.respondWith(
+    caches.match(request)
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+
+        return fetch(request)
+          .then(networkResponse => {
+            const responseClone = networkResponse.clone();
+
+            caches.open(CACHE_NAME)
+              .then(cache => {
+                cache.put(request, responseClone);
+              })
+              .catch(error => {
+                console.warn('Runtime cache failed:', error);
+              });
+
+            return networkResponse;
+          })
+          .catch(() => {
+            if (request.mode === 'navigate') {
+              return caches.match('./index.html');
+            }
+
+            return caches.match(request);
+          });
+      })
+  );
 });

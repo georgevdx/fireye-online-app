@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'v120-recovery-import-integrity';
+const APP_VERSION = 'v103.4-resolve-actions';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -2323,39 +2323,17 @@ if (!confirmed) return false;
 
     exportEmergencyBackup(`import-${sourceLabel}`);
 
-    /*
-      RC v120 Recovery Integrity
-      A backup restore must restore the backup exactly as selected by the user.
-      Do NOT apply the deleted-inspection register during import, because a previous
-      faulty delete may have marked a valid inspection as deleted. Clear that register
-      first, then write every project from the backup.
-    */
-    localStorage.removeItem('fireyeDeletedProjectIds');
-
-    const importedProjects = Array.isArray(backup.projects)
-      ? backup.projects.filter(project => project && project.id)
-      : [];
-
-    const expectedImportCount = backup.projects.length;
+    const importedProjects = filterDeletedProjects(backup.projects);
 
     setProjects(importedProjects);
     currentProjectId = null;
-    currentProjectSummaryId = null;
-    archivedReportContext = null;
     currentPhotos = [];
-    followUpFindingModeActive = false;
-    followUpFindingNavIndexes = [];
-    followUpFindingNavPosition = 0;
 
     renderProjectsList();
     showProjectList();
-    updateAppInfo();
-    if (typeof renderHomeCommandCentre === 'function') {
-      renderHomeCommandCentre();
-    }
 
     const message =
-      `Backup imported successfully (${importedProjects.length} of ${expectedImportCount} inspection${expectedImportCount === 1 ? '' : 's'} restored). Deleted-inspection register cleared.`;
+      `Backup imported successfully (${importedProjects.length} inspection${importedProjects.length === 1 ? '' : 's'}).`;
     const saveMessage = document.getElementById('saveMessage');
     if (saveMessage) {
       saveMessage.textContent = message;
@@ -2365,8 +2343,6 @@ if (!confirmed) return false;
     if (syncStatus) {
       syncStatus.textContent = message;
     }
-
-    alert(message);
 
     return true;
   } catch (error) {
@@ -5076,7 +5052,6 @@ clearInputValue('finalComments');
   }
 
   updateDisplay();
-  clearChecklistResponseFields();
 
   showProjectForm();
 }
@@ -10908,14 +10883,6 @@ detailCard.innerHTML = `
         Open Inspection
       </button>
 
-      <button
-        type="button"
-        class="inspection-card-action secondary-action"
-        onclick="startNewInspectionForPremises('${escapeHtml(project.id)}')"
-      >
-        Start New Inspection
-      </button>
-
       ${reviewActionHtml}
 
       <button
@@ -11171,117 +11138,6 @@ function resolveProjectOpenIdentifier(projectIdentifier) {
   return null;
 }
 
-
-function clearChecklistResponseFields() {
-  document.querySelectorAll('.answer-select').forEach(field => {
-    field.value = '';
-  });
-
-  document.querySelectorAll('[id^="note_"]').forEach(field => {
-    field.value = '';
-  });
-
-  document.querySelectorAll('.expiry-date').forEach(field => {
-    field.value = '';
-  });
-}
-
-function startNewInspectionForPremises(projectId) {
-  if (!canCreateInspection()) {
-    alert(
-      'Your company access does not allow new inspections. Please contact your company admin or Fire-S support.'
-    );
-    return;
-  }
-
-  const projects = getProjects();
-  const index = projects.findIndex(project => project.id === projectId);
-
-  if (index === -1) {
-    alert('Could not find this premises. Please refresh and try again.');
-    return;
-  }
-
-  const existing = projects[index];
-  const hasCurrentInspectionData =
-    (existing.answers || []).length > 0 ||
-    (existing.photos || []).length > 0 ||
-    existing.finalComments ||
-    existing.followUpNotes ||
-    existing.completedAt;
-
-  const confirmed = confirm(
-    'Start a new inspection for this existing premises?\n\nThe Building Passport and premises details will remain. Previous checklist answers, photos and action items will be moved to Inspection History and the new inspection will start blank.'
-  );
-
-  if (!confirmed) return;
-
-  const inspectionHistory = hasCurrentInspectionData
-    ? archiveCurrentInspectionCycle(existing, 'new_inspection_started')
-    : (existing.inspectionHistory || []);
-
-  const newInspectionDate = new Date().toISOString().slice(0, 10);
-
-  projects[index] = {
-    ...existing,
-
-    inspectionHistory,
-
-    inspectionNumber: generateInspectionNumber(),
-    inspectionDate: newInspectionDate,
-    completedAt: null,
-    archiveStatus: '',
-    archivedAt: null,
-    scheduledDate: '',
-    scheduledStatus: 'in_progress',
-    scheduleFreshInspection: false,
-    scheduledReason: '',
-    scheduleType: 'new_inspection',
-    scheduledNote: '',
-
-    answers: [],
-    photos: [],
-    finalComments: '',
-
-    followUpRequired: 'No',
-    followUpDate: '',
-    followUpNotes: '',
-
-    repeatFindings: [],
-    followUpFindingMode: false,
-    followUpFindingIndexes: [],
-    followUpSourceInspectionNumber: '',
-
-    currentInspectionStatus: 'Draft',
-    currentInspectionStartedAt: new Date().toISOString(),
-
-    syncPending: true,
-    syncError: false,
-    lastSaved: new Date().toISOString()
-  };
-
-  setProjects(projects);
-  currentProjectId = projects[index].id;
-  currentProject = projects[index];
-  currentPhotos = [];
-
-  renderProjectsList();
-
-  if (navigator.onLine) {
-    uploadSingleInspection(projects[index]).catch(error => {
-      console.warn('New inspection upload failed:', error);
-    });
-  }
-
-  openProject(projects[index].id, '');
-
-  const saveMessage = document.getElementById('saveMessage');
-  if (saveMessage) {
-    saveMessage.textContent =
-      'New inspection started. Premises details kept; checklist answers are blank.';
-  }
-}
-
 function openProject(projectId, focusMode) {
   closeFinishSummaryBanner();
   currentProjectSummaryId = null;
@@ -11437,7 +11293,6 @@ getEl('finalComments').value = project.finalComments || '';
   currentPhotos = project.photos || [];
   renderPhotos();
   updateDisplay();
-  clearChecklistResponseFields();
 
   if (project.answers) {
    project.answers.forEach(item => {
@@ -16108,7 +15963,6 @@ function renderSiteHistory(project) {
   form.prepend(panel);
 }
 loadData();
-window.startNewInspectionForPremises = startNewInspectionForPremises;
 window.openProject = openProject;
 window.viewArchivedInspection = viewArchivedInspection;
 window.closeArchivedInspectionDetail = closeArchivedInspectionDetail;
@@ -20711,195 +20565,3 @@ function fireSInitAutoActionCreation1032() {
 
 setTimeout(fireSInitAutoActionCreation1032, 500);
 setInterval(fireSBindAutoActionCreation1032, 1500);
-
-
-/* FIRE-S Sprint 103.5 Action Dashboard
-   Adds action intelligence to the existing Home Command Centre.
-   No card/filter/layout rollback.
-*/
-
-function fireSGetAllActions1035() {
-  const projects =
-    typeof getCommandCentreProjects === 'function'
-      ? getCommandCentreProjects()
-      : (typeof getProjects === 'function' ? getProjects() : []);
-
-  const actions = [];
-
-  projects.forEach(project => {
-    (project.actions || []).forEach(action => {
-      actions.push({
-        ...action,
-        projectId: project.id,
-        projectName:
-          project.projectName ||
-          [project.organisationName, project.siteName].filter(Boolean).join(' ') ||
-          project.siteName ||
-          'Untitled Premises'
-      });
-    });
-  });
-
-  return actions;
-}
-
-function fireSIsActionOpen1035(action) {
-  return String(action?.status || '').toLowerCase() !== 'closed';
-}
-
-function fireSIsActionOverdue1035(action) {
-  if (!fireSIsActionOpen1035(action)) return false;
-  if (!action?.dueDate) return false;
-
-  const due =
-    String(action.dueDate).slice(0, 10);
-
-  const today =
-    new Date().toISOString().slice(0, 10);
-
-  return due < today;
-}
-
-function fireSActionStats1035() {
-  const all =
-    fireSGetAllActions1035();
-
-  const open =
-    all.filter(fireSIsActionOpen1035);
-
-  return {
-    total: all.length,
-    open: open.length,
-    critical: open.filter(action => action.priority === 'Critical').length,
-    high: open.filter(action => action.priority === 'High').length,
-    overdue: open.filter(fireSIsActionOverdue1035).length,
-    closed: all.filter(action => !fireSIsActionOpen1035(action)).length
-  };
-}
-
-function fireSRenderActionDashboard1035() {
-  const centre =
-    document.getElementById('mainCommandCentre');
-
-  if (!centre) return;
-
-  let panel =
-    document.getElementById('fireSActionDashboardV1035');
-
-  if (!panel) {
-    const statsGrid =
-      centre.querySelector('.main-command-stats');
-
-    if (!statsGrid) return;
-
-    statsGrid.insertAdjacentHTML('afterend', `
-      <section id="fireSActionDashboardV1035" class="fire-s-action-dashboard-v1035">
-        <div class="fire-s-action-dashboard-head-v1035">
-          <div>
-            <span>Action Centre</span>
-            <strong>Outstanding Compliance Actions</strong>
-          </div>
-          <button type="button" id="fireSOpenActionCentreBtn1035">Open Actions</button>
-        </div>
-
-        <div class="fire-s-action-dashboard-grid-v1035">
-          <button type="button" data-action-dash-filter="open">
-            <span id="fireSDashOpenActions1035">0</span>
-            <small>Open</small>
-          </button>
-          <button type="button" data-action-dash-filter="critical">
-            <span id="fireSDashCriticalActions1035">0</span>
-            <small>Critical</small>
-          </button>
-          <button type="button" data-action-dash-filter="high">
-            <span id="fireSDashHighActions1035">0</span>
-            <small>High</small>
-          </button>
-          <button type="button" data-action-dash-filter="overdue">
-            <span id="fireSDashOverdueActions1035">0</span>
-            <small>Overdue</small>
-          </button>
-          <button type="button" data-action-dash-filter="closed">
-            <span id="fireSDashClosedActions1035">0</span>
-            <small>Closed</small>
-          </button>
-        </div>
-      </section>
-    `);
-
-    document
-      .getElementById('fireSOpenActionCentreBtn1035')
-      ?.addEventListener('click', () => {
-        if (typeof showProjectList === 'function') {
-          showProjectList();
-        }
-
-        setTimeout(() => {
-          const section =
-            document.getElementById('projectListSection');
-
-          if (section) {
-            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, 150);
-      });
-
-    document
-      .querySelectorAll('[data-action-dash-filter]')
-      .forEach(button => {
-        button.addEventListener('click', () => {
-          if (typeof showProjectList === 'function') {
-            showProjectList();
-          }
-
-          if (button.dataset.actionDashFilter === 'overdue') {
-            currentFilter = 'overdue';
-          } else if (button.dataset.actionDashFilter === 'open') {
-            currentFilter = 'inspection-attention';
-          }
-
-          currentProjectPage = 1;
-
-          if (typeof renderProjectsList === 'function') {
-            renderProjectsList();
-          }
-
-          setTimeout(() => {
-            document.getElementById('projectListSection')
-              ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 150);
-        });
-      });
-  }
-
-  const stats =
-    fireSActionStats1035();
-
-  const openEl = document.getElementById('fireSDashOpenActions1035');
-  const criticalEl = document.getElementById('fireSDashCriticalActions1035');
-  const highEl = document.getElementById('fireSDashHighActions1035');
-  const overdueEl = document.getElementById('fireSDashOverdueActions1035');
-  const closedEl = document.getElementById('fireSDashClosedActions1035');
-
-  if (openEl) openEl.textContent = stats.open;
-  if (criticalEl) criticalEl.textContent = stats.critical;
-  if (highEl) highEl.textContent = stats.high;
-  if (overdueEl) overdueEl.textContent = stats.overdue;
-  if (closedEl) closedEl.textContent = stats.closed;
-}
-
-if (typeof renderHomeCommandCentre === 'function' && !window.fireSOriginalRenderHomeCommandCentre1035) {
-  window.fireSOriginalRenderHomeCommandCentre1035 = renderHomeCommandCentre;
-
-  renderHomeCommandCentre = function fireSRenderHomeCommandCentreWithActions1035() {
-    const result =
-      window.fireSOriginalRenderHomeCommandCentre1035.apply(this, arguments);
-
-    setTimeout(fireSRenderActionDashboard1035, 80);
-
-    return result;
-  };
-}
-
-setTimeout(fireSRenderActionDashboard1035, 700);
-setInterval(fireSRenderActionDashboard1035, 3000);
