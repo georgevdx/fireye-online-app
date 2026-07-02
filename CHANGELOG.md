@@ -1,19 +1,12 @@
-# Fire-S RC 1.1.17 - Smart Action Engine Module
+# Fire-S RC 1.1.17A - Live Inspection Engine Hotfix
 
-## Added
-- Smart Action Engine panel generated from current NO answers.
-- Single action source: `project.actions[]`.
-- Auto category, priority, due date and responsible suggestion.
-- Action cards grouped with category chips.
+## Fixed
+- Yes -> No now creates/refreshes the generated Action Item immediately.
+- No -> Yes now removes the generated Action Item immediately.
+- Action Register counters refresh from the same live answers cycle.
+- Prevents stale generated `project.actions[]` entries from remaining after answers change.
+- Version/cache bumped to RC 1.1.17A.
 
-## Stability
-- Does not delete existing actions.
-- Merges generated actions with existing `project.actions[]`.
-- Cache/version bumped to RC 1.1.17.
-
-## Files
-- index.html
-- app.js
-- styles.css
-- service-worker.js
-- CHANGELOG.md
+## Scope
+- No new features.
+- Stability hotfix only.

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-17-smart-action-engine';
+const CACHE_NAME = 'fire-s-rc-1-1-17A-live-inspection-engine-hotfix';
 
 const APP_SHELL = [
   './',

@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.17 - Smart Action Engine Module';
+const APP_VERSION = 'RC 1.1.17A - Live Inspection Engine Hotfix';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -24293,4 +24293,274 @@ if (!window.fireSMobileSmartCardsApplied) {
   document.addEventListener('change',e=>{if(e.target&&e.target.classList&&e.target.classList.contains('answer-select')) setTimeout(()=>{syncCurrent(); renderPanel();},80);});
   window.addEventListener('fireSProjectOpened',()=>setTimeout(renderPanel,400));
   setTimeout(()=>{try{if(window.currentProjectId) renderPanel();}catch(e){}},1200);
+})();
+
+
+// =====================================================
+// FIRE-S RC 1.1.17A - LIVE INSPECTION ENGINE HOTFIX
+// Purpose: make Yes/No changes update actions immediately and reliably.
+// Fixes: old generated actions staying behind when NO is changed back to YES.
+// =====================================================
+(function () {
+  'use strict';
+
+  const VERSION = 'rc-1-1-17A-live-inspection-engine-hotfix';
+
+  function norm(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function currentId() {
+    try {
+      if (typeof currentProjectId !== 'undefined' && currentProjectId) return currentProjectId;
+    } catch (_) {}
+    return window.currentProjectId || window.currentProject?.id || null;
+  }
+
+  function readProjects() {
+    try {
+      if (typeof getProjects === 'function') return getProjects();
+      return JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+    } catch (error) {
+      console.warn('Live Inspection Engine could not read projects:', error);
+      return [];
+    }
+  }
+
+  function writeProjects(projects) {
+    if (!Array.isArray(projects)) return;
+    if (typeof setProjects === 'function') setProjects(projects);
+    else localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+  }
+
+  function checklist() {
+    try {
+      if (typeof getActiveTemplateChecklist === 'function') {
+        const active = getActiveTemplateChecklist();
+        if (Array.isArray(active) && active.length) return active;
+      }
+    } catch (_) {}
+    try {
+      if (typeof checklists !== 'undefined' && Array.isArray(checklists)) return checklists;
+    } catch (_) {}
+    return Array.isArray(window.checklists) ? window.checklists : [];
+  }
+
+  function inferCategory(text) {
+    const t = norm(text);
+    if (/escape|egress|exit|stair|corridor|route|evac/.test(t)) return 'Means of Escape';
+    if (/alarm|detect|detector|mcp|manual call|sounder|panel/.test(t)) return 'Fire Detection and Alarm';
+    if (/sprinkler|pump|hydrant|hose reel|water|booster|valve|tank/.test(t)) return 'Fire Water / Protection';
+    if (/extinguisher|fire equipment|service tag/.test(t)) return 'Fire Equipment';
+    if (/emergency light|lighting|exit sign|signage/.test(t)) return 'Emergency Lighting / Signage';
+    if (/fire door|self closing|door closer|smoke seal/.test(t)) return 'Fire Doors';
+    if (/hazard|flammable|chemical|substance|fuel|gas/.test(t)) return 'Hazardous Substances';
+    if (/electrical|db|distribution board|cable|generator|plug/.test(t)) return 'Electrical';
+    if (/housekeeping|storage|combustible|waste/.test(t)) return 'Housekeeping';
+    if (/document|certificate|coc|logbook|record|drill|plan/.test(t)) return 'Documentation';
+    return 'General Fire Safety';
+  }
+
+  function priorityFor(category, question, item) {
+    const explicit = String(item?.Severity || '').trim();
+    if (explicit) return explicit;
+    const t = norm(`${category} ${question}`);
+    if (/blocked|locked|isolated|failed|not working|inoperative|missing/.test(t) && /escape|exit|alarm|sprinkler|pump|hydrant|fire door|emergency/.test(t)) return 'Critical';
+    if (/escape|exit|alarm|detect|sprinkler|pump|hydrant|fire door|emergency lighting|hazard/.test(t)) return 'High';
+    if (/extinguisher|electrical|housekeeping|storage|signage/.test(t)) return 'Medium';
+    return 'Low';
+  }
+
+  function dueDays(priority) {
+    if (priority === 'Critical') return 7;
+    if (priority === 'High') return 21;
+    if (priority === 'Medium') return 30;
+    return 60;
+  }
+
+  function datePlus(days) {
+    const d = new Date();
+    d.setDate(d.getDate() + Number(days || 30));
+    return d.toISOString().slice(0, 10);
+  }
+
+  function actionKey(project, answer, item, index) {
+    const idx = Number.isFinite(Number(answer?.itemIndex)) ? Number(answer.itemIndex) : index;
+    const number = answer?.itemNumber || item?.['Item Number'] || String(idx + 1);
+    const question = item?.['Checklist Item'] || answer?.question || answer?.item || '';
+    return [project?.id || 'premises', idx, number, norm(question)].join('|');
+  }
+
+  function readAnswersFromDom() {
+    const selectedChecklist = checklist();
+    const answers = [];
+
+    document.querySelectorAll('.answer-select').forEach((field, index) => {
+      const row = field.closest('.checklist-row');
+      const itemIndex = Number(field.dataset.index ?? row?.dataset.index ?? row?.dataset.itemIndex ?? index);
+      const safeIndex = Number.isFinite(itemIndex) ? itemIndex : index;
+      const item = selectedChecklist[safeIndex] || selectedChecklist[index] || {};
+      const noteField = document.getElementById(`note_${safeIndex}`);
+      const expiryField = document.querySelector(`.expiry-date[data-index="${safeIndex}"]`);
+
+      answers.push({
+        itemIndex: safeIndex,
+        itemNumber: item['Item Number'] || String(safeIndex + 1),
+        question: item['Checklist Item'] || '',
+        sectionName: item.sectionName || item.Section || item.Category || '',
+        answer: field.value,
+        note: noteField ? noteField.value.trim() : '',
+        expiryDate: expiryField ? expiryField.value : null
+      });
+    });
+
+    return answers;
+  }
+
+  function buildActions(project) {
+    const selectedChecklist = checklist();
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+
+    return answers
+      .filter(answer => norm(answer?.answer) === 'no')
+      .map((answer, index) => {
+        const idx = Number.isFinite(Number(answer.itemIndex)) ? Number(answer.itemIndex) : index;
+        const item = selectedChecklist[idx] || selectedChecklist[index] || {};
+        const question = item['Checklist Item'] || answer.question || answer.item || `Checklist item ${idx + 1}`;
+        const rawSection = item.sectionName || item.Section || item.Category || answer.sectionName || answer.category || '';
+        const category = rawSection && !/^inspection$/i.test(rawSection) ? rawSection : inferCategory(question);
+        const priority = priorityFor(category, question, item);
+        const key = actionKey(project, answer, item, index);
+
+        return {
+          actionKey: key,
+          actionId: `ACT-${String(idx + 1).padStart(4, '0')}`,
+          premisesId: project?.id || '',
+          inspectionId: project?.currentInspectionId || project?.inspectionId || project?.id || '',
+          inspectionNumber: project?.inspectionNumber || '',
+          itemIndex: idx,
+          itemNumber: answer.itemNumber || item['Item Number'] || String(idx + 1),
+          sectionName: category,
+          category,
+          question,
+          finding: item['Non Compliance Text'] || answer.note || question,
+          correctiveAction: item['Corrective Action'] || '',
+          reference: item.Reference || '',
+          priority,
+          status: 'Open',
+          responsible: priority === 'Critical' || priority === 'High' ? 'Approved Contractor / Building Owner' : 'Site Manager',
+          dueDate: datePlus(dueDays(priority)),
+          createdDate: new Date().toISOString(),
+          source: 'NO answer',
+          generatedBy: VERSION
+        };
+      });
+  }
+
+  function mergeGeneratedActions(project, generated) {
+    const existing = Array.isArray(project?.actions) ? project.actions : [];
+    const generatedKeys = new Set(generated.map(action => action.actionKey));
+    const existingByKey = new Map(existing.map(action => [action.actionKey || action.actionId, action]));
+
+    const mergedGenerated = generated.map(action => {
+      const old = existingByKey.get(action.actionKey);
+      if (!old) return action;
+      return {
+        ...action,
+        status: norm(old.status) === 'closed' ? 'Open' : (old.status || 'Open'),
+        responsible: old.responsible || action.responsible,
+        dueDate: old.dueDate || action.dueDate,
+        comments: old.comments || [],
+        photosBefore: old.photosBefore || [],
+        photosAfter: old.photosAfter || [],
+        history: old.history || action.history || []
+      };
+    });
+
+    const manualActions = existing.filter(action => {
+      const key = action.actionKey || action.actionId;
+      const wasGenerated = action.source === 'NO answer' || action.generatedBy || /^ACT-/.test(String(action.actionId || ''));
+      return !wasGenerated && !generatedKeys.has(key);
+    });
+
+    return [...manualActions, ...mergedGenerated];
+  }
+
+  function syncProjectFromDom() {
+    const id = currentId();
+    if (!id) return null;
+
+    const projects = readProjects();
+    const index = projects.findIndex(project => String(project.id) === String(id));
+    if (index < 0) return null;
+
+    const project = projects[index];
+    const answers = readAnswersFromDom();
+    const updated = {
+      ...project,
+      answers,
+      actions: mergeGeneratedActions(project, buildActions({ ...project, answers })),
+      actionEngineVersion: VERSION,
+      actionEngineUpdatedAt: new Date().toISOString(),
+      syncPending: true,
+      syncError: false,
+      lastSaved: new Date().toISOString()
+    };
+
+    projects[index] = updated;
+    writeProjects(projects);
+    window.currentProject = updated;
+    window.currentProjectId = updated.id;
+    return updated;
+  }
+
+  function refreshLiveUi(project) {
+    try { if (typeof updateAnswerSummary === 'function') updateAnswerSummary(); } catch (_) {}
+    try { if (typeof updateProjectReadinessPanel === 'function') updateProjectReadinessPanel(); } catch (_) {}
+    try { if (window.FireSSmartActionEngine?.render) window.FireSSmartActionEngine.render(); } catch (_) {}
+    try { if (window.FireSHealthCentre?.render) window.FireSHealthCentre.render(project); } catch (_) {}
+    try { if (window.FireSExecutiveDashboard1115?.render) window.FireSExecutiveDashboard1115.render(); } catch (_) {}
+    try { if (window.FireSExecutiveSnapshot?.render) window.FireSExecutiveSnapshot.render(); } catch (_) {}
+    try { if (typeof renderHomeCommandCentre === 'function') renderHomeCommandCentre(); } catch (_) {}
+  }
+
+  function runLiveSync() {
+    const project = syncProjectFromDom();
+    if (!project) return;
+    refreshLiveUi(project);
+    const msg = document.getElementById('saveMessage');
+    if (msg) msg.textContent = 'Live update saved. Actions and counters refreshed.';
+  }
+
+  function install() {
+    if (window.__fireSLiveInspectionEngine117A) return;
+    window.__fireSLiveInspectionEngine117A = true;
+    window.FireSLiveInspectionEngine117A = { version: VERSION, sync: runLiveSync, syncProjectFromDom };
+
+    if (typeof handleAnswerChange === 'function') {
+      const originalHandleAnswerChange = handleAnswerChange;
+      handleAnswerChange = function fireSLiveHandleAnswerChange(selectEl, options = {}) {
+        const result = originalHandleAnswerChange.apply(this, arguments);
+        if (!options || !options.skipAutoSave) {
+          setTimeout(runLiveSync, 0);
+          setTimeout(runLiveSync, 180);
+        }
+        return result;
+      };
+    }
+
+    document.addEventListener('change', event => {
+      if (event.target?.matches?.('.answer-select')) {
+        setTimeout(runLiveSync, 0);
+        setTimeout(runLiveSync, 180);
+      }
+    }, true);
+
+    setTimeout(() => {
+      if (currentId()) runLiveSync();
+    }, 900);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
 })();
