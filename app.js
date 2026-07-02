@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.16D - Photo Question Linking';
+const APP_VERSION = 'RC 1.1.17 - Smart Action Engine Module';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -24263,4 +24263,34 @@ if (!window.fireSMobileSmartCardsApplied) {
     getChecklistItemsForLinking,
     markQuestionsWithPhotoCounts
   };
+})();
+
+
+// =====================================================
+// FIRE-S RC 1.1.17 - SMART ACTION ENGINE MODULE
+// Single source for actions: project.actions[] generated from NO answers.
+// =====================================================
+(function(){
+  'use strict';
+  const VERSION='rc-1-1-17-smart-action-engine';
+  function norm(v){return String(v||'').trim().toLowerCase();}
+  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+  function projects(){try{return typeof getProjects==='function'?getProjects():JSON.parse(localStorage.getItem('fireyeProjects')||'[]');}catch(e){return [];}}
+  function save(list){if(typeof setProjects==='function') setProjects(list); else localStorage.setItem('fireyeProjects',JSON.stringify(list));}
+  function current(){const id=window.currentProjectId||window.currentProject?.id;return projects().find(p=>String(p.id)===String(id))||window.currentProject||null;}
+  function checklist(){try{if(typeof getActiveTemplateChecklist==='function'){const c=getActiveTemplateChecklist(); if(Array.isArray(c)&&c.length) return c;}}catch(e){} return Array.isArray(window.checklists)?window.checklists:[];}
+  function catFromText(text){const t=norm(text); if(/escape|egress|exit|stair|corridor|route/.test(t))return 'Means of Escape'; if(/sprinkler|pump|hydrant|hose reel|water|booster|valve/.test(t))return 'Fire Water / Protection'; if(/alarm|detect|detector|mcp|call point|sounder|panel/.test(t))return 'Fire Detection and Alarm'; if(/extinguisher|fire equipment|service tag/.test(t))return 'Fire Equipment'; if(/emergency light|lighting|exit sign|signage/.test(t))return 'Emergency Lighting / Signage'; if(/door|self closing|fire door|smoke seal/.test(t))return 'Fire Doors'; if(/hazard|flammable|chemical|substance|fuel|gas/.test(t))return 'Hazardous Substances'; if(/electrical|db|distribution board|cable|generator/.test(t))return 'Electrical'; if(/housekeeping|storage|combustible|waste/.test(t))return 'Housekeeping'; if(/document|certificate|coc|logbook|record|drill|plan/.test(t))return 'Documentation'; return 'General Fire Safety';}
+  function priority(category,text){const t=norm(category+' '+text); if(/blocked|locked|isolated|failed|not working|inoperative|missing/.test(t)&&/escape|exit|alarm|sprinkler|pump|hydrant|fire door|emergency/.test(t))return 'Critical'; if(/escape|exit|alarm|detect|sprinkler|pump|hydrant|fire door|emergency lighting|hazard/.test(t))return 'High'; if(/extinguisher|electrical|housekeeping|storage/.test(t))return 'Medium'; return 'Low';}
+  function dueDays(p){return p==='Critical'?7:p==='High'?21:p==='Medium'?30:60;}
+  function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+  function idFor(project,answer,item,index){return [project?.id||'premises',answer?.itemIndex??index,answer?.itemNumber||item?.['Item Number']||'',norm(item?.['Checklist Item']||answer?.question||answer?.item||'')].join('|');}
+  function buildFromAnswers(project){const c=checklist(); const out=[]; (project?.answers||[]).forEach((a,i)=>{if(norm(a?.answer)!=='no')return; const idx=Number.isFinite(Number(a.itemIndex))?Number(a.itemIndex):i; const item=c[idx]||{}; const q=item['Checklist Item']||a.question||a.item||`Checklist item ${idx+1}`; const section=item.sectionName||item._sectionName||item.Category||a.sectionName||a.category||catFromText(q); const category=section&&section!=='Inspection'?section:catFromText(q); const p= item.Severity || priority(category,q); out.push({actionKey:idFor(project,a,item,i),actionId:'ACT-'+String(idx+1).padStart(4,'0'),premisesId:project?.id||'',inspectionId:project?.currentInspectionId||project?.inspectionId||project?.id||'',inspectionNumber:project?.inspectionNumber||'',itemIndex:idx,itemNumber:a.itemNumber||item['Item Number']||String(idx+1),sectionName:category,category,question:q,finding:item['Non Compliance Text']||a.note||q,correctiveAction:item['Corrective Action']||'',reference:item.Reference||'',priority:p,status:'Open',responsible:p==='Critical'||p==='High'?'Approved Contractor / Building Owner':'Site Manager',dueDate:addDays(dueDays(p)),createdDate:new Date().toISOString(),source:'NO answer'});}); return out;}
+  function sync(project){if(!project)return project; const generated=buildFromAnswers(project); const existing=Array.isArray(project.actions)?project.actions:[]; const map=new Map(); existing.forEach(a=>map.set(a.actionKey||a.actionId,a)); generated.forEach(g=>{const old=map.get(g.actionKey); map.set(g.actionKey, old?{...g,...old, status: old.status||'Open', priority: old.priority||g.priority, dueDate: old.dueDate||g.dueDate}:g);}); const actions=[...map.values()].filter(a=>a&&a.actionKey); return {...project,actions,actionEngineVersion:VERSION,actionEngineUpdatedAt:new Date().toISOString()};}
+  function syncCurrent(){const id=window.currentProjectId||window.currentProject?.id; if(!id)return null; const list=projects(); const i=list.findIndex(p=>String(p.id)===String(id)); if(i<0)return null; list[i]=sync(list[i]); save(list); window.currentProject=list[i]; return list[i];}
+  function renderPanel(){const project=syncCurrent()||current(); if(!project)return; const host=document.getElementById('smartActionEnginePanel')||document.createElement('section'); host.id='smartActionEnginePanel'; host.className='card smart-action-engine-panel'; const actions=(project.actions||[]).filter(a=>norm(a.status)!=='closed'); const byCat={}; actions.forEach(a=>{const c=a.category||a.sectionName||'General Fire Safety'; byCat[c]=(byCat[c]||0)+1;}); host.innerHTML=`<div class="sae-head"><div><h3>Smart Action Register</h3><p>Generated from current NO answers. Source: project.actions[]</p></div><strong>${actions.length} Open</strong></div><div class="sae-chips">${Object.entries(byCat).map(([c,n])=>`<span>${esc(c)} <b>${n}</b></span>`).join('')||'<span>No open actions</span>'}</div><div class="sae-list">${actions.slice(0,20).map(a=>`<article class="sae-card sae-${norm(a.priority)}"><div><b>${esc(a.priority||'Medium')}</b><span>${esc(a.category||a.sectionName||'General')}</span></div><h4>${esc(a.question||a.finding||'Action item')}</h4><p>${esc(a.correctiveAction||a.finding||'Corrective action required.')}</p><small>Item ${esc(a.itemNumber||'-')} · Due ${esc(a.dueDate||'Not set')}</small></article>`).join('')||'<div class="sae-empty">No NO answers requiring action.</div>'}</div>`; const form=document.getElementById('projectFormSection')||document.body; const checklistCard=document.getElementById('checklistCard')||document.getElementById('checklist')?.closest('.card'); if(!host.parentElement){ if(checklistCard) checklistCard.insertAdjacentElement('afterend',host); else form.appendChild(host);} }
+  window.FireSSmartActionEngine={syncCurrent,render:renderPanel,version:VERSION};
+  const oldAuto=window.autoSaveProject; if(typeof oldAuto==='function'){window.autoSaveProject=function(){const r=oldAuto.apply(this,arguments); setTimeout(syncCurrent,50); return r;};}
+  document.addEventListener('change',e=>{if(e.target&&e.target.classList&&e.target.classList.contains('answer-select')) setTimeout(()=>{syncCurrent(); renderPanel();},80);});
+  window.addEventListener('fireSProjectOpened',()=>setTimeout(renderPanel,400));
+  setTimeout(()=>{try{if(window.currentProjectId) renderPanel();}catch(e){}},1200);
 })();

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-16D-photo-question-linking';
+const CACHE_NAME = 'fire-s-rc-1-1-17-smart-action-engine';
 
 const APP_SHELL = [
   './',
