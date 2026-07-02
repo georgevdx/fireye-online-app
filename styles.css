@@ -10133,3 +10133,58 @@ body > #actionDropdown.action-dropdown button:last-child {
     min-height: 82px;
   }
 }
+
+/* RC 1.1.4 - Action Register Polish */
+.fire-s-action-legend-1114,
+.fire-s-action-polish-note-1114 {
+  margin: 8px 0 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.fire-s-action-legend-1114 strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+
+.fire-s-action-legend-1114 span {
+  display: block;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.fire-s-action-polish-note-1114 {
+  border-left: 4px solid #b71c1c;
+  background: #fff7ed;
+  color: #7c2d12;
+  font-weight: 800;
+}
+
+.fire-s-action-card-v1033 {
+  overflow: hidden;
+}
+
+.fire-s-action-meta-v1033 strong {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .fire-s-action-legend-1114,
+  .fire-s-action-polish-note-1114 {
+    margin: 6px 0 8px;
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+
+  .fire-s-action-meta-v1033 {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 6px !important;
+  }
+}

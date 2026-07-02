@@ -1,0 +1,8 @@
+Fire-S RC 1.1.4 - Action Register Polish
+
+- Auto-cleans Action Register categories from checklist/action text.
+- Reduces generic / uncategorised action wording where possible.
+- Adds safer default responsible person, priority and due date when missing.
+- Hides duplicate-looking action cards in the current UI view without deleting action data.
+- Keeps mobile Action Register compact.
+- Cache/version bump to RC 1.1.4.

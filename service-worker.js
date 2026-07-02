@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-3-photo-categories';
+const CACHE_NAME = 'fire-s-rc-1-1-4-action-register-polish';
 
 const APP_SHELL = [
   './',

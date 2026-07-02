@@ -1,7 +1,6 @@
-# Fire-S v103.4 Resolve Actions
+# Fire-S RC 1.1.4 - Action Register Polish
 
-- Adds Update / Resolve button on each Action.
-- Allows status changes: Open, In Progress, Waiting, Closed.
-- Allows responsible person, due date, completed by, completed date and comment updates.
-- Saves updates back to project.actions.
-- Closed actions move to Closed filter.
+- Polished Action Register category detection.
+- Improved generic/uncategorised action wording.
+- Added view-only duplicate hiding for repeated-looking action cards.
+- Updated cache-busters and service worker cache.

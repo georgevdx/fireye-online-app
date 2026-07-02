@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.3 - Photo Categories';
+const APP_VERSION = 'RC 1.1.4 - Action Register Polish';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const PHOTO_CATEGORIES = [
   'General Evidence',
