@@ -15,3 +15,7 @@ Stability: Green / safe patch.
 - app.js
 - styles.css
 - service-worker.js
+
+
+RC 1.1.8C
+- Premises Workspace placeholder patch.
