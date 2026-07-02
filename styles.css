@@ -10065,3 +10065,225 @@ body > #actionDropdown.action-dropdown button:last-child {
     font-size: 10.5px;
   }
 }
+
+
+/* =====================================================
+   Fire-S RC 1.1.8B - Premises Cards 2.0
+   Mobile-first professional premises list cards.
+   ===================================================== */
+.premises-stats-bar-v118b {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 10px 0 12px;
+}
+.premises-stats-bar-v118b span {
+  padding: 9px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(15,23,42,0.05);
+}
+.premises-stats-bar-v118b strong {
+  display: block;
+  font-size: 17px;
+  color: #111827;
+  line-height: 1;
+}
+.premises-stats-bar-v118b small {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.premises-list-v118b {
+  display: grid;
+  gap: 10px;
+}
+.premises-card-v118b {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.premises-card-v118b:hover,
+.premises-card-v118b:focus {
+  transform: translateY(-1px);
+  border-color: #b71c1c;
+  box-shadow: 0 12px 28px rgba(15,23,42,0.12);
+  outline: none;
+}
+.premises-card-strip-v118b {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: #94a3b8;
+}
+.premises-card-v118b.ultra-status-overdue .premises-card-strip-v118b,
+.premises-card-v118b.ultra-status-action .premises-card-strip-v118b,
+.premises-card-v118b.health-critical .premises-card-strip-v118b { background: #b71c1c; }
+.premises-card-v118b.health-attention .premises-card-strip-v118b { background: #f57c00; }
+.premises-card-v118b.health-good .premises-card-strip-v118b { background: #1565c0; }
+.premises-card-v118b.health-excellent .premises-card-strip-v118b { background: #2e7d32; }
+.premises-card-main-v118b {
+  padding: 13px 14px 12px 18px;
+}
+.premises-card-head-v118b {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.premises-card-title-block-v118b { min-width: 0; }
+.premises-card-title-block-v118b h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.premises-card-title-block-v118b p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.premises-health-badge-v118b {
+  flex: 0 0 auto;
+  min-width: 74px;
+  padding: 7px 8px;
+  border-radius: 14px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  text-align: center;
+}
+.premises-health-badge-v118b strong {
+  display: block;
+  font-size: 17px;
+  line-height: 1;
+  color: #334155;
+}
+.premises-health-badge-v118b span {
+  display: block;
+  margin-top: 3px;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #64748b;
+}
+.premises-health-badge-v118b.health-excellent { background: #e8f5e9; border-color: #81c784; }
+.premises-health-badge-v118b.health-excellent strong,
+.premises-health-badge-v118b.health-excellent span { color: #1b5e20; }
+.premises-health-badge-v118b.health-good { background: #e3f2fd; border-color: #64b5f6; }
+.premises-health-badge-v118b.health-good strong,
+.premises-health-badge-v118b.health-good span { color: #1565c0; }
+.premises-health-badge-v118b.health-attention { background: #fff3e0; border-color: #ffb74d; }
+.premises-health-badge-v118b.health-attention strong,
+.premises-health-badge-v118b.health-attention span { color: #ef6c00; }
+.premises-health-badge-v118b.health-critical { background: #ffebee; border-color: #e57373; }
+.premises-health-badge-v118b.health-critical strong,
+.premises-health-badge-v118b.health-critical span { color: #b71c1c; }
+.premises-card-metrics-v118b {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+  margin-top: 11px;
+}
+.premises-card-metrics-v118b span {
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+.premises-card-metrics-v118b small {
+  display: block;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.premises-card-metrics-v118b strong {
+  display: block;
+  margin-top: 3px;
+  color: #111827;
+  font-size: 13px;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.premises-card-metrics-v118b .risk-high { background: #ffebee; border-color: #e57373; }
+.premises-card-metrics-v118b .risk-high strong,
+.premises-card-metrics-v118b .risk-high small { color: #b71c1c; }
+.premises-card-metrics-v118b .risk-medium { background: #fff3e0; border-color: #ffb74d; }
+.premises-card-metrics-v118b .risk-medium strong,
+.premises-card-metrics-v118b .risk-medium small { color: #ef6c00; }
+.premises-card-metrics-v118b .risk-low { background: #e8f5e9; border-color: #81c784; }
+.premises-card-metrics-v118b .risk-low strong,
+.premises-card-metrics-v118b .risk-low small { color: #1b5e20; }
+.premises-card-footer-v118b {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid #e2e8f0;
+}
+.premises-card-footer-v118b span {
+  min-width: 0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.premises-card-footer-v118b b {
+  flex: 0 0 auto;
+  color: #b71c1c;
+  font-size: 12px;
+  font-weight: 900;
+}
+@media (max-width: 700px) {
+  .premises-stats-bar-v118b { gap: 6px; }
+  .premises-stats-bar-v118b span { padding: 7px 5px; border-radius: 12px; }
+  .premises-stats-bar-v118b strong { font-size: 15px; }
+  .premises-stats-bar-v118b small { font-size: 8px; }
+  .premises-list-v118b { gap: 8px; }
+  .premises-card-v118b { border-radius: 14px; box-shadow: 0 4px 14px rgba(15,23,42,0.07); }
+  .premises-card-main-v118b { padding: 10px 10px 10px 15px; }
+  .premises-card-title-block-v118b h3 { font-size: 14px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .premises-card-title-block-v118b p { display: none; }
+  .premises-health-badge-v118b { min-width: 62px; padding: 6px; border-radius: 12px; }
+  .premises-health-badge-v118b strong { font-size: 14px; }
+  .premises-health-badge-v118b span { font-size: 7.5px; }
+  .premises-card-metrics-v118b { grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+  .premises-card-metrics-v118b span:nth-child(2) { display: none; }
+  .premises-card-metrics-v118b span { padding: 6px; }
+  .premises-card-metrics-v118b small { font-size: 7.5px; }
+  .premises-card-metrics-v118b strong { font-size: 11px; }
+  .premises-card-footer-v118b { margin-top: 8px; padding-top: 7px; }
+  .premises-card-footer-v118b span { display: none; }
+  .premises-card-footer-v118b b { margin-left: auto; font-size: 11px; }
+}
+@media (max-width: 380px) {
+  .premises-stats-bar-v118b { grid-template-columns: repeat(2, 1fr); }
+}

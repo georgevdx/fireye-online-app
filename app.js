@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.8 - Premises Terminology Patch';
+const APP_VERSION = 'RC 1.1.8B - Premises Cards';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -20656,3 +20656,306 @@ if (!window.fireSMobileSmartCardsApplied) {
     `;
   };
 }
+
+
+/* =====================================================
+   FIRE-S RC 1.1.8B - Premises Cards 2.0
+   Small patch: modern premises cards, mobile-safe layout,
+   health/action/photo badges, card click preserved.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  if (window.fireSPremisesCards118BApplied) return;
+  window.fireSPremisesCards118BApplied = true;
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function title(project) {
+    if (typeof window.fireSUltraCardTitle === 'function') return window.fireSUltraCardTitle(project);
+    return project?.projectName || [project?.organisationName, project?.siteName].filter(Boolean).join(' ') || project?.siteName || 'Untitled Premises';
+  }
+
+  function address(project) {
+    return project?.projectAddress || [project?.streetNumber, project?.addressLine].filter(Boolean).join(' ') || project?.addressLine || 'No address captured';
+  }
+
+  function dateKey(value) {
+    if (!value) return '';
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function dateText(value) {
+    const key = dateKey(value);
+    if (!key) return 'Not set';
+    const d = new Date(key + 'T00:00:00');
+    return Number.isNaN(d.getTime()) ? key : d.toLocaleDateString();
+  }
+
+  function lastInspection(project) {
+    if (typeof window.fireSUltraLastInspectionDate === 'function') return window.fireSUltraLastInspectionDate(project);
+    const dates = [project?.completedAt, project?.inspectionDate, project?.lastSaved]
+      .concat((project?.inspectionHistory || []).map(h => h?.completedAt || h?.inspectionDate || h?.archivedAt || ''))
+      .map(dateKey).filter(Boolean).sort();
+    return dates.length ? dates[dates.length - 1] : '';
+  }
+
+  function nextInspection(project) {
+    if (typeof window.fireSUltraNextInspectionDate === 'function') return window.fireSUltraNextInspectionDate(project);
+    return project?.scheduledDate || project?.followUpDate || '';
+  }
+
+  function answers(project) {
+    return Array.isArray(project?.answers) ? project.answers : [];
+  }
+
+  function answerValue(answer) {
+    return String(answer?.answer || '').trim().toLowerCase();
+  }
+
+  function actionCount(project) {
+    const savedActions = Array.isArray(project?.actions)
+      ? project.actions.filter(action => String(action?.status || 'Open').toLowerCase() !== 'closed').length
+      : 0;
+    const noAnswers = answers(project).filter(a => answerValue(a) === 'no').length;
+    return Math.max(savedActions, noAnswers);
+  }
+
+  function photoCount(project) {
+    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
+    return current + history;
+  }
+
+  function healthScore(project) {
+    const scored = answers(project).filter(a => ['yes', 'no'].includes(answerValue(a)));
+    if (!scored.length) return null;
+    const yes = scored.filter(a => answerValue(a) === 'yes').length;
+    let score = Math.round((yes / scored.length) * 100);
+    const actions = actionCount(project);
+    if (actions >= 10) score -= 8;
+    else if (actions >= 5) score -= 4;
+    return Math.max(0, Math.min(100, score));
+  }
+
+  function healthLabel(score) {
+    if (score === null || score === undefined) return 'Not scored';
+    if (score >= 90) return 'Excellent';
+    if (score >= 75) return 'Good';
+    if (score >= 55) return 'Attention';
+    return 'Critical';
+  }
+
+  function healthClass(score) {
+    if (score === null || score === undefined) return 'health-unknown';
+    if (score >= 90) return 'health-excellent';
+    if (score >= 75) return 'health-good';
+    if (score >= 55) return 'health-attention';
+    return 'health-critical';
+  }
+
+  function status(project) {
+    if (typeof window.fireSUltraStatus === 'function') return window.fireSUltraStatus(project);
+    const actions = actionCount(project);
+    const next = dateKey(nextInspection(project));
+    const today = new Date().toISOString().slice(0, 10);
+    if (next && next < today) return { label: 'Overdue', className: 'ultra-status-overdue', priority: 1 };
+    if (actions) return { label: 'Action Required', className: 'ultra-status-action', priority: 2 };
+    return { label: 'Ready', className: 'ultra-status-complete', priority: 5 };
+  }
+
+  function riskFrom(project, score, actions, st) {
+    if (st.label === 'Overdue' || actions >= 10 || (score !== null && score < 55)) return { label: 'High', cls: 'risk-high' };
+    if (actions > 0 || (score !== null && score < 75)) return { label: 'Medium', cls: 'risk-medium' };
+    if (score === null) return { label: 'Unknown', cls: 'risk-unknown' };
+    return { label: 'Low', cls: 'risk-low' };
+  }
+
+  function ensureLocalUser() {
+    if (window.currentUserProfile) return;
+    window.currentUserProfile = {
+      id: 'local-user',
+      email: 'local@fire-s.app',
+      fullName: 'Local User',
+      role: 'super_admin',
+      companyId: null,
+      companyName: 'Local / Personal Workspace'
+    };
+    window.currentCompanyAccess = { status: 'active', plan: 'local', source: 'local-fallback' };
+  }
+
+  function visibleProjects() {
+    const all = typeof window.getProjects === 'function' ? window.getProjects() : [];
+    if (typeof window.getVisibleProjectsForCurrentUser === 'function') return window.getVisibleProjectsForCurrentUser(all);
+    return all;
+  }
+
+  function matchesSearch(project, searchText) {
+    if (typeof window.fireSPremisesDropdownFilter !== 'undefined' && window.fireSPremisesDropdownFilter && typeof window.fireSGetPremisesKey === 'function') {
+      if (window.fireSGetPremisesKey(project) !== window.fireSPremisesDropdownFilter) return false;
+    }
+    if (!searchText) return true;
+    const haystack = [
+      project?.projectName, project?.organisationName, project?.siteName,
+      project?.projectAddress, project?.addressLine, project?.inspectionNumber,
+      project?.inspectorName, project?.contactPerson, project?.contactTel,
+      project?.contactEmail, project?.gps
+    ].join(' ').toLowerCase();
+    return haystack.includes(searchText);
+  }
+
+  function renderStatsBar(projects) {
+    const count = projects.length;
+    const actions = projects.reduce((sum, p) => sum + actionCount(p), 0);
+    const photos = projects.reduce((sum, p) => sum + photoCount(p), 0);
+    const scored = projects.map(healthScore).filter(v => v !== null && v !== undefined);
+    const avg = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : '—';
+    return `
+      <div class="premises-stats-bar-v118b">
+        <span><strong>${count}</strong><small>Premises</small></span>
+        <span><strong>${actions}</strong><small>Actions</small></span>
+        <span><strong>${photos}</strong><small>Photos</small></span>
+        <span><strong>${avg}${avg === '—' ? '' : '%'}</strong><small>Health</small></span>
+      </div>
+    `;
+  }
+
+  function renderCard(project) {
+    const st = status(project);
+    const score = healthScore(project);
+    const actions = actionCount(project);
+    const photos = photoCount(project);
+    const risk = riskFrom(project, score, actions, st);
+    const projectIdJs = JSON.stringify(project.id || '');
+    const inspectionNumber = project?.inspectionNumber || 'No inspection number';
+    const inspector = project?.inspectorName || 'Inspector not recorded';
+    const healthText = score === null || score === undefined ? '—' : `${score}%`;
+
+    return `
+      <article
+        class="premises-card-v118b ${esc(st.className)} ${esc(healthClass(score))}"
+        role="button"
+        tabindex="0"
+        data-project-id="${esc(project.id || '')}"
+        onclick='event.stopPropagation(); window.fireSOpenProjectCard(${projectIdJs})'
+        onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); window.fireSOpenProjectCard(${projectIdJs}); }'
+      >
+        <div class="premises-card-strip-v118b"></div>
+        <div class="premises-card-main-v118b">
+          <div class="premises-card-head-v118b">
+            <div class="premises-card-title-block-v118b">
+              <h3>${esc(title(project))}</h3>
+              <p>${esc(address(project))}</p>
+            </div>
+            <div class="premises-health-badge-v118b ${esc(healthClass(score))}">
+              <strong>${esc(healthText)}</strong>
+              <span>${esc(healthLabel(score))}</span>
+            </div>
+          </div>
+
+          <div class="premises-card-metrics-v118b">
+            <span><small>Actions</small><strong>${actions}</strong></span>
+            <span><small>Photos</small><strong>${photos}</strong></span>
+            <span class="${esc(risk.cls)}"><small>Risk</small><strong>${esc(risk.label)}</strong></span>
+            <span><small>Last</small><strong>${esc(dateText(lastInspection(project)))}</strong></span>
+          </div>
+
+          <div class="premises-card-footer-v118b">
+            <span>${esc(inspectionNumber)} · ${esc(inspector)}</span>
+            <b>Open →</b>
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  window.renderProjectsList = function fireSRenderPremisesCards118B() {
+    const container = document.getElementById('projectsList');
+    if (!container) return;
+
+    ensureLocalUser();
+    const projects = visibleProjects();
+    if (typeof window.fireSEnsurePremisesDropdown === 'function') window.fireSEnsurePremisesDropdown(projects);
+    if (typeof window.updateAppInfo === 'function') window.updateAppInfo();
+    if (typeof window.renderDashboardMetrics === 'function') window.renderDashboardMetrics(projects);
+    if (typeof window.updateOfflineReadinessBanner === 'function') window.updateOfflineReadinessBanner();
+    if (typeof window.updateSiteReadyPreflightChecklist === 'function') window.updateSiteReadyPreflightChecklist();
+    if (typeof window.updatePostSiteSyncReminder === 'function') window.updatePostSiteSyncReminder();
+
+    const searchField = document.getElementById('projectSearch');
+    const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
+
+    const baseFiltered = projects.filter(project => {
+      if (!matchesSearch(project, searchText)) return false;
+      return typeof window.projectMatchesInspectionDateFilter === 'function'
+        ? window.projectMatchesInspectionDateFilter(project)
+        : true;
+    });
+
+    const filtered = baseFiltered.filter(project =>
+      typeof window.projectMatchesInspectionGatewayQuickFilter === 'function'
+        ? window.projectMatchesInspectionGatewayQuickFilter(project, window.currentFilter || 'all')
+        : true
+    );
+
+    if (typeof window.updateActiveFilterStatus === 'function') window.updateActiveFilterStatus(filtered.length);
+    const filters = typeof window.renderInspectionGatewayQuickFilters === 'function'
+      ? window.renderInspectionGatewayQuickFilters(baseFiltered)
+      : '';
+
+    filtered.sort((a, b) => {
+      const ad = status(a).priority - status(b).priority;
+      if (ad !== 0) return ad;
+      const an = dateKey(nextInspection(a)) || '9999-12-31';
+      const bn = dateKey(nextInspection(b)) || '9999-12-31';
+      if (an !== bn) return an.localeCompare(bn);
+      return (dateKey(lastInspection(b)) || '').localeCompare(dateKey(lastInspection(a)) || '');
+    });
+
+    const perPage = typeof window.PROJECTS_PER_PAGE === 'number' ? window.PROJECTS_PER_PAGE : 10;
+    const page = typeof window.currentProjectPage === 'number' ? window.currentProjectPage : 1;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    if (typeof window.currentProjectPage !== 'undefined' && window.currentProjectPage > totalPages) window.currentProjectPage = totalPages;
+    const currentPage = typeof window.currentProjectPage === 'number' ? window.currentProjectPage : page;
+    const start = (currentPage - 1) * perPage;
+    const pageItems = filtered.slice(start, start + perPage);
+    window.currentProjectsListView = pageItems;
+
+    const paging = document.getElementById('projectPagingControls');
+    if (paging) {
+      paging.innerHTML = `
+        <button type="button" onclick="previousProjectPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+        <span>Showing ${filtered.length === 0 ? 0 : start + 1} - ${Math.min(start + perPage, filtered.length)} of ${filtered.length}</span>
+        <button type="button" onclick="nextProjectPage()" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+      `;
+    }
+
+    if (!filtered.length) {
+      container.innerHTML = `${filters}${renderStatsBar(baseFiltered)}<div class="empty-state">No matching premises found.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      ${filters}
+      ${renderStatsBar(baseFiltered)}
+      <div class="premises-list-v118b">
+        ${pageItems.map(renderCard).join('')}
+      </div>
+      <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>
+    `;
+  };
+
+  window.addEventListener('DOMContentLoaded', () => {
+    if (typeof window.updateAppInfo === 'function') window.updateAppInfo();
+  });
+})();

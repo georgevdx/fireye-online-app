@@ -1,18 +1,17 @@
-# Fire-S RC 1.1.8 - Premises Terminology Patch
+# Fire-S RC 1.1.8B - Premises Cards Patch
 
-Small GitHub-friendly patch ZIP.
+Stability: Green / safe patch.
 
 ## Changed
-- User-facing **Projects** wording changed to **Premises**.
-- Added lightweight `premises-terminology.js` UI terminology layer.
-- Updated app version to RC 1.1.8.
-- Updated `index.html` cache-busters.
-- Updated `service-worker.js` cache name and app shell.
+- Adds mobile-friendly Premises Cards 2.0.
+- Adds compact Premises stats bar.
+- Adds Building Health badge on each premises card.
+- Adds Action, Photo, Risk and Last Inspection metrics.
+- Keeps whole card clickable.
+- Updates version/cache labels to RC 1.1.8B.
 
-## Upload / Replace
-- `index.html`
-- `app.js`
-- `styles.css`
-- `service-worker.js`
-- `premises-terminology.js`
-- `CHANGELOG.md`
+## Modified files
+- index.html
+- app.js
+- styles.css
+- service-worker.js

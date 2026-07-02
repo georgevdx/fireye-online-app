@@ -1,11 +1,10 @@
-const CACHE_NAME = 'fire-s-rc-1-1-8-premises-terminology';
+const CACHE_NAME = 'fire-s-rc-1-1-8B-premises-cards';
 
 const APP_SHELL = [
   './',
   './index.html',
   './styles.css',
   './app.js',
-  './premises-terminology.js',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
