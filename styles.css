@@ -10961,3 +10961,164 @@ body > #actionDropdown.action-dropdown button:last-child {
     white-space: nowrap !important;
   }
 }
+
+
+/* Fire-S RC 1.1.12 - Show Filters Drawer Polish */
+.fire-s-filter-toggle-v1112,
+#toggleFiltersBtn.fire-s-filter-toggle-v1112 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  min-height: 44px !important;
+  border-radius: 14px !important;
+  background: #1f2937 !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  letter-spacing: .01em !important;
+}
+
+.fire-s-filter-panel-v1112,
+#filterPanel.fire-s-filter-panel-v1112 {
+  border: 1px solid #dbe3ef !important;
+  border-radius: 18px !important;
+  background: #ffffff !important;
+  box-shadow: 0 14px 34px rgba(15,23,42,.10) !important;
+  padding: 12px !important;
+}
+
+.fire-s-filter-panel-v1112 .filter-panel-heading {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  margin: 0 0 12px !important;
+  padding: 12px !important;
+  border-radius: 14px !important;
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.fire-s-filter-panel-v1112 .filter-panel-heading strong,
+.fire-s-workspace-filter-title-v1112 strong {
+  display: block !important;
+  color: #111827 !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+
+.fire-s-filter-panel-v1112 .filter-panel-heading span,
+.fire-s-workspace-filter-title-v1112 span {
+  display: block !important;
+  margin-top: 3px !important;
+  color: #64748b !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+}
+
+.fire-s-filter-close-v1112 {
+  width: auto !important;
+  max-width: none !important;
+  min-width: 74px !important;
+  padding: 8px 12px !important;
+  border-radius: 999px !important;
+  background: #b91c1c !important;
+  color: #fff !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  white-space: nowrap !important;
+}
+
+.fire-s-filter-section-v1112,
+.fire-s-workspace-filter-title-v1112 {
+  margin: 10px 0 !important;
+  padding: 12px !important;
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  background: #f8fafc !important;
+}
+
+.fire-s-workspace-filter-title-v1112 {
+  margin-bottom: 0 !important;
+  border-bottom-left-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
+}
+
+.fire-s-filter-workspace-v1112 {
+  margin-top: 0 !important;
+  border-top-left-radius: 10px !important;
+  border-top-right-radius: 10px !important;
+}
+
+.fire-s-filter-panel-v1112 .inspection-date-filter-title,
+.fire-s-filter-panel-v1112 .metric-section-title {
+  color: #475569 !important;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .06em !important;
+}
+
+.fire-s-filter-panel-v1112 .inspection-quick-date-row,
+.fire-s-filter-panel-v1112 .metric-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.fire-s-filter-panel-v1112 .inspection-quick-date-row button,
+.fire-s-filter-panel-v1112 .metric-card {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 42px !important;
+  border-radius: 12px !important;
+}
+
+.fire-s-filter-panel-v1112 .metric-card {
+  justify-content: flex-start !important;
+  background: #ffffff !important;
+  border-color: #dbe3ef !important;
+  white-space: normal !important;
+}
+
+.fire-s-filter-panel-v1112 .metric-card.metric-active {
+  background: #b91c1c !important;
+  border-color: #b91c1c !important;
+  color: #ffffff !important;
+}
+
+.fire-s-filter-panel-v1112 .metric-number {
+  min-width: 26px !important;
+  text-align: center !important;
+}
+
+@media (max-width: 700px) {
+  .fire-s-filter-panel-v1112,
+  #filterPanel.fire-s-filter-panel-v1112 {
+    padding: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .fire-s-filter-panel-v1112 .filter-panel-heading {
+    align-items: stretch !important;
+  }
+
+  .fire-s-filter-panel-v1112 .inspection-date-filter-grid,
+  .fire-s-filter-panel-v1112 .inspection-quick-date-row,
+  .fire-s-filter-panel-v1112 .metric-row {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .fire-s-filter-panel-v1112 .metric-card {
+    padding: 9px 10px !important;
+    gap: 6px !important;
+  }
+
+  .fire-s-filter-panel-v1112 .metric-label {
+    font-size: 11px !important;
+    line-height: 1.15 !important;
+  }
+}

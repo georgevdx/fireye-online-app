@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.11 - Premises Cards Snapshot Cleanup';
+const APP_VERSION = 'RC 1.1.12 - Show Filters Drawer Polish';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -22430,5 +22430,119 @@ if (!window.fireSMobileSmartCardsApplied) {
   window.FireSSnapshotCleanup1111 = {
     version: VERSION,
     refresh: refreshUiPolish
+  };
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.12 - Show Filters Drawer Polish
+   Scope: UI polish only. No filter logic changed.
+   Date filters and workspace filters remain inside Show Filters.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.12-show-filters-drawer-polish';
+
+  function enhanceFilterDrawer() {
+    const panel = document.getElementById('filterPanel');
+    const toggle = document.getElementById('toggleFiltersBtn');
+    const datePanel = document.getElementById('inspectionDateFilterPanel');
+    const metrics = document.getElementById('dashboardMetrics');
+
+    if (toggle) {
+      const isOpen = panel && panel.style.display === 'block';
+      toggle.classList.add('fire-s-filter-toggle-v1112');
+      toggle.textContent = isOpen ? 'Hide Filters ▲' : 'Show Filters ▼';
+      toggle.setAttribute('aria-expanded', String(Boolean(isOpen)));
+      toggle.setAttribute('aria-controls', 'filterPanel');
+    }
+
+    if (!panel || panel.dataset.fireSFilterPolish === VERSION) return;
+    panel.dataset.fireSFilterPolish = VERSION;
+    panel.classList.add('fire-s-filter-panel-v1112');
+
+    const heading = panel.querySelector('.filter-panel-heading');
+    if (heading) {
+      heading.innerHTML = `
+        <div>
+          <strong>Show Filters</strong>
+          <span>Date filters and workspace filters are kept here so the premises list stays clean.</span>
+        </div>
+        <button type="button" class="fire-s-filter-close-v1112" aria-label="Close filters">Done</button>
+      `;
+
+      const closeBtn = heading.querySelector('.fire-s-filter-close-v1112');
+      if (closeBtn && !closeBtn.__fireSBound) {
+        closeBtn.__fireSBound = true;
+        closeBtn.addEventListener('click', event => {
+          event.preventDefault();
+          if (typeof window.closeFilterPanel === 'function') window.closeFilterPanel();
+          else panel.style.display = 'none';
+          enhanceFilterDrawer();
+        });
+      }
+    }
+
+    if (datePanel) {
+      datePanel.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-date-v1112');
+      const title = datePanel.querySelector('.inspection-date-filter-title');
+      if (title) title.textContent = 'Inspection Date';
+    }
+
+    if (metrics) {
+      metrics.classList.add('fire-s-filter-section-v1112', 'fire-s-filter-workspace-v1112');
+      if (!document.getElementById('fireSWorkspaceFilterTitle1112')) {
+        const title = document.createElement('div');
+        title.id = 'fireSWorkspaceFilterTitle1112';
+        title.className = 'fire-s-workspace-filter-title-v1112';
+        title.innerHTML = '<strong>Workspace Filters</strong><span>Tap a filter once to apply it; tap All to reset.</span>';
+        metrics.insertAdjacentElement('beforebegin', title);
+      }
+    }
+  }
+
+  // Keep the toggle label correct after the original toggleFilterPanel/closeFilterPanel runs.
+  const originalToggle = window.toggleFilterPanel;
+  if (typeof originalToggle === 'function' && !originalToggle.__fireSPolished1112) {
+    const wrapped = function () {
+      const result = originalToggle.apply(this, arguments);
+      setTimeout(enhanceFilterDrawer, 0);
+      return result;
+    };
+    wrapped.__fireSPolished1112 = true;
+    window.toggleFilterPanel = wrapped;
+  }
+
+  const originalClose = window.closeFilterPanel;
+  if (typeof originalClose === 'function' && !originalClose.__fireSPolished1112) {
+    const wrappedClose = function () {
+      const result = originalClose.apply(this, arguments);
+      setTimeout(enhanceFilterDrawer, 0);
+      return result;
+    };
+    wrappedClose.__fireSPolished1112 = true;
+    window.closeFilterPanel = wrappedClose;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(enhanceFilterDrawer, 200);
+    setTimeout(enhanceFilterDrawer, 1000);
+  });
+
+  const observer = new MutationObserver(() => {
+    clearTimeout(observer.__fireSTimer);
+    observer.__fireSTimer = setTimeout(enhanceFilterDrawer, 120);
+  });
+
+  if (document.body) {
+    observer.observe(document.body, { childList: true, subtree: true });
+  } else {
+    document.addEventListener('DOMContentLoaded', () => observer.observe(document.body, { childList: true, subtree: true }));
+  }
+
+  window.FireSFilterPolish1112 = {
+    version: VERSION,
+    refresh: enhanceFilterDrawer
   };
 })();

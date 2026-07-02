@@ -1,10 +1,10 @@
-const CACHE_NAME = 'fire-s-rc-1-1-11-premises-cards-snapshot-cleanup';
+const CACHE_NAME = 'fire-s-rc-1-1-12-show-filters-drawer-polish';
 
 const APP_SHELL = [
   './',
-  './index.html',
-  './styles.css',
-  './app.js',
+  './index.html?v=rc-1-1-12-show-filters-drawer-polish',
+  './styles.css?v=rc-1-1-12-show-filters-drawer-polish',
+  './app.js?v=rc-1-1-12-show-filters-drawer-polish',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
