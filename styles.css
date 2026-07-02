@@ -10547,3 +10547,30 @@ body > #actionDropdown.action-dropdown button:last-child {
     font-size: 18px;
   }
 }
+
+/* =====================================================
+   Fire-S RC 1.1.8F - Executive Snapshot Functional Cleanup
+   ===================================================== */
+.fire-s-exec-grid .fire-s-exec-stat {
+  width: 100%;
+  max-width: none;
+  min-height: 76px;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  border: 1px solid rgba(148,163,184,.35);
+  background: #fff;
+}
+.fire-s-exec-grid .fire-s-exec-stat:hover,
+.fire-s-exec-grid .fire-s-exec-stat:focus {
+  transform: translateY(-1px);
+  outline: 2px solid rgba(183,28,28,.18);
+  outline-offset: 2px;
+}
+.fire-s-exec-grid .fire-s-exec-stat.good { background: #ecfdf5; }
+.fire-s-exec-grid .fire-s-exec-stat.watch { background: #fffbeb; }
+.fire-s-exec-grid .fire-s-exec-stat.risk { background: #fef2f2; }
+.fire-s-exec-grid .fire-s-exec-stat.neutral { background: #f8fafc; }
+.premises-stats-bar-v118b {
+  display: none !important;
+}

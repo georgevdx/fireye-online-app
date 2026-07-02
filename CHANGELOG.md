@@ -1,18 +1,12 @@
-# Fire-S RC 1.1.8E - Executive Mini Dashboard
+# Fire-S RC 1.1.8F - Executive Snapshot Functional Cleanup
 
-Patch type: Small GitHub patch
-Stability: Beta
-
-## Included
-- Adds a compact Executive Snapshot above the Premises list.
-- Shows visible premises count, average Building Health, open actions, overdue items, photo count and premises requiring attention.
-- Mobile-first layout: 2 columns on phone, 3 columns on wider screens.
-- Uses existing local data only; no cloud/schema/storage changes.
-- Cache/version bump to RC 1.1.8E.
-
-## Modified files
-- index.html
-- app.js
-- styles.css
-- service-worker.js
-- CHANGELOG.md
+- Keeps the Executive Snapshot as the single top summary.
+- Removes the duplicate Premises stats bar below the snapshot.
+- Makes Executive Snapshot tiles functional:
+  - Premises: clears to all visible premises.
+  - Health: opens Analytics if available, otherwise focuses the Premises list.
+  - Open Actions / Attention: filters to action-required premises.
+  - Overdue: filters to overdue premises.
+  - Photos: focuses the Premises search/list.
+- Updates app version and cache busters to RC 1.1.8F.
+- No inspection data, cloud sync or report data changed.

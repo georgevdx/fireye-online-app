@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-8E-executive-mini-dashboard';
+const CACHE_NAME = 'fire-s-rc-1-1-8F-executive-snapshot-functional-cleanup';
 
 const APP_SHELL = [
   './',
