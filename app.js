@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.8D - Building Health Centre';
+const APP_VERSION = 'RC 1.1.8E - Executive Mini Dashboard';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -21200,6 +21200,180 @@ if (!window.fireSMobileSmartCardsApplied) {
     });
 
     setTimeout(decoratePremisesCards, 500);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.1.8E - Executive Mini Dashboard
+   Small mobile-first portfolio snapshot above Premises list.
+   No data, sync or inspection logic changed.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.8E-executive-mini-dashboard';
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function readProjects() {
+    try {
+      const all = typeof window.getProjects === 'function'
+        ? window.getProjects()
+        : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+
+      if (typeof window.getVisibleProjectsForCurrentUser === 'function' && window.currentUserProfile) {
+        return window.getVisibleProjectsForCurrentUser(all);
+      }
+
+      return Array.isArray(all) ? all : [];
+    } catch (error) {
+      console.warn('Fire-S Executive Mini Dashboard could not read premises:', error);
+      return [];
+    }
+  }
+
+  function valueDate(project) {
+    return project?.followUpDate || project?.scheduledDate || '';
+  }
+
+  function isOverdue(project) {
+    const date = String(valueDate(project) || '').slice(0, 10);
+    if (!date) return false;
+    return date < new Date().toISOString().slice(0, 10);
+  }
+
+  function openActionCount(project) {
+    const realActions = Array.isArray(project?.actions)
+      ? project.actions.filter(action => String(action?.status || 'Open').toLowerCase() !== 'closed').length
+      : 0;
+
+    const noAnswers = Array.isArray(project?.answers)
+      ? project.answers.filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no').length
+      : 0;
+
+    return Math.max(realActions, noAnswers);
+  }
+
+  function photoCount(project) {
+    const current = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const history = (project?.inspectionHistory || []).reduce((sum, item) => sum + ((item?.photos || []).length), 0);
+    return current + history;
+  }
+
+  function healthScore(project) {
+    if (window.FireSHealthCentre?.calculate) {
+      try { return Number(window.FireSHealthCentre.calculate(project).score || 0); }
+      catch (_) {}
+    }
+
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const yesNo = answers.filter(a => ['yes', 'no'].includes(String(a?.answer || '').trim().toLowerCase()));
+    if (!yesNo.length) return 0;
+    const yes = yesNo.filter(a => String(a?.answer || '').trim().toLowerCase() === 'yes').length;
+    return Math.round((yes / yesNo.length) * 100);
+  }
+
+  function labelFor(score) {
+    if (!score) return 'No data';
+    if (score >= 90) return 'Strong';
+    if (score >= 75) return 'Good';
+    if (score >= 60) return 'Attention';
+    return 'Critical';
+  }
+
+  function calc(projects) {
+    const count = projects.length;
+    const scores = projects.map(healthScore).filter(score => score > 0);
+    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    const actions = projects.reduce((sum, p) => sum + openActionCount(p), 0);
+    const overdue = projects.filter(isOverdue).length;
+    const photos = projects.reduce((sum, p) => sum + photoCount(p), 0);
+    const attention = projects.filter(p => healthScore(p) > 0 && healthScore(p) < 75).length;
+    return { count, avg, actions, overdue, photos, attention };
+  }
+
+  function stat(label, value, sub, tone) {
+    return `
+      <div class="fire-s-exec-stat ${tone || ''}">
+        <span>${esc(label)}</span>
+        <strong>${esc(value)}</strong>
+        <em>${esc(sub || '')}</em>
+      </div>`;
+  }
+
+  function render() {
+    const section = document.getElementById('projectListSection');
+    if (!section || section.style.display === 'none') return;
+
+    const search = document.getElementById('projectSearch');
+    if (!search) return;
+
+    let panel = document.getElementById('fireSExecutiveMiniDashboard');
+    if (!panel) {
+      panel = document.createElement('section');
+      panel.id = 'fireSExecutiveMiniDashboard';
+      panel.className = 'fire-s-exec-mini-dashboard';
+      search.insertAdjacentElement('beforebegin', panel);
+    }
+
+    const projects = readProjects();
+    const data = calc(projects);
+    const healthTone = data.avg >= 90 ? 'good' : data.avg >= 75 ? 'watch' : data.avg ? 'risk' : 'neutral';
+
+    panel.innerHTML = `
+      <div class="fire-s-exec-head">
+        <div>
+          <div class="fire-s-exec-kicker">Executive Snapshot</div>
+          <h3>Premises Overview</h3>
+        </div>
+        <button type="button" onclick="window.FireSExecutiveMiniDashboard.refresh()">Refresh</button>
+      </div>
+      <div class="fire-s-exec-grid">
+        ${stat('Premises', data.count, 'visible', 'neutral')}
+        ${stat('Health', data.avg ? data.avg + '%' : '-', labelFor(data.avg), healthTone)}
+        ${stat('Open Actions', data.actions, data.actions ? 'requires follow-up' : 'clear', data.actions ? 'risk' : 'good')}
+        ${stat('Overdue', data.overdue, data.overdue ? 'attention' : 'none', data.overdue ? 'risk' : 'good')}
+        ${stat('Photos', data.photos, 'evidence', 'neutral')}
+        ${stat('Attention', data.attention, 'low health', data.attention ? 'watch' : 'good')}
+      </div>
+      <div class="fire-s-exec-bar"><i style="width:${Math.max(0, Math.min(100, data.avg || 0))}%"></i></div>
+    `;
+  }
+
+  function install() {
+    if (window.__fireSExecutiveMiniDashboard118E) return;
+    window.__fireSExecutiveMiniDashboard118E = true;
+    window.FireSExecutiveMiniDashboard = { refresh: render, version: VERSION };
+
+    if (typeof window.renderProjectsList === 'function') {
+      const original = window.renderProjectsList;
+      window.renderProjectsList = function fireSRenderProjectsListWithExecutiveMiniDashboard() {
+        const result = original.apply(this, arguments);
+        setTimeout(render, 50);
+        return result;
+      };
+    }
+
+    document.addEventListener('click', event => {
+      if (event.target?.closest?.('#cmdDashboardBtn, #cmdInspectionsBtn, #projectsHomeBtn, #newProjectBtn')) {
+        setTimeout(render, 250);
+      }
+    }, true);
+
+    setTimeout(render, 500);
+    setTimeout(render, 1200);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);

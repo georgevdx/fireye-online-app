@@ -10413,3 +10413,137 @@ body > #actionDropdown.action-dropdown button:last-child {
   .fire-s-health-row strong { text-align: left; }
   .fire-s-card-health { grid-template-columns: auto auto 1fr; padding: 6px 7px; }
 }
+
+
+/* =====================================================
+   Fire-S RC 1.1.8E - Executive Mini Dashboard
+   ===================================================== */
+.fire-s-exec-mini-dashboard {
+  margin: 10px 0 14px;
+  padding: 12px;
+  border-radius: 18px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #ffffff, #f8fafc);
+  box-shadow: 0 8px 24px rgba(15,23,42,0.08);
+}
+
+.fire-s-exec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.fire-s-exec-kicker {
+  color: #b71c1c;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.fire-s-exec-head h3 {
+  margin: 2px 0 0;
+  font-size: 17px;
+  color: #0f172a;
+}
+
+.fire-s-exec-head button {
+  width: auto;
+  max-width: none;
+  min-height: 36px;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: #334155;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.fire-s-exec-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.fire-s-exec-stat {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
+.fire-s-exec-stat span,
+.fire-s-exec-stat em {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fire-s-exec-stat span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.fire-s-exec-stat strong {
+  display: block;
+  margin: 3px 0 1px;
+  color: #0f172a;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.fire-s-exec-stat em {
+  color: #64748b;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.fire-s-exec-stat.good { border-color: #bbf7d0; background: #f0fdf4; }
+.fire-s-exec-stat.watch { border-color: #fed7aa; background: #fff7ed; }
+.fire-s-exec-stat.risk { border-color: #fecaca; background: #fef2f2; }
+.fire-s-exec-stat.neutral { border-color: #e2e8f0; background: #f8fafc; }
+
+.fire-s-exec-stat.good strong { color: #166534; }
+.fire-s-exec-stat.watch strong { color: #c2410c; }
+.fire-s-exec-stat.risk strong { color: #b91c1c; }
+
+.fire-s-exec-bar {
+  height: 7px;
+  overflow: hidden;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #e5e7eb;
+}
+
+.fire-s-exec-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #b71c1c;
+}
+
+@media (max-width: 700px) {
+  .fire-s-exec-mini-dashboard {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .fire-s-exec-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fire-s-exec-stat {
+    padding: 9px;
+  }
+
+  .fire-s-exec-stat strong {
+    font-size: 18px;
+  }
+}

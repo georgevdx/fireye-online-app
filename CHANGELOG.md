@@ -1,14 +1,14 @@
-# Fire-S RC 1.1.8D - Building Health Centre Patch
+# Fire-S RC 1.1.8E - Executive Mini Dashboard
 
-Stability: Beta / small UI module patch.
+Patch type: Small GitHub patch
+Stability: Beta
 
 ## Included
-- Adds Fire-S Building Health™ calculation layer.
-- Adds compact Health badge to Premises cards.
-- Adds mobile-first Building Health Centre inside an opened Premises.
-- Shows compliance, open actions, critical items, trend and category health.
-- Excludes N/A/skipped answers from compliance calculations.
-- Updates app version and cache-busters to RC 1.1.8D.
+- Adds a compact Executive Snapshot above the Premises list.
+- Shows visible premises count, average Building Health, open actions, overdue items, photo count and premises requiring attention.
+- Mobile-first layout: 2 columns on phone, 3 columns on wider screens.
+- Uses existing local data only; no cloud/schema/storage changes.
+- Cache/version bump to RC 1.1.8E.
 
 ## Modified files
 - index.html
