@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.16A - Photo Sync Phase 1';
+const APP_VERSION = 'RC 1.1.16B - Photo Source Hotfix';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4741,16 +4741,46 @@ function filterDeletedProjects(projects) {
   );
 }
 
+function getStoredPhotoSource(photo = {}) {
+  return (
+    photo.src ||
+    photo.photoSrc ||
+    photo.imageSrc ||
+    photo.image ||
+    photo.dataUrl ||
+    photo.dataURL ||
+    photo.url ||
+    photo.publicUrl ||
+    photo.publicURL ||
+    photo.thumbnailSrc ||
+    photo.previewSrc ||
+    ''
+  );
+}
+
 function stripHeavyPhotoData(project) {
   if (!project) return project;
 
   return {
     ...project,
-    photos: (project.photos || []).map(photo => ({
-      timestamp: photo.timestamp || null,
-      note: photo.note || '',
-      src: photo.src && photo.src.length < 5000 ? photo.src : ''
-    }))
+    photos: (project.photos || []).map(photo => {
+      const source = getStoredPhotoSource(photo);
+      const compactSource = source && source.length < 5000 ? source : '';
+      const previewSource = photo.previewSrc || photo.thumbnailSrc || compactSource || '';
+
+      return {
+        ...photo,
+        timestamp: photo.timestamp || null,
+        note: photo.note || '',
+        category: photo.category || 'General',
+        area: photo.area || '',
+        linkedQuestion: photo.linkedQuestion || '',
+        src: compactSource,
+        previewSrc: previewSource && previewSource.length < 20000 ? previewSource : compactSource,
+        thumbnailSrc: previewSource && previewSource.length < 20000 ? previewSource : compactSource,
+        sourceMissing: !compactSource && !previewSource
+      };
+    })
   };
 }
 
@@ -14444,13 +14474,27 @@ function createLocalPhotoFallback(file) {
         const compressedDataUrl =
           canvas.toDataURL('image/jpeg', 0.85);
 
+        const thumbCanvas = document.createElement('canvas');
+        const thumbMax = 360;
+        const thumbRatio = Math.min(thumbMax / width, thumbMax / height, 1);
+        thumbCanvas.width = Math.max(1, Math.round(width * thumbRatio));
+        thumbCanvas.height = Math.max(1, Math.round(height * thumbRatio));
+        const thumbCtx = thumbCanvas.getContext('2d');
+        thumbCtx.drawImage(img, 0, 0, thumbCanvas.width, thumbCanvas.height);
+        const previewSrc = thumbCanvas.toDataURL('image/jpeg', 0.62);
+
         resolve({
           id: crypto.randomUUID
             ? crypto.randomUUID()
             : String(Date.now()),
           src: compressedDataUrl,
+          previewSrc,
+          thumbnailSrc: previewSrc,
           timestamp: new Date().toISOString(),
           note: '',
+          category: 'General',
+          area: '',
+          linkedQuestion: '',
           uploadFallback: true,
           uploadPending: true
         });
@@ -14573,15 +14617,25 @@ async function handlePhotoUpload(event) {
         );
 
         if (photoIndex !== -1) {
-          const existingNote =
-            currentPhotos[photoIndex].note || '';
+          const existingPhoto = currentPhotos[photoIndex] || {};
+          const existingNote = existingPhoto.note || '';
+          const uploadedSource = getStoredPhotoSource(uploadedPhoto);
+          const fallbackPreview = existingPhoto.previewSrc || existingPhoto.thumbnailSrc || existingPhoto.src || '';
 
           currentPhotos[photoIndex] = {
+            ...existingPhoto,
             ...uploadedPhoto,
             id: localPhotoId,
+            src: uploadedSource || existingPhoto.src || fallbackPreview,
+            previewSrc: uploadedSource || fallbackPreview,
+            thumbnailSrc: fallbackPreview || uploadedSource,
             note: existingNote,
+            category: existingPhoto.category || 'General',
+            area: existingPhoto.area || '',
+            linkedQuestion: existingPhoto.linkedQuestion || '',
             uploadFallback: false,
-            uploadPending: false
+            uploadPending: false,
+            sourceMissing: !(uploadedSource || fallbackPreview)
           };
 
           renderPhotos();
@@ -23333,13 +23387,13 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.16A - Photo Sync Phase 1
+   FIRE-S RC 1.1.16B - Photo Source Hotfix
    Purpose: add practical photo metadata without changing core sync logic.
    ===================================================== */
 (function () {
   'use strict';
 
-  const VERSION = '1.1.16A-photo-sync-phase-1';
+  const VERSION = '1.1.16B-photo-source-hotfix';
   const PHOTO_CATEGORIES = [
     'General',
     'Fire Equipment',
@@ -23436,11 +23490,36 @@ if (!window.fireSMobileSmartCardsApplied) {
     ).join('');
   }
 
+  function getPhotoSource(photo) {
+    if (!photo || typeof photo !== 'object') return '';
+    return (
+      photo.src ||
+      photo.photoSrc ||
+      photo.imageSrc ||
+      photo.image ||
+      photo.dataUrl ||
+      photo.dataURL ||
+      photo.url ||
+      photo.publicUrl ||
+      photo.publicURL ||
+      photo.previewSrc ||
+      photo.thumbnailSrc ||
+      ''
+    );
+  }
+
   function normalisePhoto(photo) {
     if (!photo || typeof photo !== 'object') return photo;
     if (!photo.category) photo.category = 'General';
     if (!photo.area) photo.area = '';
     if (!photo.linkedQuestion) photo.linkedQuestion = '';
+
+    const source = getPhotoSource(photo);
+    if (source && !photo.src) photo.src = source;
+    if (source && !photo.previewSrc) photo.previewSrc = source;
+    if (source && !photo.thumbnailSrc) photo.thumbnailSrc = source;
+    photo.sourceMissing = !source;
+
     return photo;
   }
 
@@ -23535,14 +23614,14 @@ if (!window.fireSMobileSmartCardsApplied) {
       const div = document.createElement('div');
       div.className = 'photo-item fire-s-photo-item-v1116';
 
-      const photoSrc = photo.src || '';
+      const photoSrc = getPhotoSource(photo);
       const photoTime = photo.timestamp ? new Date(photo.timestamp).toLocaleString() : 'Not recorded';
       const category = photo.category || 'General';
       const area = photo.area || '';
       const linkedQuestion = photo.linkedQuestion || '';
 
       div.innerHTML = `
-        ${photoSrc ? `<img src="${esc(photoSrc)}" alt="Inspection photo ${index + 1}">` : '<div class="fire-s-photo-missing-v1116">Photo source missing</div>'}
+        ${photoSrc ? `<img src="${esc(photoSrc)}" alt="Inspection photo ${index + 1}">` : '<div class="fire-s-photo-missing-v1116">Photo preview unavailable<br><small>Take the photo again if it was added before the sync fix.</small></div>'}
 
         <div class="fire-s-photo-meta-line-v1116">
           <span>Photo ${index + 1}</span>
@@ -23592,6 +23671,7 @@ if (!window.fireSMobileSmartCardsApplied) {
       const category = photo.category || 'General';
       const area = photo.area || 'Not recorded';
       const linkedQuestion = photo.linkedQuestion || 'Not linked';
+      const photoSrc = getPhotoSource(photo);
       const pageClass = index === 0 ? 'first-photo-page' : 'next-photo-page';
 
       return `
@@ -23606,7 +23686,7 @@ if (!window.fireSMobileSmartCardsApplied) {
               <span><strong>Linked item:</strong> ${esc(linkedQuestion)}</span>
             </div>
             <div class="report-photo-image-box">
-              ${photo.src ? `<img src="${esc(photo.src)}" class="report-photo-img" alt="Inspection photo ${photoNumber}">` : '<div class="report-photo-missing">Photo source missing. Sync / refresh may be required.</div>'}
+              ${photoSrc ? `<img src="${esc(photoSrc)}" class="report-photo-img" alt="Inspection photo ${photoNumber}">` : '<div class="report-photo-missing">Photo preview unavailable. Retake the photo if it was captured before the photo sync hotfix.</div>'}
             </div>
             <div class="report-photo-note"><strong>Photo Note:</strong> ${esc(photo.note || 'No note added.')}</div>
           </div>
@@ -23670,6 +23750,7 @@ if (!window.fireSMobileSmartCardsApplied) {
     version: VERSION,
     categories: PHOTO_CATEGORIES,
     stats: photoStats,
+    getPhotoSource,
     normalisePhoto,
     sync: syncPhotoCentreNow
   };

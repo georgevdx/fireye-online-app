@@ -1,16 +1,8 @@
-# Fire-S RC 1.1.16A - Photo Sync Phase 1
+# Fire-S RC 1.1.16B - Photo Source Hotfix
 
-Stability hotfix for Smart Photo Centre.
-
-## Fixed
-- Smart Photo Centre now reads from the same `currentPhotos` / `project.photos[]` source as the existing Photo Evidence counter.
-- Prevents creation of a separate `window.currentPhotos` array that caused `Photos: 1/10` but `Smart Photo Centre: 0 photos`.
-- Keeps category, area, linked item and notes on the actual photo object.
-- Updates cache/version strings to RC 1.1.16A.
-
-## Modified files
-- index.html
-- app.js
-- styles.css
-- service-worker.js
-- CHANGELOG.md
+- Fixes Smart Photo Centre using blank photo source fields.
+- Adds fallback source detection across src, publicUrl, previewSrc, thumbnailSrc and related fields.
+- Preserves a compact preview thumbnail for local/offline photos.
+- Prevents category/area/linked item metadata from being lost after cloud upload.
+- Improves Photo Centre card layout so images are larger and usable.
+- Version/cache bump to RC 1.1.16B.

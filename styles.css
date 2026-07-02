@@ -11708,7 +11708,7 @@ body > #actionDropdown.action-dropdown button:last-child {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.16 - Smart Photo Centre
+   FIRE-S RC 1.1.16B - Photo Source Hotfix
    ===================================================== */
 .fire-s-photo-centre-v1116 {
   grid-column: 1 / -1;
@@ -11858,5 +11858,68 @@ body > #actionDropdown.action-dropdown button:last-child {
     display: block;
     margin-top: 4px;
     text-align: left;
+  }
+}
+
+
+/* =====================================================
+   FIRE-S RC 1.1.16B - Photo Source + Card Layout Hotfix
+   ===================================================== */
+#photoPreview {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+.photo-item.fire-s-photo-item-v1116 {
+  display: grid;
+  grid-template-columns: minmax(180px, 280px) 1fr;
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+}
+.photo-item.fire-s-photo-item-v1116 img,
+.photo-item.fire-s-photo-item-v1116 .fire-s-photo-missing-v1116 {
+  grid-row: span 6;
+  width: 100%;
+  min-height: 190px;
+  max-height: 260px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #eef2f7;
+}
+.fire-s-photo-missing-v1116 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+}
+.fire-s-photo-missing-v1116 small {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.photo-item.fire-s-photo-item-v1116 .photo-delete,
+.photo-item.fire-s-photo-item-v1116 .photo-note,
+.photo-item.fire-s-photo-item-v1116 input,
+.photo-item.fire-s-photo-item-v1116 select {
+  width: 100%;
+  max-width: none;
+}
+@media (max-width: 700px) {
+  .photo-item.fire-s-photo-item-v1116 {
+    grid-template-columns: 1fr;
+  }
+  .photo-item.fire-s-photo-item-v1116 img,
+  .photo-item.fire-s-photo-item-v1116 .fire-s-photo-missing-v1116 {
+    grid-row: auto;
+    min-height: 220px;
   }
 }

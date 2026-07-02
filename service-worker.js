@@ -1,10 +1,10 @@
-const CACHE_NAME = 'fire-s-rc-1-1-16A-photo-sync-phase-1';
+const CACHE_NAME = 'fire-s-rc-1-1-16B-photo-source-hotfix';
 
 const APP_SHELL = [
   './',
   './index.html?v=rc-1-1-12-show-filters-drawer-polish',
-  './styles.css?v=rc-1-1-16A-photo-sync-phase-1',
-  './app.js?v=rc-1-1-16A-photo-sync-phase-1',
+  './styles.css?v=rc-1-1-16B-photo-source-hotfix',
+  './app.js?v=rc-1-1-16B-photo-source-hotfix',
   './occupancies.json',
   './requirements.json',
   './checklists.json',
