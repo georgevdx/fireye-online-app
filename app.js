@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.14 - Building Health Centre Module';
+const APP_VERSION = 'RC 1.1.15 - Executive Dashboard Module';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -22901,7 +22901,7 @@ if (!window.fireSMobileSmartCardsApplied) {
 
 
 /* =====================================================
-   FIRE-S RC 1.1.14 - Building Health Centre Module
+   FIRE-S RC 1.1.15 - Executive Dashboard Module
    Purpose: adds a dedicated, mobile-first Building Health Centre for the active premises.
    Safe add-on: reads existing answers/actions/photos/history only; no storage or sync logic changed.
    ===================================================== */
@@ -23232,4 +23232,88 @@ if (!window.fireSMobileSmartCardsApplied) {
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
   else install();
+})();
+
+
+// =====================================================
+// Fire-S RC 1.1.15 - Executive Dashboard Module
+// Read-only portfolio dashboard. Does not change filters or inspection data.
+// =====================================================
+(function(){
+  'use strict';
+  function esc(v){
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(v || '');
+    return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+  }
+  function projects(){
+    try { return typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]'); }
+    catch(_) { return []; }
+  }
+  function ans(p){ return Array.isArray(p?.answers) ? p.answers : []; }
+  function norm(v){ return String(v || '').trim().toLowerCase(); }
+  function yesNo(p){ return ans(p).filter(a => ['yes','no'].includes(norm(a.answer))); }
+  function noCount(p){ return ans(p).filter(a => norm(a.answer)==='no').length; }
+  function photos(p){ return (Array.isArray(p?.photos)?p.photos.length:0) + (p?.inspectionHistory||[]).reduce((s,h)=>s+((h.photos||[]).length),0); }
+  function isOverdue(p){ const d=String(p?.followUpDate || p?.scheduledDate || '').slice(0,10); return d && d < new Date().toISOString().slice(0,10); }
+  function compliance(list){
+    let yes=0,total=0;
+    list.forEach(p=>yesNo(p).forEach(a=>{ total++; if(norm(a.answer)==='yes') yes++; }));
+    return total ? Math.round((yes/total)*100) : 0;
+  }
+  function healthFor(p){
+    const y=yesNo(p); if(!y.length) return 0;
+    const yes=y.filter(a=>norm(a.answer)==='yes').length;
+    return Math.max(0, Math.round((yes / y.length) * 100) - Math.min(noCount(p)*2, 30));
+  }
+  function avgHealth(list){ const scored=list.map(healthFor).filter(Boolean); return scored.length ? Math.round(scored.reduce((a,b)=>a+b,0)/scored.length) : 0; }
+  function monthCount(list){ const ym=new Date().toISOString().slice(0,7); return list.filter(p=>String(p.inspectionDate||p.completedAt||p.lastSaved||'').slice(0,7)===ym).length; }
+  function ensure(){
+    const host=document.getElementById('mainCommandCentre') || document.getElementById('projectListSection');
+    if(!host || document.getElementById('fireSExecutiveDashboard1115')) return;
+    const section=document.createElement('section');
+    section.id='fireSExecutiveDashboard1115';
+    section.className='fire-s-exec-dashboard-v1115';
+    host.insertAdjacentElement('afterend', section);
+  }
+  function render(){
+    ensure();
+    const el=document.getElementById('fireSExecutiveDashboard1115');
+    if(!el) return;
+    const list=projects();
+    const premises=list.length;
+    const open=list.reduce((s,p)=>s+noCount(p),0);
+    const overdue=list.filter(isOverdue).length;
+    const photoTotal=list.reduce((s,p)=>s+photos(p),0);
+    const comp=compliance(list);
+    const health=avgHealth(list);
+    const month=monthCount(list);
+    el.innerHTML=`
+      <div class="fire-s-exec-top-v1115">
+        <div><h3>Executive Dashboard</h3><p>Portfolio-level snapshot across visible premises. Read-only summary; filters remain inside Show Filters.</p></div>
+        <button type="button" class="fire-s-exec-refresh-v1115" id="fireSExecRefresh1115">Refresh</button>
+      </div>
+      <div class="fire-s-exec-grid-v1115">
+        <div class="fire-s-exec-tile-v1115"><span>Premises</span><strong>${premises}</strong><em>Total records</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>Building Health</span><strong>${health}%</strong><em>Average score</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>Open Actions</span><strong>${open}</strong><em>From NO answers</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>Overdue</span><strong>${overdue}</strong><em>Need attention</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>Compliance</span><strong>${comp}%</strong><em>Yes / No answers</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>Photos</span><strong>${photoTotal}</strong><em>Evidence captured</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>This Month</span><strong>${month}</strong><em>Inspection activity</em></div>
+        <div class="fire-s-exec-tile-v1115"><span>Cloud</span><strong>${navigator.onLine ? '✓' : '—'}</strong><em>${navigator.onLine ? 'Online' : 'Offline'}</em></div>
+      </div>
+      <div class="fire-s-exec-bars-v1115">
+        ${[['Compliance',comp],['Building Health',health],['Action Load', premises ? Math.max(0,100-Math.min(100,Math.round(open/premises*10))) : 0]].map(r=>`<div class="fire-s-exec-bar-row-v1115"><span>${esc(r[0])}</span><div class="fire-s-exec-bar-v1115"><i style="width:${Number(r[1])||0}%"></i></div><strong>${Number(r[1])||0}%</strong></div>`).join('')}
+      </div>`;
+    const btn=document.getElementById('fireSExecRefresh1115');
+    if(btn) btn.addEventListener('click', render);
+  }
+  window.fireSRenderExecutiveDashboard1115 = render;
+  document.addEventListener('DOMContentLoaded', () => setTimeout(render, 500));
+  const oldRender = window.renderProjectsList;
+  if (typeof oldRender === 'function' && !oldRender.__fireSExec1115Wrapped) {
+    const wrapped=function(){ const result=oldRender.apply(this, arguments); setTimeout(render, 100); return result; };
+    wrapped.__fireSExec1115Wrapped=true;
+    window.renderProjectsList=wrapped;
+  }
 })();

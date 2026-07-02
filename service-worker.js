@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-14-building-health-centre-module';
+const CACHE_NAME = 'fire-s-rc-1-1-15-executive-dashboard-module';
 
 const APP_SHELL = [
   './',

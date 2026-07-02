@@ -1,14 +1,13 @@
-Fire-S RC 1.1.14 - Building Health Centre Module
+# Fire-S RC 1.1.15 - Executive Dashboard Module
 
-- Adds a dedicated Fire-S Building Health™ Centre below the Premises Workspace.
-- Shows health score, compliance, open actions, critical actions, overdue actions, trend and photo count.
-- Adds category breakdown bars and top priority actions.
-- Adds rule-based Fire-S Insights for the active premises.
-- Keeps Executive Snapshot read-only and does not change inspection, storage or cloud-sync logic.
+Small patch ZIP.
 
-Modified files:
-- index.html
-- app.js
-- styles.css
-- service-worker.js
-- CHANGELOG.md
+## Added
+- Read-only Executive Dashboard module below Command Centre.
+- Portfolio stats: premises, building health, open actions, overdue, compliance, photos, monthly activity and cloud state.
+- Mobile-first dashboard tiles and simple bar indicators.
+
+## Not changed
+- No inspection data logic changed.
+- No cloud sync logic changed.
+- Filters remain inside Show Filters.
