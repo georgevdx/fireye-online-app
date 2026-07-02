@@ -1,17 +1,8 @@
-# Fire-S RC 1.1.9 - Gateway Filter Consolidation
+# Fire-S RC 1.1.10 - Gateway Filter Stabilisation
 
-Stabilisation patch.
-
-- Brings Inspection Date filters inside the Show Filters panel.
-- Keeps workspace/status/expiry filters inside Show Filters.
-- Removes duplicate inline quick-filter strip from the Premises list.
-- Makes Executive Snapshot read-only KPI information, not a filter/navigation control.
-- Resets broken exec-* filters back to All Premises.
-- Updates cache/version strings to RC 1.1.9.
-
-Modified files:
-- index.html
-- app.js
-- styles.css
-- service-worker.js
-- CHANGELOG.md
+- Stabilises Gateway filters.
+- Uses one source of truth for filter counts and visible Premises cards.
+- Keeps Date Filters and Workspace Filters inside Show Filters.
+- Removes duplicate quick-filter bar above Premises cards.
+- Fixes No/no answer matching for action/risk counts.
+- Updates cache/version to RC 1.1.10.

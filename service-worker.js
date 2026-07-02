@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fire-s-rc-1-1-9-gateway-filter-consolidation';
+const CACHE_NAME = 'fire-s-rc-1-1-10-gateway-filter-stabilisation';
 
 const APP_SHELL = [
   './',
@@ -45,14 +45,8 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   event.respondWith(
-    caches.match(request)
-      .then(cachedResponse => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-
-        return fetch(request)
-          .then(networkResponse => {
+    fetch(request)
+      .then(networkResponse => {
             const responseClone = networkResponse.clone();
 
             caches.open(CACHE_NAME)
@@ -65,13 +59,6 @@ self.addEventListener('fetch', event => {
 
             return networkResponse;
           })
-          .catch(() => {
-            if (request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-
-            return caches.match(request);
-          });
-      })
+          .catch(() => caches.match(request).then(cachedResponse => cachedResponse || (request.mode === 'navigate' ? caches.match('./index.html') : undefined)))
   );
 });

@@ -10724,3 +10724,51 @@ body > #actionDropdown.action-dropdown button:last-child {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+
+/* Fire-S RC 1.1.10 - Gateway Filter Stabilisation */
+.fire-s-stable-filter-row {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)) !important;
+  gap: 8px !important;
+}
+.fire-s-stable-filter-row .metric-card {
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 54px !important;
+  border-radius: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  text-align: center !important;
+}
+.fire-s-stable-filter-row .metric-card .metric-number {
+  font-size: 18px !important;
+  font-weight: 900 !important;
+}
+.fire-s-stable-filter-row .metric-card .metric-label {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+}
+.fire-s-stable-premises-list {
+  display: grid;
+  gap: 10px;
+}
+.fire-s-stable-premises-card {
+  cursor: pointer;
+}
+.fire-s-stable-premises-card:focus {
+  outline: 3px solid rgba(183,28,28,.28);
+  outline-offset: 2px;
+}
+@media (max-width: 700px) {
+  .fire-s-stable-filter-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  .fire-s-stable-filter-row .metric-card {
+    min-height: 50px !important;
+    padding: 8px !important;
+  }
+}
