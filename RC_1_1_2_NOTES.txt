@@ -1,0 +1,14 @@
+Fire-S RC 1.1.2 - Mobile Stable Cache Fix
+
+Upload/replace these files on GitHub:
+- index.html
+- app.js
+- styles.css
+- service-worker.js
+- all included .js/.json/.css support files if not already present
+
+Focus:
+- Correct version and cache-busting for GitHub Pages / phone testing.
+- Service worker changed to network-first for app shell files so updates show faster.
+- Includes current uploaded stability, history, analytics and action support modules.
+- No destructive storage/database changes.
