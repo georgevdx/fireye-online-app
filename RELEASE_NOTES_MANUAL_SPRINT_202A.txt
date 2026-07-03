@@ -1,0 +1,6 @@
+Fire-S Manual Sprint 202A - Frontpage Loading Hotfix
+
+- Removed the aggressive screen-guard script from index.html load order.
+- Kept the safer app.js guard that prevents Home/Executive render while Premises is visible.
+- Purpose: restore normal frontpage/app startup while retaining the Sprint 201/202 render isolation fix.
+- screen-guard.js remains as a disabled placeholder only, so it will not hide or block any startup UI.
