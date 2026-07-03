@@ -1,0 +1,21 @@
+Fire-S Manual Sprint 202 - Navigation Render Guard
+
+Purpose:
+- Continue manual stabilisation after Sprint 201.
+- Reduce Premises bounce and Executive Snapshot ghosting.
+
+Changes:
+- Updated APP_VERSION to Manual Sprint 202 - Navigation Render Guard.
+- Added modules/screen-guard.js.
+- Guard now enforces one primary screen at a time.
+- Home / Executive Snapshot is hard-hidden while Premises, Inspection, Reports or Services is active.
+- Direct app.js renderHomeCommandCentre wrapper now blocks Home render during Premises list as well as Inspection form.
+- Updated cache-busting in index.html and styles.css.
+
+Manual test:
+1. Open app manually.
+2. Open Premises.
+3. Switch filters and scroll the Premises list.
+4. Open an inspection and go back to Premises.
+5. Confirm Executive Snapshot no longer flashes through behind Premises.
+6. Press Ctrl + Shift + D to view diagnostics if the bounce returns.

@@ -12095,3 +12095,18 @@ body > #actionDropdown.action-dropdown button:last-child {
 .smart-action-register-clarity-v1119 .sae-card + .sae-card {
   margin-top: 10px;
 }
+
+/* Manual Sprint 202 - Screen Guard */
+body.fire-s-screen-guard-premises #homeSection,
+body.fire-s-screen-guard-premises #mainCommandCentre {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+body.fire-s-screen-premises #projectListSection,
+body.fire-s-screen-inspection #projectFormSection {
+  visibility: visible !important;
+  opacity: 1 !important;
+}

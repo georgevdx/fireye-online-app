@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'Manual Sprint 201 - Premises Render Isolation';
+const APP_VERSION = 'Manual Sprint 202 - Navigation Render Guard';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -24749,7 +24749,12 @@ if (!window.fireSMobileSmartCardsApplied) {
   if (typeof renderHomeCommandCentre === 'function') {
     const originalRenderHomeCommandCentre = renderHomeCommandCentre;
     renderHomeCommandCentre = function fireSStableHomeCommandCentre() {
-      if (isInspectionFormVisible()) return;
+      // Manual Sprint 202:
+      // Never rebuild the Executive/Home command centre while either the
+      // Premises list or the Inspection form is visible. Earlier builds only
+      // blocked this during the inspection form, which still allowed the
+      // Executive Snapshot to ghost through while the Premises list was active.
+      if (isPremisesListVisible() || isInspectionFormVisible()) return;
       return originalRenderHomeCommandCentre.apply(this, arguments);
     };
     window.renderHomeCommandCentre = renderHomeCommandCentre;
