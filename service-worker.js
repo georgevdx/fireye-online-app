@@ -1,10 +1,8 @@
-// Fire-S Manual Sprint 202B
-// Service worker disabled for manual deployment mode.
-// This prevents stale cached app.js/json files from causing loading errors.
+// Fire-S Usable Recovery 204
+// Disabled service worker: clears old cached broken index/app/json files.
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
-
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -13,7 +11,6 @@ self.addEventListener('activate', event => {
       .then(() => self.clients.claim())
   );
 });
-
 self.addEventListener('fetch', event => {
   return;
 });
