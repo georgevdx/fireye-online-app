@@ -1,10 +1,10 @@
-const CACHE_NAME = 'fire-s-rc-1-1-19-action-register-clarity';
+const CACHE_NAME = 'fire-s-manual-sprint-201';
 
 const APP_SHELL = [
   './',
-  './index.html?v=rc-1-1-19-action-register-clarity',
-  './styles.css?v=rc-1-1-19-action-register-clarity',
-  './app.js?v=rc-1-1-19-action-register-clarity',
+  './index.html?v=manual-sprint-201',
+  './styles.css?v=manual-sprint-201',
+  './app.js?v=manual-sprint-201',
   './occupancies.json',
   './requirements.json',
   './checklists.json',

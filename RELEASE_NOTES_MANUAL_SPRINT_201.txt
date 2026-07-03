@@ -1,0 +1,33 @@
+Fire-S Manual Sprint 201 - Premises Render Isolation
+
+Purpose:
+- Return to manual ZIP workflow.
+- Stabilise Premises screen bounce by removing the direct Executive/Home render from showProjectList().
+- Add a lightweight diagnostics panel for future manual testing.
+
+Code changes:
+- app.js
+  - APP_VERSION updated to Manual Sprint 201.
+  - showProjectList() no longer calls renderHomeCommandCentre() while Premises is active.
+  - Premises render lock body class is applied before project list rendering.
+
+- index.html
+  - cache-busting updated to manual-sprint-201.
+  - added modules/dev-diagnostics.js.
+
+- service-worker.js
+  - cache name updated to fire-s-manual-sprint-201.
+  - app shell cache URLs updated to manual-sprint-201.
+
+- modules/dev-diagnostics.js
+  - New manual testing diagnostics panel.
+  - Press Ctrl + Shift + D to toggle.
+  - Shows current visible screen layers and recent module events.
+
+Testing focus:
+1. Hard refresh / clear old cache if needed.
+2. Open Premises.
+3. Switch filters.
+4. Open an inspection and go back to Premises.
+5. Confirm Executive Snapshot no longer ghosts through during the bounce.
+6. Optional: press Ctrl + Shift + D to show diagnostics.
