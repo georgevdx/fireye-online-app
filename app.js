@@ -17052,7 +17052,14 @@ function startAutoSyncLoop() {
   fireyeAutoSyncTimer = setInterval(() => {
     if (document.visibilityState !== 'visible') return;
     if (!navigator.onLine) return;
-
+    try {
+      const page = (window.currentPage || window.activePage || '').toString().toLowerCase();
+      if (page.includes('project')) return;
+      const hash = (location.hash || '').toLowerCase();
+      if (hash.includes('project')) return;
+      const projectsView = document.querySelector('[data-page="projects"].active,.projects-page.active,#projectsPage.active');
+      if (projectsView) return;
+    } catch (e) {}
     runBackgroundSync('auto interval');
   }, 20000);
 }
