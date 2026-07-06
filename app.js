@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.0A - Inspection Lifecycle UX';
+const APP_VERSION = 'RC 1.2.0B - User Choice Layer';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -25976,4 +25976,538 @@ function fireSApplyLifecycleUxLabels() {
     window.showProjectForm = wrapped;
     try { showProjectForm = wrapped; } catch (_) {}
   }
+})();
+
+/* =====================================================
+   FIRE-S RC 1.2.0B - User Choice Layer
+   View + Sort controls for Projects/Premises lists.
+   Purpose: let each user choose how results are seen.
+   ===================================================== */
+(function installFireSUserChoiceLayer120B() {
+  'use strict';
+
+  if (window.fireSUserChoiceLayer120BApplied) return;
+  window.fireSUserChoiceLayer120BApplied = true;
+
+  const STORAGE_KEY = 'fireSProjectUserChoice120B';
+
+  function esc(value) {
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value || '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function loadPrefs() {
+    try {
+      return Object.assign(
+        { view: 'cards', sort: 'smart', advancedOpen: false },
+        JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      );
+    } catch (_) {
+      return { view: 'cards', sort: 'smart', advancedOpen: false };
+    }
+  }
+
+  function savePrefs(nextPrefs) {
+    const prefs = Object.assign(loadPrefs(), nextPrefs || {});
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    return prefs;
+  }
+
+  function dateKey(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 10);
+    return date.toISOString().slice(0, 10);
+  }
+
+  function dateTime(value) {
+    const key = dateKey(value);
+    if (!key) return 0;
+    const time = new Date(key + 'T00:00:00').getTime();
+    return Number.isNaN(time) ? 0 : time;
+  }
+
+  function title(project) {
+    if (typeof window.fireSUltraCardTitle === 'function') return window.fireSUltraCardTitle(project);
+    return project?.projectName || [project?.organisationName, project?.siteName].filter(Boolean).join(' ') || project?.siteName || 'Untitled Premises';
+  }
+
+  function address(project) {
+    return project?.projectAddress || [project?.streetNumber, project?.addressLine].filter(Boolean).join(' ') || project?.addressLine || 'No address captured';
+  }
+
+  function lastInspection(project) {
+    if (typeof window.fireSUltraLastInspectionDate === 'function') return window.fireSUltraLastInspectionDate(project);
+    const historyDates = Array.isArray(project?.inspectionHistory)
+      ? project.inspectionHistory.map(item => item?.completedAt || item?.inspectionDate || item?.archivedAt || '').filter(Boolean)
+      : [];
+    const dates = [project?.completedAt, project?.inspectionDate, project?.lastSaved, ...historyDates]
+      .map(dateKey)
+      .filter(Boolean)
+      .sort();
+    return dates.length ? dates[dates.length - 1] : '';
+  }
+
+  function nextInspection(project) {
+    if (typeof window.fireSUltraNextInspectionDate === 'function') return window.fireSUltraNextInspectionDate(project);
+    return project?.scheduledDate || project?.followUpDate || '';
+  }
+
+  function modifiedAt(project) {
+    return project?.lastSaved || project?.updatedAt || project?.updated_at || project?.completedAt || project?.createdAt || project?.created_at || '';
+  }
+
+  function hasMeaningfulInspection(project) {
+    if (typeof window.fireSHasMeaningfulInspectionData === 'function') return window.fireSHasMeaningfulInspectionData(project);
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    return Boolean(project?.completedAt || answers.some(answer => String(answer?.answer || '').trim()) || (project?.photos || []).length);
+  }
+
+  function isScheduled(project) {
+    if (typeof window.fireSIsScheduledNewPremises === 'function') return window.fireSIsScheduledNewPremises(project);
+    return project?.scheduledStatus === 'scheduled' && !project?.completedAt;
+  }
+
+  function isNewPremise(project) {
+    if (typeof window.fireSIsNewPremises === 'function') return window.fireSIsNewPremises(project);
+    return !isScheduled(project) && !hasMeaningfulInspection(project) && !(project?.inspectionHistory || []).length;
+  }
+
+  function isCurrent(project) {
+    if (typeof window.fireSIsCurrentInspection === 'function') return window.fireSIsCurrentInspection(project);
+    return hasMeaningfulInspection(project) && !project?.completedAt;
+  }
+
+  function hasHistory(project) {
+    return Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0;
+  }
+
+  function actionCount(project) {
+    const saved = Array.isArray(project?.actions)
+      ? project.actions.filter(action => String(action?.status || 'Open').toLowerCase() !== 'closed').length
+      : 0;
+    const noAnswers = Array.isArray(project?.answers)
+      ? project.answers.filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'no').length
+      : 0;
+    return Math.max(saved, noAnswers);
+  }
+
+  function photoCount(project) {
+    return Array.isArray(project?.photos) ? project.photos.length : 0;
+  }
+
+  function answerCount(project) {
+    return Array.isArray(project?.answers)
+      ? project.answers.filter(answer => String(answer?.answer || '').trim()).length
+      : 0;
+  }
+
+  function healthScore(project) {
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    const scored = answers.filter(answer => ['yes', 'no'].includes(String(answer?.answer || '').trim().toLowerCase()));
+    if (!scored.length) return null;
+    const yes = scored.filter(answer => String(answer?.answer || '').trim().toLowerCase() === 'yes').length;
+    return Math.round((yes / scored.length) * 100);
+  }
+
+  function status(project) {
+    if (isScheduled(project)) return { label: 'Scheduled', className: 'status-scheduled', priority: 2, group: 'Scheduled' };
+    if (isNewPremise(project)) return { label: 'Not Assessed', className: 'status-not-assessed', priority: 3, group: 'New Premises' };
+    if (isCurrent(project)) return { label: 'In Progress', className: 'status-current', priority: 1, group: 'Continue Inspection' };
+    if (project?.completedAt || hasHistory(project)) return { label: 'Completed / History', className: 'status-completed', priority: 4, group: 'Existing / Previous Cycles' };
+    return { label: 'Open', className: 'status-open', priority: 5, group: 'Other' };
+  }
+
+  function formatDate(value) {
+    const key = dateKey(value);
+    if (!key) return 'Not set';
+    const date = new Date(key + 'T00:00:00');
+    return Number.isNaN(date.getTime()) ? key : date.toLocaleDateString();
+  }
+
+  function applySort(projects, sortKey) {
+    const list = projects.slice();
+    const byName = (a, b) => title(a).localeCompare(title(b), undefined, { numeric: true, sensitivity: 'base' });
+
+    list.sort((a, b) => {
+      if (sortKey === 'name-az') return byName(a, b);
+      if (sortKey === 'name-za') return byName(b, a);
+      if (sortKey === 'newest') return dateTime(modifiedAt(b)) - dateTime(modifiedAt(a)) || byName(a, b);
+      if (sortKey === 'oldest') return dateTime(modifiedAt(a)) - dateTime(modifiedAt(b)) || byName(a, b);
+      if (sortKey === 'last-inspection') return dateTime(lastInspection(b)) - dateTime(lastInspection(a)) || byName(a, b);
+      if (sortKey === 'inspection-due') return (dateTime(nextInspection(a)) || Number.MAX_SAFE_INTEGER) - (dateTime(nextInspection(b)) || Number.MAX_SAFE_INTEGER) || byName(a, b);
+      if (sortKey === 'health-high') return (healthScore(b) ?? -1) - (healthScore(a) ?? -1) || byName(a, b);
+      if (sortKey === 'health-low') return (healthScore(a) ?? 999) - (healthScore(b) ?? 999) || byName(a, b);
+
+      const statusDiff = status(a).priority - status(b).priority;
+      if (statusDiff !== 0) return statusDiff;
+      return dateTime(modifiedAt(b)) - dateTime(modifiedAt(a)) || byName(a, b);
+    });
+
+    return list;
+  }
+
+  function matchesSearch(project, searchText) {
+    if (typeof window.fireSPremisesDropdownFilter !== 'undefined' && window.fireSPremisesDropdownFilter && typeof window.fireSGetPremisesKey === 'function') {
+      if (window.fireSGetPremisesKey(project) !== window.fireSPremisesDropdownFilter) return false;
+    }
+
+    if (!searchText) return true;
+
+    const haystack = [
+      project?.projectName,
+      project?.organisationName,
+      project?.siteName,
+      project?.projectAddress,
+      project?.addressLine,
+      project?.streetNumber,
+      project?.inspectionNumber,
+      project?.inspectorName,
+      project?.contactPerson,
+      project?.contactTel,
+      project?.contactEmail,
+      project?.gps,
+      project?.occupancy
+    ].join(' ').toLowerCase();
+
+    return haystack.includes(searchText);
+  }
+
+  function setFilterFromSelect(value) {
+    if (typeof window.setInspectionGatewayQuickFilter === 'function') {
+      window.setInspectionGatewayQuickFilter(value);
+      return;
+    }
+    window.currentFilter = value;
+    try { currentFilter = value; } catch (_) {}
+    try { currentProjectPage = 1; } catch (_) {}
+    if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+  }
+
+  window.fireSSetProjectSort120B = function fireSSetProjectSort120B(value) {
+    savePrefs({ sort: value });
+    try { currentProjectPage = 1; } catch (_) {}
+    window.renderProjectsList();
+  };
+
+  window.fireSSetProjectView120B = function fireSSetProjectView120B(value) {
+    savePrefs({ view: value });
+    try { currentProjectPage = 1; } catch (_) {}
+    window.renderProjectsList();
+  };
+
+  window.fireSSetProjectLifecycleFilter120B = function fireSSetProjectLifecycleFilter120B(value) {
+    setFilterFromSelect(value);
+  };
+
+  window.fireSToggleAdvancedFilters120B = function fireSToggleAdvancedFilters120B() {
+    const prefs = savePrefs({ advancedOpen: !loadPrefs().advancedOpen });
+    const panel = document.getElementById('filterPanel');
+    if (panel) panel.style.display = prefs.advancedOpen ? 'block' : 'none';
+    window.renderProjectsList();
+  };
+
+  function countFor(projects, filterKey) {
+    if (!Array.isArray(projects)) return 0;
+    if (filterKey === 'all') return projects.length;
+    if (filterKey === 'scheduled-new') return projects.filter(isScheduled).length;
+    if (filterKey === 'new-premise') return projects.filter(isNewPremise).length;
+    if (filterKey === 'inspection-progress') return projects.filter(isCurrent).length;
+    if (filterKey === 'existing-history') return projects.filter(project => hasHistory(project) || project?.completedAt).length;
+    if (filterKey === 'archive-new-cycle') return projects.filter(project => hasHistory(project) || project?.completedAt).length;
+    return projects.length;
+  }
+
+  function renderUserChoiceControls(baseProjects, filteredCount) {
+    const prefs = loadPrefs();
+    const activeFilter = window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all') || 'all';
+
+    const filters = [
+      ['all', 'All'],
+      ['inspection-progress', 'Continue'],
+      ['scheduled-new', 'Scheduled'],
+      ['new-premise', 'New Premises'],
+      ['existing-history', 'Previous Cycles']
+    ];
+
+    return `
+      <section class="fire-s-choice-panel" aria-label="Projects view and sort controls">
+        <div class="fire-s-choice-heading">
+          <div>
+            <strong>Mission Control</strong>
+            <span>Choose how you want to see your inspections.</span>
+          </div>
+          <small>${filteredCount} result${filteredCount === 1 ? '' : 's'}</small>
+        </div>
+
+        <div class="fire-s-choice-controls">
+          <label>
+            <span>Status</span>
+            <select onchange="fireSSetProjectLifecycleFilter120B(this.value)">
+              ${filters.map(([key, label]) => `
+                <option value="${esc(key)}" ${activeFilter === key ? 'selected' : ''}>
+                  ${esc(label)} (${countFor(baseProjects, key)})
+                </option>
+              `).join('')}
+            </select>
+          </label>
+
+          <label>
+            <span>Sort</span>
+            <select onchange="fireSSetProjectSort120B(this.value)">
+              ${[
+                ['smart', 'Smart order'],
+                ['newest', 'Last modified - newest'],
+                ['oldest', 'Last modified - oldest'],
+                ['name-az', 'Name A-Z'],
+                ['name-za', 'Name Z-A'],
+                ['last-inspection', 'Last inspection'],
+                ['inspection-due', 'Inspection due'],
+                ['health-high', 'Health high-low'],
+                ['health-low', 'Health low-high']
+              ].map(([key, label]) => `
+                <option value="${esc(key)}" ${prefs.sort === key ? 'selected' : ''}>${esc(label)}</option>
+              `).join('')}
+            </select>
+          </label>
+
+          <label>
+            <span>View</span>
+            <select onchange="fireSSetProjectView120B(this.value)">
+              ${[
+                ['cards', 'Cards'],
+                ['list', 'List'],
+                ['grouped', 'Grouped'],
+                ['timeline', 'Timeline']
+              ].map(([key, label]) => `
+                <option value="${esc(key)}" ${prefs.view === key ? 'selected' : ''}>${esc(label)}</option>
+              `).join('')}
+            </select>
+          </label>
+
+          <button type="button" class="fire-s-advanced-toggle" onclick="fireSToggleAdvancedFilters120B()">
+            ${prefs.advancedOpen ? 'Hide Advanced' : 'Advanced'}
+          </button>
+        </div>
+      </section>
+    `;
+  }
+
+  function openProject(project) {
+    const id = JSON.stringify(project?.id || '');
+    return `event.stopPropagation(); window.fireSOpenProjectCard(${id})`;
+  }
+
+  function renderCard(project) {
+    const st = status(project);
+    const score = healthScore(project);
+    const scoreText = score === null || score === undefined ? '—' : `${score}%`;
+    const riskText = hasMeaningfulInspection(project) ? (score === null ? 'Unknown' : (score < 65 ? 'High' : score < 85 ? 'Medium' : 'Low')) : 'Not Assessed';
+    const primary = typeof window.getProjectPrimaryAction === 'function' ? window.getProjectPrimaryAction(project).label : 'Open';
+
+    return `
+      <article class="choice-card ${esc(st.className)}" role="button" tabindex="0" data-project-id="${esc(project?.id || '')}" onclick='${openProject(project)}' onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); ${openProject(project)}; }'>
+        <div class="choice-card-top">
+          <div>
+            <strong>${esc(title(project))}</strong>
+            <span>${esc(address(project))}</span>
+          </div>
+          <b class="choice-status-pill">${esc(st.label)}</b>
+        </div>
+        <div class="choice-card-grid">
+          <span><small>Last</small><strong>${esc(formatDate(lastInspection(project)))}</strong></span>
+          <span><small>Next</small><strong>${esc(formatDate(nextInspection(project)))}</strong></span>
+          <span><small>Health</small><strong>${esc(scoreText)}</strong></span>
+          <span><small>Risk</small><strong>${esc(riskText)}</strong></span>
+        </div>
+        <div class="choice-card-footer">
+          <span>${answerCount(project)} answers · ${photoCount(project)} photos · ${actionCount(project)} actions</span>
+          <b>${esc(primary)} →</b>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderList(projects) {
+    return `
+      <div class="choice-list-table" role="table">
+        <div class="choice-list-row choice-list-head" role="row">
+          <span>Name</span><span>Status</span><span>Last</span><span>Next</span><span>Health</span><span>Actions</span>
+        </div>
+        ${projects.map(project => {
+          const st = status(project);
+          const score = healthScore(project);
+          return `
+            <div class="choice-list-row" role="row" tabindex="0" data-project-id="${esc(project?.id || '')}" onclick='${openProject(project)}' onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); ${openProject(project)}; }'>
+              <span><strong>${esc(title(project))}</strong><small>${esc(address(project))}</small></span>
+              <span><b class="choice-status-pill ${esc(st.className)}">${esc(st.label)}</b></span>
+              <span>${esc(formatDate(lastInspection(project)))}</span>
+              <span>${esc(formatDate(nextInspection(project)))}</span>
+              <span>${score === null ? '—' : esc(score + '%')}</span>
+              <span>${actionCount(project)}</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function renderGrouped(projects) {
+    const order = ['Continue Inspection', 'Scheduled', 'New Premises', 'Existing / Previous Cycles', 'Other'];
+    const groups = projects.reduce((acc, project) => {
+      const key = status(project).group;
+      (acc[key] ||= []).push(project);
+      return acc;
+    }, {});
+
+    return `
+      <div class="choice-grouped-view">
+        ${order.filter(key => groups[key]?.length).map(key => `
+          <section class="choice-group">
+            <h3>${esc(key)} <span>${groups[key].length}</span></h3>
+            <div class="choice-card-stack">${groups[key].map(renderCard).join('')}</div>
+          </section>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderTimeline(projects) {
+    const groups = projects.reduce((acc, project) => {
+      const key = dateKey(lastInspection(project) || nextInspection(project) || modifiedAt(project)) || 'No Date';
+      const year = key === 'No Date' ? 'No Date' : key.slice(0, 4);
+      (acc[year] ||= []).push(project);
+      return acc;
+    }, {});
+
+    const years = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+    return `
+      <div class="choice-timeline-view">
+        ${years.map(year => `
+          <section class="choice-timeline-year">
+            <h3>${esc(year)}</h3>
+            ${groups[year].map(project => `
+              <div class="choice-timeline-item" tabindex="0" data-project-id="${esc(project?.id || '')}" onclick='${openProject(project)}' onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); ${openProject(project)}; }'>
+                <time>${esc(formatDate(lastInspection(project) || nextInspection(project) || modifiedAt(project)))}</time>
+                <strong>${esc(title(project))}</strong>
+                <span>${esc(status(project).label)}</span>
+              </div>
+            `).join('')}
+          </section>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function renderResults(projects, prefs) {
+    if (prefs.view === 'list') return renderList(projects);
+    if (prefs.view === 'grouped') return renderGrouped(projects);
+    if (prefs.view === 'timeline') return renderTimeline(projects);
+    return `<div class="choice-card-grid-view">${projects.map(renderCard).join('')}</div>`;
+  }
+
+  window.renderInspectionGatewayQuickFilters = function fireSChoiceNoLegacyFilterButtons() {
+    return '';
+  };
+
+  window.renderProjectsList = function fireSRenderProjectsUserChoice120B() {
+    const container = document.getElementById('projectsList');
+    if (!container) return;
+
+    if (!window.currentUserProfile && typeof currentUserProfile !== 'undefined') {
+      currentUserProfile = {
+        id: 'local-user',
+        email: 'local@fire-s.app',
+        fullName: 'Local User',
+        role: 'super_admin',
+        companyId: null,
+        companyName: 'Local / Personal Workspace'
+      };
+      currentCompanyAccess = { status: 'active', plan: 'local', source: 'local-fallback' };
+    }
+
+    const allProjects = typeof window.getProjects === 'function' ? window.getProjects() : [];
+    const projects = typeof window.getVisibleProjectsForCurrentUser === 'function'
+      ? window.getVisibleProjectsForCurrentUser(allProjects)
+      : allProjects;
+
+    if (typeof window.fireSEnsurePremisesDropdown === 'function') window.fireSEnsurePremisesDropdown(projects);
+    if (typeof window.updateAppInfo === 'function') window.updateAppInfo();
+    if (typeof window.renderDashboardMetrics === 'function') window.renderDashboardMetrics(projects);
+    if (typeof window.updateOfflineReadinessBanner === 'function') window.updateOfflineReadinessBanner();
+    if (typeof window.updateSiteReadyPreflightChecklist === 'function') window.updateSiteReadyPreflightChecklist();
+    if (typeof window.updatePostSiteSyncReminder === 'function') window.updatePostSiteSyncReminder();
+
+    const searchField = document.getElementById('projectSearch');
+    const searchText = searchField ? searchField.value.trim().toLowerCase() : '';
+
+    const baseFiltered = projects.filter(project => {
+      if (!matchesSearch(project, searchText)) return false;
+      return typeof window.projectMatchesInspectionDateFilter === 'function'
+        ? window.projectMatchesInspectionDateFilter(project)
+        : true;
+    });
+
+    const activeFilter = window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all') || 'all';
+    const lifecycleFiltered = baseFiltered.filter(project =>
+      typeof window.projectMatchesInspectionGatewayQuickFilter === 'function'
+        ? window.projectMatchesInspectionGatewayQuickFilter(project, activeFilter)
+        : true
+    );
+
+    const prefs = loadPrefs();
+    const filtered = applySort(lifecycleFiltered, prefs.sort);
+
+    if (typeof window.updateActiveFilterStatus === 'function') window.updateActiveFilterStatus(filtered.length);
+
+    const perPage = typeof window.PROJECTS_PER_PAGE === 'number' ? window.PROJECTS_PER_PAGE : 10;
+    const page = typeof currentProjectPage === 'number' ? currentProjectPage : 1;
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    if (typeof currentProjectPage !== 'undefined' && currentProjectPage > totalPages) currentProjectPage = totalPages;
+    const currentPage = typeof currentProjectPage === 'number' ? currentProjectPage : page;
+    const start = (currentPage - 1) * perPage;
+    const pageItems = filtered.slice(start, start + perPage);
+    window.currentProjectsListView = pageItems;
+
+    const paging = document.getElementById('projectPagingControls');
+    if (paging) {
+      paging.innerHTML = `
+        <button type="button" onclick="previousProjectPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+        <span>Showing ${filtered.length === 0 ? 0 : start + 1} - ${Math.min(start + perPage, filtered.length)} of ${filtered.length}</span>
+        <button type="button" onclick="nextProjectPage()" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>
+      `;
+    }
+
+    const controls = renderUserChoiceControls(baseFiltered, filtered.length);
+    const advancedNotice = prefs.advancedOpen
+      ? `<div class="fire-s-advanced-note">Advanced filters are open below/above where available. Keep this closed for normal field work.</div>`
+      : '';
+
+    if (!filtered.length) {
+      container.innerHTML = `${controls}${advancedNotice}<div class="empty-state">No matching premises found.</div>`;
+      return;
+    }
+
+    container.innerHTML = `
+      ${controls}
+      ${advancedNotice}
+      <div id="projectListView" class="choice-results choice-view-${esc(prefs.view)}">
+        ${renderResults(pageItems, prefs)}
+      </div>
+      <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>
+    `;
+  };
+
+  const applyInitialAdvancedState = () => {
+    const panel = document.getElementById('filterPanel');
+    if (panel) panel.style.display = loadPrefs().advancedOpen ? 'block' : 'none';
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyInitialAdvancedState);
+  else applyInitialAdvancedState();
 })();
