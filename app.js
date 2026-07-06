@@ -26290,9 +26290,18 @@ function fireSApplyLifecycleUxLabels() {
             </select>
           </label>
 
-          <button type="button" class="fire-s-advanced-toggle" onclick="fireSToggleAdvancedFilters120B()">
-            ${prefs.advancedOpen ? 'Hide Advanced' : 'Advanced'}
-          </button>
+          <label class="fire-s-choice-more-control">
+            <span>More</span>
+            <button
+              type="button"
+              class="fire-s-advanced-toggle"
+              onclick="fireSToggleAdvancedFilters120B()"
+              aria-label="${prefs.advancedOpen ? 'Hide advanced filters' : 'Show advanced filters'}"
+              title="${prefs.advancedOpen ? 'Hide advanced filters' : 'Show advanced filters'}"
+            >
+              ${prefs.advancedOpen ? 'Hide Advanced' : 'Advanced Filters'}
+            </button>
+          </label>
         </div>
       </section>
     `;
