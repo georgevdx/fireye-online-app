@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'Manual Sprint 202B - JSON Load and Cache Reset Hotfix';
+const APP_VERSION = 'RC 1.1.19B - Inspection Session Guard';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -223,6 +223,70 @@ function clearInputValue(id) {
   field.value = '';
   field.defaultValue = '';
   field.setAttribute('value', '');
+}
+
+
+// =====================================================
+// RC 1.1.19B - Inspection Session Guard
+// Prevents stale inspection data from carrying into a new site.
+// =====================================================
+function clearInspectionAnswerUiState() {
+  document.querySelectorAll('.answer-select').forEach(field => {
+    field.value = '';
+  });
+
+  document.querySelectorAll('.note-input').forEach(field => {
+    field.value = '';
+    field.defaultValue = '';
+  });
+
+  document.querySelectorAll('.expiry-date').forEach(field => {
+    field.value = '';
+    field.defaultValue = '';
+  });
+
+  if (typeof updateAnswerSummary === 'function') {
+    updateAnswerSummary();
+  }
+}
+
+function resetInspectionSessionState(options = {}) {
+  const keepProjectId = Boolean(options.keepProjectId);
+
+  clearTimeout(autoSaveTimer);
+  setWorkflowGateNoWriteLock(true);
+
+  if (!keepProjectId) {
+    currentProjectId = null;
+  }
+
+  currentProject = null;
+  currentPhotos = [];
+  archivedReportContext = null;
+  followUpFindingModeActive = false;
+  followUpFindingNavIndexes = [];
+  followUpFindingNavPosition = 0;
+  activeChecklistSectionIndex = null;
+  activeChecklistQuestionPosition = 0;
+  activeInspectionSectionId = null;
+
+  [
+    'siteHistoryPanel',
+    'inspectionArchivePanel',
+    'smartActionEnginePanel',
+    'finishSummaryBanner',
+    'inspectionOpenGateBackdrop'
+  ].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.remove();
+  });
+
+  clearInspectionAnswerUiState();
+  renderPhotos();
+
+  window.setTimeout(() => {
+    setWorkflowGateNoWriteLock(false);
+  }, 250);
 }
 
 let autoSaveTimer = null;
@@ -5222,6 +5286,8 @@ function cancelScheduleNewInspection() {
 
 function createNewProject() {
 
+  resetInspectionSessionState({ keepProjectId: false });
+
   if (!canCreateInspection()) {
     alert(
       'Your company access does not allow new inspections. Please contact your company admin or Fire-S support.'
@@ -5229,11 +5295,7 @@ function createNewProject() {
     return;
   }
 
-  clearTimeout(autoSaveTimer);
-  currentProjectId = null;
-  followUpFindingModeActive = false;
-followUpFindingNavIndexes = [];
-followUpFindingNavPosition = 0;
+  // Session state is already cleared by resetInspectionSessionState().
 
   const existingHistoryPanel =
     document.getElementById('siteHistoryPanel');
@@ -5298,6 +5360,7 @@ clearInputValue('finalComments');
   }
 
   updateDisplay();
+  clearInspectionAnswerUiState();
 
   showProjectForm();
 }
@@ -12154,13 +12217,8 @@ function openProject(projectId, focusMode, options = {}) {
     return;
   }
 
+  resetInspectionSessionState({ keepProjectId: true });
   currentProjectId = project.id;
-  currentProject = null;
-  currentPhotos = [];
-  archivedReportContext = null;
-  followUpFindingModeActive = false;
-followUpFindingNavIndexes = [];
-followUpFindingNavPosition = 0;
  
   const shouldStartFreshScheduledInspection =
   project.scheduleFreshInspection === true;
@@ -12312,6 +12370,7 @@ getEl('finalComments').value = project.finalComments || '';
     console.warn('Photo recovery check failed:', error);
   });
   updateDisplay();
+  clearInspectionAnswerUiState();
 
   if (project.answers) {
    project.answers.forEach(item => {
@@ -25513,4 +25572,157 @@ if (!window.fireSMobileSmartCardsApplied) {
   setTimeout(setProjectsFreezeClass, 500);
 
   window.FireSProjectsLayoutStability118B = { version: VERSION, isProjectsPageVisible };
+})();
+
+/* =====================================================
+   Fire-S RC 1.1.19 - Initial Render Stabiliser
+   Purpose: remove the remaining one-time Projects/Premises "hop" by
+   batching early list renders, preserving list height during rebuilds,
+   and disabling movement transitions during app warm-up.
+   ===================================================== */
+(function () {
+  'use strict';
+
+  const VERSION = '1.1.19-initial-render-stabiliser';
+  const state = {
+    bootUntil: Date.now() + 1800,
+    renderQueued: false,
+    lastRenderAt: 0,
+    lastSignature: '',
+    userInteracted: false
+  };
+
+  function markInteracted() {
+    state.userInteracted = true;
+  }
+
+  ['pointerdown', 'keydown', 'input', 'change', 'touchstart'].forEach(type => {
+    document.addEventListener(type, markInteracted, true);
+  });
+
+  function isVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    return el.style.display !== 'none' && !el.hidden && (!style || style.display !== 'none' && style.visibility !== 'hidden');
+  }
+
+  function isProjectsPageVisible() {
+    return isVisible(document.getElementById('projectListSection')) && !isVisible(document.getElementById('projectFormSection'));
+  }
+
+  function readStableSignature() {
+    try {
+      const projects = typeof window.getProjects === 'function' ? window.getProjects() : [];
+      const search = document.getElementById('projectSearch')?.value || '';
+      const filter = window.currentFilter || '';
+      const page = window.currentProjectPage || 1;
+      return JSON.stringify({
+        search,
+        filter,
+        page,
+        items: (Array.isArray(projects) ? projects : []).map(project => ({
+          id: project?.id || '',
+          saved: project?.lastSaved || project?.updatedAt || project?.completedAt || '',
+          status: project?.inspectionStatus || project?.status || '',
+          actions: Array.isArray(project?.actions) ? project.actions.length : 0,
+          photos: Array.isArray(project?.photos) ? project.photos.length : 0
+        }))
+      });
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function lockListHeight(container) {
+    if (!container || !isProjectsPageVisible()) return () => {};
+    const rect = container.getBoundingClientRect();
+    if (rect.height > 80) {
+      container.style.minHeight = `${Math.ceil(rect.height)}px`;
+    }
+    return () => {
+      window.setTimeout(() => {
+        if (container && container.style) container.style.minHeight = '';
+      }, 650);
+    };
+  }
+
+  function installBootClass() {
+    if (!document.body) return;
+    document.body.classList.add('fire-s-render-warmup');
+    window.setTimeout(() => {
+      document.body.classList.remove('fire-s-render-warmup');
+      document.body.classList.add('fire-s-render-ready');
+    }, 1800);
+  }
+
+  function wrapRenderProjectsList() {
+    if (typeof window.renderProjectsList !== 'function') return false;
+    if (window.renderProjectsList.__fireSInitialStabiliser119) return true;
+
+    const previousRender = window.renderProjectsList;
+
+    function stableRenderProjectsList(options = {}) {
+      const force = !!(options && options.force === true);
+      const now = Date.now();
+      const booting = now < state.bootUntil;
+      const container = document.getElementById('projectsList');
+      const signature = readStableSignature();
+
+      if (!force && isProjectsPageVisible() && container?.innerHTML) {
+        const sameSignature = signature && signature === state.lastSignature;
+        const rapidInitialRender = booting && !state.userInteracted && now - state.lastRenderAt < 450;
+
+        if (sameSignature || rapidInitialRender) {
+          if (!state.renderQueued) {
+            state.renderQueued = true;
+            window.requestAnimationFrame(() => {
+              state.renderQueued = false;
+              stableRenderProjectsList({ force: true });
+            });
+          }
+          return;
+        }
+      }
+
+      const active = document.activeElement;
+      const activeId = active?.id || '';
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+      const releaseHeight = lockListHeight(container);
+
+      const result = previousRender.apply(this, arguments);
+
+      state.lastSignature = signature || readStableSignature();
+      state.lastRenderAt = Date.now();
+
+      window.requestAnimationFrame(() => {
+        if (activeId) {
+          const nextActive = document.getElementById(activeId);
+          if (nextActive && typeof nextActive.focus === 'function') {
+            try { nextActive.focus({ preventScroll: true }); } catch (_) {}
+          }
+        }
+        if (isProjectsPageVisible()) window.scrollTo(scrollX, scrollY);
+        releaseHeight();
+      });
+
+      return result;
+    }
+
+    stableRenderProjectsList.__fireSInitialStabiliser119 = true;
+    window.renderProjectsList = stableRenderProjectsList;
+    try { renderProjectsList = stableRenderProjectsList; } catch (_) {}
+    return true;
+  }
+
+  function install() {
+    installBootClass();
+    if (!wrapRenderProjectsList()) window.setTimeout(wrapRenderProjectsList, 400);
+    window.setTimeout(() => { state.bootUntil = 0; }, 2200);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install);
+  else install();
+
+  window.FireSInitialRenderStabiliser119 = { version: VERSION };
 })();
