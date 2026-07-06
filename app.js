@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.1.19C - New Inspection Context Reset';
+const APP_VERSION = 'RC 1.2.0A - Inspection Lifecycle UX';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -4219,18 +4219,18 @@ if (cancelScheduledInspectionBtn) {
   
   const backBtn = document.getElementById('backBtn');
   if (backBtn) {
-    backBtn.addEventListener('click', showProjectList);
+    backBtn.addEventListener('click', closeInspectionSession);
   }
 
   const topBackBtn = document.getElementById('topBackBtn');
   if (topBackBtn) {
-    topBackBtn.addEventListener('click', showProjectList);
+    topBackBtn.addEventListener('click', closeInspectionSession);
   }
   const floatingBackToProjectsBtn =
     document.getElementById('floatingBackToProjectsBtn');
 
   if (floatingBackToProjectsBtn) {
-    floatingBackToProjectsBtn.addEventListener('click', showProjectList);
+    floatingBackToProjectsBtn.addEventListener('click', closeInspectionSession);
   }
   getEl('photoInput').addEventListener('change', handlePhotoUpload);
   const downloadAllPhotosBtn =
@@ -5293,6 +5293,8 @@ function cancelScheduleNewInspection() {
 
 function createNewProject() {
 
+  currentInspectionSessionSnapshot = null;
+  currentInspectionSessionWasNew = true;
   resetInspectionSessionState({ keepProjectId: false });
   currentProjectId = null;
   currentProject = null;
@@ -12246,6 +12248,8 @@ function openProject(projectId, focusMode, options = {}) {
   resetInspectionSessionState({ keepProjectId: true });
   currentProjectId = project.id;
   window.currentProjectId = project.id;
+  currentInspectionSessionSnapshot = cloneInspectionProjectForWorkflow(project);
+  currentInspectionSessionWasNew = false;
   currentProject = project;
   window.currentProject = project;
  
@@ -13065,6 +13069,10 @@ lastSaved: new Date().toISOString()
   renderProjectsList();
 
   const savedProject = projects.find(p => p.id === currentProjectId);
+  if (savedProject) {
+    currentInspectionSessionSnapshot = cloneInspectionProjectForWorkflow(savedProject);
+    currentInspectionSessionWasNew = false;
+  }
 
   if (savedProject) {
   if (!navigator.onLine) {
@@ -25756,4 +25764,216 @@ if (!window.fireSMobileSmartCardsApplied) {
   else install();
 
   window.FireSInitialRenderStabiliser119 = { version: VERSION };
+})();
+
+
+// =====================================================
+// RC 1.2.0A - Inspection Lifecycle UX
+// Close / Save / Finish model, simplified Projects filters and safer card status.
+// =====================================================
+let currentInspectionSessionSnapshot = null;
+let currentInspectionSessionWasNew = false;
+
+function fireSHasMeaningfulInspectionData(project) {
+  if (!project) return false;
+  const answers = Array.isArray(project.answers) ? project.answers : [];
+  const answered = answers.some(answer => String(answer?.answer || '').trim());
+  const photos = Array.isArray(project.photos) ? project.photos.length : 0;
+  const comments = String(project.finalComments || '').trim();
+  return answered || photos > 0 || !!comments || !!project.completedAt;
+}
+
+function fireSHasPreviousCycles(project) {
+  return Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0;
+}
+
+function fireSIsScheduledNewPremises(project) {
+  return project?.scheduledStatus === 'scheduled' && project?.scheduleType === 'new_site' && !project?.completedAt;
+}
+
+function fireSIsNewPremises(project) {
+  return !fireSIsScheduledNewPremises(project) && !fireSHasMeaningfulInspectionData(project) && !fireSHasPreviousCycles(project);
+}
+
+function fireSIsCurrentInspection(project) {
+  if (!project || fireSIsScheduledNewPremises(project)) return false;
+  if (project.completedAt && project.scheduledStatus === 'completed') return false;
+  return fireSHasMeaningfulInspectionData(project) && !project.completedAt;
+}
+
+function fireSIsCompletedOrArchiveCandidate(project) {
+  if (!project || fireSIsScheduledNewPremises(project)) return false;
+  return Boolean(project.completedAt) || fireSHasPreviousCycles(project);
+}
+
+function projectMatchesInspectionGatewayQuickFilter(project, filter) {
+  const activeFilter = filter || 'all';
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'scheduled-new' || activeFilter === 'scheduled') return fireSIsScheduledNewPremises(project);
+  if (activeFilter === 'new-premise') return fireSIsNewPremises(project);
+  if (activeFilter === 'inspection-progress' || activeFilter === 'current') return fireSIsCurrentInspection(project);
+  if (activeFilter === 'existing-history') return fireSHasPreviousCycles(project);
+  if (activeFilter === 'archive-new-cycle' || activeFilter === 'inspection-complete' || activeFilter === 'completed') return fireSIsCompletedOrArchiveCandidate(project);
+  if (activeFilter === 'risk') return fireSHasMeaningfulInspectionData(project) && hasProjectOpenActionItems(project);
+  if (activeFilter === 'overdue') return typeof fireSIsInspectionOverdue === 'function' ? fireSIsInspectionOverdue(project) : hasProjectOverdueActions(project);
+  if (activeFilter === 'inspection-attention') return fireSHasMeaningfulInspectionData(project) && (hasProjectOpenActionItems(project) || hasProjectOverdueActions(project));
+  if (activeFilter === 'compliant' || activeFilter === 'clear-completed') return fireSHasMeaningfulInspectionData(project) && isProjectCompliantForGateway(project);
+  return true;
+}
+
+function getInspectionGatewayQuickFilterCounts(projects) {
+  const safeProjects = Array.isArray(projects) ? projects : [];
+  const count = key => safeProjects.filter(project => projectMatchesInspectionGatewayQuickFilter(project, key)).length;
+  return {
+    all: safeProjects.length,
+    'scheduled-new': count('scheduled-new'),
+    'new-premise': count('new-premise'),
+    'inspection-progress': count('inspection-progress'),
+    'existing-history': count('existing-history'),
+    'archive-new-cycle': count('archive-new-cycle')
+  };
+}
+
+function renderInspectionGatewayQuickFilters(projects) {
+  const counts = getInspectionGatewayQuickFilterCounts(projects);
+  const filters = [
+    { key: 'all', label: 'All' },
+    { key: 'scheduled-new', label: 'Scheduled' },
+    { key: 'new-premise', label: 'New Premise' },
+    { key: 'inspection-progress', label: 'Continue Current' },
+    { key: 'existing-history', label: 'Previous Cycles' },
+    { key: 'archive-new-cycle', label: 'Archive / New Cycle' }
+  ];
+
+  return `
+    <div class="fire-s-lifecycle-heading">
+      <strong>Inspection Lifecycle</strong>
+      <span>Select the work area you need today.</span>
+    </div>
+    <div class="gateway-quick-filter-bar fire-s-lifecycle-filter-bar" aria-label="Inspection lifecycle filters">
+      ${filters.map(filter => `
+        <button
+          type="button"
+          class="${currentFilter === filter.key ? 'gateway-filter-active' : ''}"
+          onclick="setInspectionGatewayQuickFilter('${filter.key}')"
+        >
+          <strong>${counts[filter.key] || 0}</strong>
+          <span>${escapeHtml(filter.label)}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function getInspectionCardVisualClass(project) {
+  if (!fireSHasMeaningfulInspectionData(project)) {
+    return fireSIsScheduledNewPremises(project) ? 'inspection-card-status-blue' : 'inspection-card-status-neutral';
+  }
+
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+
+  if ((typeof fireSIsInspectionOverdue === 'function' && fireSIsInspectionOverdue(project)) || completion.noCount > 0 || expiryCounts.overdue > 0) {
+    return 'inspection-card-status-red';
+  }
+
+  if (expiryCounts.soon > 0) return 'inspection-card-status-amber';
+  return 'inspection-card-status-green';
+}
+
+function getInspectionCardChips(project) {
+  if (!fireSHasMeaningfulInspectionData(project)) {
+    return [{ className: 'inspection-chip-clear', text: fireSIsScheduledNewPremises(project) ? 'Scheduled - Not Started' : 'Not Assessed' }];
+  }
+
+  const completion = getProjectCompletionCounts(project);
+  const expiryCounts = getProjectExpiryCounts(project);
+  const chips = [];
+
+  if (completion.noCount > 0) chips.push({ className: 'inspection-chip-danger', text: `${completion.noCount} Action Item${completion.noCount === 1 ? '' : 's'}` });
+  if (completion.unanswered > 0 && !project.completedAt) chips.push({ className: 'inspection-chip-progress', text: `${completion.unanswered} Unanswered` });
+  if (expiryCounts.overdue > 0) chips.push({ className: 'inspection-chip-danger', text: `${expiryCounts.overdue} Expired` });
+  if (expiryCounts.soon > 0) chips.push({ className: 'inspection-chip-warning', text: `${expiryCounts.soon} Due Soon` });
+  if (fireSHasPreviousCycles(project)) chips.push({ className: 'inspection-chip-cycle', text: `${project.inspectionHistory.length} Previous Cycle${project.inspectionHistory.length === 1 ? '' : 's'}` });
+  if (chips.length === 0) chips.push({ className: 'inspection-chip-clear', text: project.completedAt ? 'Completed' : 'In Progress' });
+  return chips;
+}
+
+function getProjectPrimaryAction(project) {
+  if (fireSIsScheduledNewPremises(project)) return { label: 'Start Scheduled Inspection', focusMode: '', className: 'action-primary' };
+  if (fireSIsNewPremises(project)) return { label: 'Start First Inspection', focusMode: '', className: 'action-primary' };
+  if (fireSIsCurrentInspection(project)) return { label: 'Continue / Edit Current', focusMode: '', className: 'action-primary' };
+  if (fireSHasPreviousCycles(project)) return { label: 'View Previous Cycles', focusMode: '', className: 'action-warning' };
+  return { label: 'Open Inspection', focusMode: '', className: 'action-primary' };
+}
+
+function closeInspectionSession() {
+  clearTimeout(autoSaveTimer);
+
+  if (!document.getElementById('projectFormSection') || document.getElementById('projectFormSection').style.display === 'none') {
+    showProjectList();
+    return;
+  }
+
+  const hasOpenInspection = Boolean(currentProjectId || currentInspectionSessionWasNew);
+  if (!hasOpenInspection) {
+    resetInspectionSessionState({ keepProjectId: false });
+    showProjectList();
+    return;
+  }
+
+  const saveAndClose = confirm('Close inspection?\n\nOK = Save & Close\nCancel = choose Discard or Continue');
+  if (saveAndClose) {
+    saveProject();
+    resetInspectionSessionState({ keepProjectId: false });
+    showProjectList();
+    return;
+  }
+
+  const discard = confirm('Discard changes and close without saving?\n\nOK = Discard & Close\nCancel = Continue Inspection');
+  if (!discard) return;
+
+  if (currentProjectId && currentInspectionSessionSnapshot) {
+    restoreWorkflowProjectSnapshot(currentProjectId, currentInspectionSessionSnapshot);
+  } else if (currentProjectId && currentInspectionSessionWasNew) {
+    const projects = getProjects().filter(project => project.id !== currentProjectId);
+    setProjects(projects);
+  }
+
+  resetInspectionSessionState({ keepProjectId: false });
+  showProjectList();
+}
+
+function fireSApplyLifecycleUxLabels() {
+  const labels = [
+    ['backBtn', 'Close'],
+    ['topBackBtn', 'Close Inspection'],
+    ['floatingBackToProjectsBtn', 'Close'],
+    ['saveBtn', 'Save Draft'],
+    ['finishBtn', 'Finish Inspection']
+  ];
+  labels.forEach(([id, text]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  });
+
+  const toggle = document.getElementById('toggleFiltersBtn');
+  if (toggle) toggle.textContent = 'Advanced Filters';
+}
+
+(function installFireSInspectionLifecycleUx120A(){
+  const apply = () => fireSApplyLifecycleUxLabels();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);
+  else apply();
+  const oldShowProjectForm = window.showProjectForm || (typeof showProjectForm !== 'undefined' ? showProjectForm : null);
+  if (typeof oldShowProjectForm === 'function' && !oldShowProjectForm.__fireSLifecycleWrapped) {
+    const wrapped = function() {
+      const result = oldShowProjectForm.apply(this, arguments);
+      fireSApplyLifecycleUxLabels();
+      return result;
+    };
+    wrapped.__fireSLifecycleWrapped = true;
+    window.showProjectForm = wrapped;
+    try { showProjectForm = wrapped; } catch (_) {}
+  }
 })();
