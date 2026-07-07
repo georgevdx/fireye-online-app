@@ -12626,3 +12626,42 @@ body.fire-s-render-warmup #saveMessage {
     width: 100%;
   }
 }
+
+
+/* =====================================================
+   FIRE-S RC 1.2.0F - Role Based Home Cleanup
+   ===================================================== */
+body.fire-s-inspector-mode #complianceHeroCard,
+body.fire-s-inspector-mode .compliance-hero-card,
+body.fire-s-inspector-mode #dashboardMetrics,
+body.fire-s-inspector-mode .dashboard-metrics,
+body.fire-s-inspector-mode .fire-s-exec-mini-dashboard,
+body.fire-s-inspector-mode .fire-s-exec-dashboard-v1115,
+body.fire-s-inspector-mode #mainCommandCentre .main-command-stats {
+  display: none !important;
+}
+
+body.fire-s-inspector-mode #filterPanel,
+body.fire-s-inspector-mode #toggleFiltersBtn {
+  display: none !important;
+}
+
+body.fire-s-inspector-mode #mainCommandCentre .main-command-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+body.fire-s-inspector-mode #cmdInspectionsBtn {
+  min-height: 96px;
+  border: 2px solid #0ea5e9;
+  background: linear-gradient(135deg, #0f172a 0%, #075985 52%, #0ea5e9 100%);
+  color: #fff;
+}
+
+body.fire-s-inspector-mode #cmdInspectionsBtn .command-copy,
+body.fire-s-inspector-mode #cmdInspectionsBtn .command-title {
+  color: #fff;
+}
+
+body.fire-s-management-mode #mainCommandCentre .main-command-stats {
+  display: grid;
+}

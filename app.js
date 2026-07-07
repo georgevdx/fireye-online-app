@@ -26561,3 +26561,146 @@ function fireSApplyLifecycleUxLabels() {
 
   window.fireSApplyMoreFiltersLabels120E = applyMoreFiltersLabels;
 })();
+
+
+// =====================================================
+// FIRE-S RC 1.2.0F - Role Based Home Cleanup
+// Purpose:
+// 1) Remove duplicate Executive Dashboard card under Command Centre.
+// 2) Inspector mode: search + inspection work only; no portfolio stats.
+// 3) Management/Owner/Admin: retain dashboard stats.
+// =====================================================
+(function fireSRoleBasedHomeCleanup120F(){
+  const MANAGER_ROLES_120F = ['super_admin', 'company_owner', 'owner', 'manager', 'management', 'viewer', 'admin'];
+
+  function role120F(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') return String(window.getCurrentUserRole() || '').toLowerCase();
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) return String(currentUserProfile.role).toLowerCase();
+    } catch (e) {}
+    return 'guest';
+  }
+
+  function isInspector120F(){
+    const role = role120F();
+    return role === 'inspector' || role === 'field_inspector' || role === 'field-inspector';
+  }
+
+  function isManagement120F(){
+    return MANAGER_ROLES_120F.includes(role120F());
+  }
+
+  window.fireSIsInspectorRole120F = isInspector120F;
+  window.fireSIsManagementRole120F = isManagement120F;
+
+  function removeDuplicateExecutiveDashboard120F(){
+    // This dashboard duplicated the Command Centre summary. The management stats remain in .main-command-stats.
+    const duplicateHero = document.getElementById('complianceHeroCard');
+    if (duplicateHero) duplicateHero.remove();
+  }
+
+  function setHomeRoleMode120F(){
+    const inspector = isInspector120F();
+    const management = isManagement120F();
+
+    document.body?.classList.toggle('fire-s-inspector-mode', inspector);
+    document.body?.classList.toggle('fire-s-management-mode', management && !inspector);
+
+    removeDuplicateExecutiveDashboard120F();
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = inspector
+        ? 'Search premises, open an inspection, capture information and continue field work.'
+        : 'Management overview: portfolio stats, action status and inspection activity.';
+    }
+
+    const kicker = document.querySelector('#mainCommandCentre .main-command-kicker');
+    if (kicker) kicker.textContent = inspector ? 'Inspector Workspace' : 'Command Centre';
+
+    const title = document.querySelector('#mainCommandCentre .main-command-top h3');
+    if (title) title.textContent = inspector ? 'Inspection Work Area' : 'Today’s Fire-S Workspace';
+
+    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+    if (stats) stats.style.display = inspector ? 'none' : '';
+
+    // Inspector should not see portfolio dashboards/stats. Status stays visible on project/premises cards.
+    const dashboardMetrics = document.getElementById('dashboardMetrics');
+    if (dashboardMetrics && inspector) dashboardMetrics.innerHTML = '';
+
+    const filterPanel = document.getElementById('filterPanel');
+    if (filterPanel && inspector) filterPanel.style.display = 'none';
+
+    const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+    if (toggleFiltersBtn && inspector) toggleFiltersBtn.style.display = 'none';
+
+    // Keep the actual inspection gateway visible. Hide management/admin/service cards for inspectors.
+    ['cmdScheduleBtn', 'cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = inspector ? 'none' : '';
+    });
+
+    const inspectionsBtn = document.getElementById('cmdInspectionsBtn');
+    if (inspectionsBtn) {
+      inspectionsBtn.style.display = '';
+      const titleEl = inspectionsBtn.querySelector('.command-title');
+      const copyEl = inspectionsBtn.querySelector('.command-copy');
+      if (titleEl) titleEl.textContent = inspector ? 'Search / Open Inspection' : 'Inspection Gateway';
+      if (copyEl) copyEl.textContent = inspector
+        ? 'Search for a premises and continue or start the required inspection.'
+        : 'Open, continue, search and manage inspections.';
+    }
+  }
+
+  // Stop creation of the second executive dashboard under Command Centre.
+  window.ensureExecutiveComplianceDashboardMarkup = function fireSNoDuplicateExecutiveDashboard120F(){
+    removeDuplicateExecutiveDashboard120F();
+  };
+
+  // Inspector mode must not render management dashboard metrics in Projects filters.
+  if (typeof window.renderDashboardMetrics === 'function' && !window.renderDashboardMetrics.__fireS120FWrapped) {
+    const previousRenderDashboardMetrics = window.renderDashboardMetrics;
+    const wrapped = function fireSRenderDashboardMetricsRoleAware120F(projects){
+      if (isInspector120F()) {
+        const metrics = document.getElementById('dashboardMetrics');
+        if (metrics) metrics.innerHTML = '';
+        return;
+      }
+      return previousRenderDashboardMetrics.apply(this, arguments);
+    };
+    wrapped.__fireS120FWrapped = true;
+    window.renderDashboardMetrics = wrapped;
+  }
+
+  // Apply cleanup after Home/Projects render cycles.
+  if (typeof window.renderHomeCommandCentre === 'function' && !window.renderHomeCommandCentre.__fireS120FWrapped) {
+    const previousRenderHome = window.renderHomeCommandCentre;
+    const wrappedHome = function fireSRenderHomeRoleAware120F(){
+      const result = previousRenderHome.apply(this, arguments);
+      setHomeRoleMode120F();
+      return result;
+    };
+    wrappedHome.__fireS120FWrapped = true;
+    window.renderHomeCommandCentre = wrappedHome;
+  }
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120FRoleWrapped) {
+    const previousRenderProjects = window.renderProjectsList;
+    const wrappedProjects = function fireSRenderProjectsRoleAware120F(){
+      const result = previousRenderProjects.apply(this, arguments);
+      setHomeRoleMode120F();
+      return result;
+    };
+    wrappedProjects.__fireS120FRoleWrapped = true;
+    window.renderProjectsList = wrappedProjects;
+  }
+
+  // Initial and delayed passes catch mobile/slow render timing.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setHomeRoleMode120F, { once: true });
+  } else {
+    setHomeRoleMode120F();
+  }
+  setTimeout(setHomeRoleMode120F, 250);
+  setTimeout(setHomeRoleMode120F, 1000);
+})();
