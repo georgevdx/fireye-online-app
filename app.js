@@ -26291,18 +26291,6 @@ function fireSApplyLifecycleUxLabels() {
             </select>
           </label>
 
-          <label class="fire-s-choice-more-control">
-            <span>More</span>
-            <button
-              type="button"
-              class="fire-s-advanced-toggle"
-              onclick="fireSToggleAdvancedFilters120B()"
-              aria-label="${prefs.advancedOpen ? 'Hide more filters' : 'Show more filters'}"
-              title="${prefs.advancedOpen ? 'Hide more filters' : 'Show more filters'}"
-            >
-              <span class="fire-s-advanced-toggle-label">More Filters</span>
-            </button>
-          </label>
         </div>
       </section>
     `;
@@ -26954,10 +26942,10 @@ function fireSApplyLifecycleUxLabels() {
         ? 'Search and open inspections. Status is shown on each premises card.'
         : 'Choose how you want to see your inspections.';
 
+      // Keep the user choice controls visible for all roles.
+      // Inspector still needs Status, Sort and View, but management-only stats stay hidden.
       panel.querySelectorAll('.fire-s-choice-controls label').forEach(label => {
-        const labelText = (label.querySelector('span')?.textContent || '').trim().toLowerCase();
-        if (inspector && ['sort', 'view', 'more'].includes(labelText)) setDisplay(label, false);
-        else setDisplay(label, true);
+        setDisplay(label, true);
       });
     });
   }
@@ -26990,4 +26978,47 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(applyRoleBoundary, 2000);
 
   window.fireSApplyRoleBoundary120H = applyRoleBoundary;
+})();
+
+
+// =====================================================
+// FIRE-S RC 1.2.0I - Filters Accessibility Hotfix
+// 1) Status / Sort / View remain accessible for inspectors and management.
+// 2) Removed the extra More Filters button from Mission Control.
+// 3) Old top filter drawer stays hidden so Mission Control remains clean.
+// =====================================================
+(function fireSFiltersAccessibilityHotfix120I(){
+  function apply(){
+    document.querySelectorAll('.fire-s-choice-panel .fire-s-choice-controls label').forEach(label => {
+      const labelText = (label.querySelector('span')?.textContent || '').trim().toLowerCase();
+      if (labelText === 'more') {
+        label.style.display = 'none';
+        label.setAttribute('aria-hidden', 'true');
+      } else {
+        label.style.display = '';
+        label.removeAttribute('aria-hidden');
+      }
+    });
+
+    const topToggle = document.getElementById('toggleFiltersBtn');
+    const topPanel = document.getElementById('filterPanel');
+    if (topToggle) topToggle.style.display = 'none';
+    if (topPanel) topPanel.style.display = 'none';
+  }
+
+  if (typeof window.renderProjectsList === 'function' && !window.renderProjectsList.__fireS120IWrapped) {
+    const previousProjects = window.renderProjectsList;
+    window.renderProjectsList = function fireSRenderProjectsFilters120I(){
+      const result = previousProjects.apply(this, arguments);
+      setTimeout(apply, 0);
+      return result;
+    };
+    window.renderProjectsList.__fireS120IWrapped = true;
+    try { renderProjectsList = window.renderProjectsList; } catch (_) {}
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply, { once: true });
+  else apply();
+  setTimeout(apply, 250);
+  setTimeout(apply, 1000);
 })();
