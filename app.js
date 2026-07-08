@@ -5414,7 +5414,8 @@ function closeFilterPanel() {
   if (!filterPanel || !toggleBtn) return;
 
   filterPanel.style.display = 'none';
-  toggleBtn.textContent = 'Show Filters';
+  toggleBtn.textContent = 'More Filters';
+  toggleBtn.setAttribute('aria-expanded', 'false');
 }
 
 function updateOfflineReadinessBanner() {
@@ -26027,6 +26028,9 @@ function fireSApplyLifecycleUxLabels() {
   }
 
   function dateTime(value) {
+    if (!value) return 0;
+    const direct = new Date(value).getTime();
+    if (!Number.isNaN(direct)) return direct;
     const key = dateKey(value);
     if (!key) return 0;
     const time = new Date(key + 'T00:00:00').getTime();
@@ -27824,4 +27828,185 @@ function fireSApplyLifecycleUxLabels() {
   window.renderInspectionGatewayQuickFilters = renderInspectionGatewayQuickFilters;
   window.projectMatchesInspectionGatewayQuickFilter = projectMatchesInspectionGatewayQuickFilter;
   window.getProjectPrimaryAction = getProjectPrimaryAction;
+})();
+
+
+/* =====================================================
+   FIRE-S RC 1.2.1G - Filter Stability Hotfix
+   - Status dropdown uses one reliable lifecycle matcher.
+   - Sort date order uses full timestamps where available.
+   - More Filters starts collapsed on each page load and opens only on click.
+   ===================================================== */
+(function installFireS121GFilterStabilityHotfix(){
+  'use strict';
+  if (window.fireS121GFilterStabilityHotfixApplied) return;
+  window.fireS121GFilterStabilityHotfixApplied = true;
+
+  const CHOICE_KEY = 'fireSProjectUserChoice120B';
+
+  function readChoicePrefs(){
+    try { return JSON.parse(localStorage.getItem(CHOICE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+
+  function writeChoicePrefs(next){
+    const prefs = Object.assign({}, readChoicePrefs(), next || {});
+    try { localStorage.setItem(CHOICE_KEY, JSON.stringify(prefs)); } catch (_) {}
+    return prefs;
+  }
+
+  // Important: every fresh Projects/Home load starts with advanced filters closed.
+  writeChoicePrefs({ advancedOpen: false });
+
+  function hideAdvancedFilters(){
+    const panel = document.getElementById('filterPanel');
+    const btn = document.getElementById('toggleFiltersBtn');
+    if (panel) panel.style.display = 'none';
+    if (btn) {
+      btn.textContent = 'More Filters';
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    document.querySelectorAll('.fire-s-advanced-note').forEach(el => el.remove());
+  }
+
+  function dateValue(value){
+    if (!value) return 0;
+    const time = new Date(value).getTime();
+    if (!Number.isNaN(time)) return time;
+    const text = String(value || '').slice(0, 10);
+    const fallback = new Date(text + 'T00:00:00').getTime();
+    return Number.isNaN(fallback) ? 0 : fallback;
+  }
+
+  function hasAnswers(project){
+    return Array.isArray(project?.answers) && project.answers.some(a => String(a?.answer || '').trim());
+  }
+
+  function hasPhotos(project){
+    return Array.isArray(project?.photos) && project.photos.length > 0;
+  }
+
+  function hasHistory(project){
+    return Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0;
+  }
+
+  function hasInspectionData(project){
+    if (typeof window.fireSHasMeaningfulInspectionData === 'function') return window.fireSHasMeaningfulInspectionData(project);
+    return Boolean(project?.completedAt || hasAnswers(project) || hasPhotos(project) || String(project?.finalComments || '').trim());
+  }
+
+  function isScheduled(project){
+    if (typeof window.fireSIsScheduledNewPremises === 'function') return window.fireSIsScheduledNewPremises(project);
+    return project?.scheduledStatus === 'scheduled' && !project?.completedAt;
+  }
+
+  function isNewPremise(project){
+    if (typeof window.fireSIsNewPremises === 'function') return window.fireSIsNewPremises(project);
+    return !isScheduled(project) && !hasInspectionData(project) && !hasHistory(project);
+  }
+
+  function isCurrent(project){
+    if (typeof window.fireSIsCurrentInspection === 'function') return window.fireSIsCurrentInspection(project);
+    return !isScheduled(project) && hasInspectionData(project) && !project?.completedAt;
+  }
+
+  function isExisting(project){
+    return !isScheduled(project) && !isNewPremise(project) && (hasInspectionData(project) || hasHistory(project));
+  }
+
+  function isArchiveCandidate(project){
+    if (typeof window.fireSIsCompletedOrArchiveCandidate === 'function') return window.fireSIsCompletedOrArchiveCandidate(project);
+    return Boolean(project?.completedAt || hasHistory(project));
+  }
+
+  function matchesLifecycle(project, filter){
+    const key = String(filter || 'all');
+    if (key === 'all') return true;
+    if (key === 'scheduled-new' || key === 'scheduled' || key === 'lifecycle-scheduled') return isScheduled(project);
+    if (key === 'new-premise' || key === 'lifecycle-new-site') return isNewPremise(project);
+    if (key === 'inspection-progress' || key === 'current' || key === 'lifecycle-continue') return isCurrent(project);
+    if (key === 'existing-history' || key === 'lifecycle-existing') return isExisting(project);
+    if (key === 'archive-new-cycle' || key === 'inspection-complete' || key === 'completed' || key === 'lifecycle-history') return isArchiveCandidate(project);
+    return null;
+  }
+
+  const previousMatcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
+
+  function stableProjectMatcher(project, filter){
+    const lifecycle = matchesLifecycle(project, filter);
+    if (lifecycle !== null) return lifecycle;
+
+    const key = String(filter || 'all');
+    if (key === 'risk') return hasInspectionData(project) && typeof hasProjectOpenActionItems === 'function' ? hasProjectOpenActionItems(project) : false;
+    if (key === 'overdue') return hasInspectionData(project) && typeof hasProjectOverdueActions === 'function' ? hasProjectOverdueActions(project) : false;
+    if (key === 'inspection-attention') {
+      return hasInspectionData(project) && (
+        (typeof hasProjectOpenActionItems === 'function' && hasProjectOpenActionItems(project)) ||
+        (typeof hasProjectOverdueActions === 'function' && hasProjectOverdueActions(project))
+      );
+    }
+    if (key === 'compliant' || key === 'clear-completed') {
+      return hasInspectionData(project) && typeof isProjectCompliantForGateway === 'function' ? isProjectCompliantForGateway(project) : false;
+    }
+
+    return previousMatcher ? previousMatcher(project, filter) : true;
+  }
+
+  window.projectMatchesInspectionGatewayQuickFilter = stableProjectMatcher;
+  try { projectMatchesInspectionGatewayQuickFilter = stableProjectMatcher; } catch (_) {}
+
+  function setStableFilter(value){
+    const key = value || 'all';
+    try { currentFilter = key; } catch (_) {}
+    window.currentFilter = key;
+    try { currentProjectPage = 1; } catch (_) {}
+    if (typeof window.renderProjectsList === 'function') window.renderProjectsList();
+    if (typeof updateDashboardSelection === 'function') updateDashboardSelection();
+    hideAdvancedFilters();
+  }
+
+  window.setInspectionGatewayQuickFilter = setStableFilter;
+  try { setInspectionGatewayQuickFilter = setStableFilter; } catch (_) {}
+  window.fireSSetProjectLifecycleFilter120B = setStableFilter;
+
+  window.fireSToggleAdvancedFilters120B = function fireS121GToggleAdvancedFilters(){
+    const panel = document.getElementById('filterPanel');
+    const btn = document.getElementById('toggleFiltersBtn');
+    const isOpen = panel && panel.style.display !== 'none' && panel.style.display !== '';
+    const nextOpen = !isOpen;
+    writeChoicePrefs({ advancedOpen: nextOpen });
+    if (panel) panel.style.display = nextOpen ? 'block' : 'none';
+    if (btn) {
+      btn.textContent = 'More Filters';
+      btn.setAttribute('aria-expanded', String(nextOpen));
+    }
+    document.querySelectorAll('.fire-s-advanced-note').forEach(el => {
+      el.style.display = nextOpen ? '' : 'none';
+    });
+  };
+
+  // Keep the panel closed after each render unless the user explicitly opened it.
+  const oldRender = window.renderProjectsList || (typeof renderProjectsList === 'function' ? renderProjectsList : null);
+  if (oldRender && !oldRender.__fireS121GWrapped) {
+    const wrapped = function fireS121GRenderProjectsList(){
+      const result = oldRender.apply(this, arguments);
+      const prefs = readChoicePrefs();
+      const panel = document.getElementById('filterPanel');
+      const btn = document.getElementById('toggleFiltersBtn');
+      if (!prefs.advancedOpen && panel) panel.style.display = 'none';
+      if (btn) {
+        btn.textContent = 'More Filters';
+        btn.setAttribute('aria-expanded', String(Boolean(prefs.advancedOpen)));
+      }
+      return result;
+    };
+    wrapped.__fireS121GWrapped = true;
+    window.renderProjectsList = wrapped;
+    try { renderProjectsList = wrapped; } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    writeChoicePrefs({ advancedOpen: false });
+    hideAdvancedFilters();
+  });
 })();
