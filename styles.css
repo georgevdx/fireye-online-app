@@ -11126,3 +11126,36 @@ body.fire-s-inspector-mission-lock-121e #mainCommandCentre #cmdInspectionsBtn {
     min-height: 92px !important;
   }
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.1J - Single Home Renderer Guard
+   Prevents startup flicker where Command Centre and Inspector Work Area both paint.
+   ===================================================== */
+body.fire-s-home-rendering-121j #mainCommandCentre {
+  visibility: hidden !important;
+}
+
+body.fire-s-home-rendering-121j #mainCommandCentre,
+body.fire-s-home-rendering-121j #mainCommandCentre * {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+body.fire-s-home-resolved-inspector-121j #complianceHeroCard,
+body.fire-s-home-resolved-inspector-121j #executiveSnapshotCard,
+body.fire-s-home-resolved-inspector-121j #executiveSnapshotPanel,
+body.fire-s-home-resolved-inspector-121j #cmdDashboardBtn,
+body.fire-s-home-resolved-inspector-121j #cmdFindingsBtn,
+body.fire-s-home-resolved-inspector-121j #cmdOverdueBtn,
+body.fire-s-home-resolved-inspector-121j #cmdReportsBtn,
+body.fire-s-home-resolved-inspector-121j #cmdCompanyBtn,
+body.fire-s-home-resolved-inspector-121j #cmdServicesBtn {
+  display: none !important;
+}
+
+body.fire-s-home-resolved-inspector-121j #cmdInspectionsBtn,
+body.fire-s-home-resolved-inspector-121j #cmdScheduleBtn {
+  display: flex !important;
+  visibility: visible !important;
+}

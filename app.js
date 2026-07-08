@@ -28087,3 +28087,150 @@ function fireSApplyLifecycleUxLabels() {
 
   document.addEventListener('DOMContentLoaded', () => setTimeout(refreshStatusDropdownCounts, 0));
 })();
+
+// =====================================================
+// FIRE-S RC 1.2.1J - Single Home Renderer Guard
+// Purpose:
+// - Stop Command Centre and Inspector Work Area racing during startup/back-home.
+// - Hide Home while role-specific render settles, then reveal one final view.
+// - Inspector remains limited to Inspection Gateway + Schedule/New Site.
+// =====================================================
+(function fireSSingleHomeRendererGuard121J(){
+  const MANAGEMENT_ROLES = new Set(['super_admin', 'company_owner', 'owner', 'manager', 'management', 'admin', 'viewer']);
+
+  function readRole(){
+    try {
+      if (typeof getCurrentUserRole === 'function') {
+        return String(getCurrentUserRole() || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) {
+        return String(currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (window.currentUserProfile?.role) {
+        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    return '';
+  }
+
+  function isManagement(){
+    const role = readRole();
+    return MANAGEMENT_ROLES.has(role);
+  }
+
+  function shouldUseInspectorHome(){
+    if (isManagement()) return false;
+
+    try {
+      if (sessionStorage.getItem('fireSInspectorHomeLock121E') === '1') return true;
+    } catch (error) {}
+
+    const accessText = String(document.getElementById('mainCommandAccessStatus')?.textContent || '').toLowerCase();
+    const modeText = String(document.getElementById('complianceModePill')?.textContent || '').toLowerCase();
+
+    return Boolean(
+      readRole().includes('inspector') ||
+      readRole() === '' ||
+      accessText.includes('inspector') ||
+      modeText.includes('inspector') ||
+      document.body?.classList.contains('fire-s-inspector-mission-lock-121e') ||
+      document.body?.classList.contains('fire-s-role-inspector')
+    );
+  }
+
+  function beginHomeRender(){
+    if (!document.body) return;
+    document.body.classList.add('fire-s-home-rendering-121j');
+    document.body.classList.toggle('fire-s-home-rendering-inspector-121j', shouldUseInspectorHome());
+    document.body.classList.toggle('fire-s-home-rendering-management-121j', isManagement());
+  }
+
+  function endHomeRender(){
+    const inspector = shouldUseInspectorHome();
+
+    if (inspector) {
+      try { sessionStorage.setItem('fireSInspectorHomeLock121E', '1'); } catch (error) {}
+
+      if (typeof window.fireSApplyInspectorHomeLock121E === 'function') {
+        window.fireSApplyInspectorHomeLock121E();
+      }
+      if (typeof window.fireSApplyInspectorMissionLock121D === 'function') {
+        window.fireSApplyInspectorMissionLock121D();
+      }
+      if (typeof window.fireSApplyInspectorAccessHotfix121C === 'function') {
+        window.fireSApplyInspectorAccessHotfix121C();
+      }
+    }
+
+    requestAnimationFrame(() => {
+      if (!document.body) return;
+      if (inspector) {
+        if (typeof window.fireSApplyInspectorHomeLock121E === 'function') {
+          window.fireSApplyInspectorHomeLock121E();
+        }
+      }
+      document.body.classList.remove('fire-s-home-rendering-121j');
+      document.body.classList.remove('fire-s-home-rendering-inspector-121j');
+      document.body.classList.remove('fire-s-home-rendering-management-121j');
+      document.body.classList.toggle('fire-s-home-resolved-inspector-121j', inspector);
+      document.body.classList.toggle('fire-s-home-resolved-management-121j', !inspector);
+    });
+  }
+
+  function wrapHomeFunction(name){
+    try {
+      const fn = window[name] || eval(name);
+      if (typeof fn !== 'function' || fn.__fireS121JSingleHomeWrapped) return;
+
+      const wrapped = function fireS121JSingleHomeWrapped(){
+        beginHomeRender();
+        let result;
+        try {
+          result = fn.apply(this, arguments);
+        } finally {
+          endHomeRender();
+        }
+        return result;
+      };
+      wrapped.__fireS121JSingleHomeWrapped = true;
+      window[name] = wrapped;
+      try { eval(`${name} = window.${name}`); } catch (error) {}
+    } catch (error) {}
+  }
+
+  ['showHome', 'renderHomeCommandCentre', 'initHomeCommandCentre'].forEach(wrapHomeFunction);
+
+  function settleHome(){
+    beginHomeRender();
+    endHomeRender();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', settleHome, { once: true });
+  } else {
+    settleHome();
+  }
+
+  window.addEventListener('load', () => {
+    settleHome();
+    setTimeout(settleHome, 80);
+    setTimeout(settleHome, 300);
+  });
+
+  document.addEventListener('click', event => {
+    const target = event.target?.closest?.('button, a, [role="button"]');
+    const text = String(target?.textContent || '').toLowerCase();
+    if (text.includes('back to home') || text === 'home' || text.includes('mission control')) {
+      beginHomeRender();
+      setTimeout(endHomeRender, 0);
+      setTimeout(endHomeRender, 120);
+    }
+  }, true);
+})();
