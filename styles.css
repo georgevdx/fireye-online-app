@@ -12695,3 +12695,70 @@ body.fire-s-phase1-inspector .fire-s-exec-dashboard-v1115 {
   min-height: 180px;
   contain: layout paint;
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.1B - Phase 2 Role Simplicity Layer
+   Safe UI-only role separation. Does not alter filter logic.
+   ===================================================== */
+body.fire-s-role-inspector #mainCommandCentre .main-command-stats,
+body.fire-s-role-inspector #dashboardMetrics,
+body.fire-s-role-inspector .dashboard-metrics,
+body.fire-s-role-inspector .compliance-hero-card,
+body.fire-s-role-inspector .fire-s-exec-mini-dashboard,
+body.fire-s-role-inspector .fire-s-exec-dashboard-v1115 {
+  display: none !important;
+}
+
+body.fire-s-role-inspector #mainCommandCentre .main-command-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.fire-s-role-inspector #cmdInspectionsBtn,
+body.fire-s-role-inspector #cmdScheduleBtn {
+  display: flex !important;
+  min-height: 104px;
+}
+
+body.fire-s-role-inspector #cmdInspectionsBtn {
+  border: 2px solid #0ea5e9;
+  background: linear-gradient(135deg, #0f172a 0%, #075985 55%, #0ea5e9 100%);
+  color: #ffffff;
+}
+
+body.fire-s-role-inspector #cmdInspectionsBtn .command-title,
+body.fire-s-role-inspector #cmdInspectionsBtn .command-copy,
+body.fire-s-role-inspector #cmdScheduleBtn .command-title,
+body.fire-s-role-inspector #cmdScheduleBtn .command-copy {
+  color: inherit;
+}
+
+body.fire-s-role-inspector #cmdScheduleBtn {
+  border: 2px solid #f97316;
+  background: #fff7ed;
+  color: #7c2d12;
+}
+
+body.fire-s-role-management #mainCommandCentre .main-command-stats {
+  display: grid;
+}
+
+#newProjectBtn {
+  min-width: 180px;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+@media (max-width: 640px) {
+  body.fire-s-role-inspector #mainCommandCentre .main-command-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.fire-s-role-inspector #cmdInspectionsBtn,
+  body.fire-s-role-inspector #cmdScheduleBtn {
+    min-height: 88px;
+  }
+
+  #newProjectBtn {
+    width: 100%;
+  }
+}

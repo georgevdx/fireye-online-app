@@ -26823,3 +26823,175 @@ function fireSApplyLifecycleUxLabels() {
   };
   if (document.body) startObserver(); else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
 })();
+
+/* =====================================================
+   FIRE-S RC 1.2.1B - Phase 2 Role Simplicity Layer
+   Purpose: simplify what each role sees without changing filters/data logic.
+   - Inspector: search/open inspections + start input flow only; no management stats.
+   - Management/Owner/Admin: dashboard stats and management cards remain visible.
+   - Keeps existing filter behaviour untouched.
+   ===================================================== */
+(function fireSPhase2RoleSimplicity121B(){
+  const MANAGEMENT_ROLES = new Set(['super_admin', 'company_owner', 'owner', 'manager', 'management', 'admin', 'viewer']);
+  const INSPECTOR_ROLES = new Set(['inspector', 'field_inspector', 'field-inspector', 'field inspector']);
+
+  function currentRole(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') {
+        return String(window.getCurrentUserRole() || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) {
+        return String(currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (window.currentUserProfile?.role) {
+        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    return 'inspector';
+  }
+
+  function isManagementRole(){
+    const role = currentRole();
+    return MANAGEMENT_ROLES.has(role);
+  }
+
+  function isInspectorRole(){
+    const role = currentRole();
+    return INSPECTOR_ROLES.has(role) || !isManagementRole();
+  }
+
+  function setText(selector, text){
+    const el = document.querySelector(selector);
+    if (el) el.textContent = text;
+  }
+
+  function setDisplay(idOrEl, display){
+    const el = typeof idOrEl === 'string' ? document.getElementById(idOrEl) : idOrEl;
+    if (el) el.style.display = display;
+  }
+
+  function updateCommandCard(id, title, copy){
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    const titleEl = btn.querySelector('.command-title, strong');
+    const copyEl = btn.querySelector('.command-copy, p');
+    if (titleEl) titleEl.textContent = title;
+    if (copyEl) copyEl.textContent = copy;
+  }
+
+  function clarifyNewButtons(){
+    const newBtn = document.getElementById('newProjectBtn');
+    if (newBtn) {
+      newBtn.setAttribute('aria-label', 'New inspection at new site');
+      newBtn.setAttribute('title', 'New inspection at new site');
+      newBtn.textContent = '+ New Inspection at New Site';
+    }
+
+    const scheduleBtn = document.getElementById('scheduleNewInspectionBtn');
+    if (scheduleBtn) {
+      scheduleBtn.setAttribute('aria-label', 'Schedule inspection for a new site');
+      scheduleBtn.setAttribute('title', 'Schedule inspection for a new site');
+    }
+  }
+
+  function removeDuplicateExecutiveBits(){
+    ['complianceHeroCard', 'executiveSnapshotCard', 'executiveSnapshotPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+  }
+
+  function applyInspectorHome(){
+    document.body?.classList.add('fire-s-role-inspector');
+    document.body?.classList.remove('fire-s-role-management');
+
+    setText('#mainCommandCentre .main-command-kicker', 'Inspector Work Area');
+    setText('#mainCommandCentre .main-command-top h3', 'Find or Start an Inspection');
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = 'Search a premises, continue an inspection, or start a new inspection at a new site.';
+    }
+
+    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+    setDisplay(stats, 'none');
+
+    // Hide management/admin cards on the front page only. Do not touch Projects filters.
+    ['cmdDashboardBtn', 'cmdFindingsBtn', 'cmdOverdueBtn', 'cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn'].forEach(id => setDisplay(id, 'none'));
+    setDisplay('cmdInspectionsBtn', '');
+    setDisplay('cmdScheduleBtn', '');
+
+    updateCommandCard('cmdInspectionsBtn', 'Search / Open Inspection', 'Search by premises, organisation, address, inspection number or inspector.');
+    updateCommandCard('cmdScheduleBtn', 'New Inspection at New Site', 'Start or schedule an inspection for a premises that is not yet fully captured.');
+
+    const accessEl = document.getElementById('mainCommandAccessStatus');
+    if (accessEl && /inspector|local|guest/i.test(accessEl.textContent || '')) {
+      accessEl.textContent = 'Inspector access';
+    }
+
+    const metrics = document.getElementById('dashboardMetrics');
+    if (metrics) metrics.innerHTML = '';
+  }
+
+  function applyManagementHome(){
+    document.body?.classList.remove('fire-s-role-inspector');
+    document.body?.classList.add('fire-s-role-management');
+
+    setText('#mainCommandCentre .main-command-kicker', 'Command Centre');
+    setText('#mainCommandCentre .main-command-top h3', 'Management Overview');
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = 'Portfolio stats, inspections, action status and compliance overview.';
+    }
+
+    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+    setDisplay(stats, 'grid');
+
+    ['cmdDashboardBtn', 'cmdFindingsBtn', 'cmdOverdueBtn', 'cmdInspectionsBtn', 'cmdScheduleBtn', 'cmdReportsBtn', 'cmdCompanyBtn', 'cmdServicesBtn'].forEach(id => setDisplay(id, ''));
+
+    updateCommandCard('cmdInspectionsBtn', 'Inspection Gateway', 'Open, continue, search and manage inspections.');
+    updateCommandCard('cmdScheduleBtn', 'Schedule', 'Create new-site bookings and review follow-ups.');
+  }
+
+  function applyPhase2RoleSimplicity(){
+    removeDuplicateExecutiveBits();
+    clarifyNewButtons();
+
+    if (isInspectorRole()) applyInspectorHome();
+    else applyManagementHome();
+  }
+
+  window.fireSApplyPhase2RoleSimplicity121B = applyPhase2RoleSimplicity;
+
+  function wrapGlobalFunction(name){
+    const fn = window[name];
+    if (typeof fn !== 'function' || fn.__fireS121BWrapped) return;
+    const wrapped = function fireS121BWrappedFunction(){
+      const result = fn.apply(this, arguments);
+      setTimeout(applyPhase2RoleSimplicity, 0);
+      return result;
+    };
+    wrapped.__fireS121BWrapped = true;
+    window[name] = wrapped;
+  }
+
+  wrapGlobalFunction('renderHomeCommandCentre');
+  wrapGlobalFunction('renderProjectsList');
+  wrapGlobalFunction('showProjectList');
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyPhase2RoleSimplicity, { once: true });
+  } else {
+    applyPhase2RoleSimplicity();
+  }
+
+  [150, 500, 1200, 2500].forEach(delay => setTimeout(applyPhase2RoleSimplicity, delay));
+})();
