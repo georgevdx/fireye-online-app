@@ -26704,3 +26704,122 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(setHomeRoleMode120F, 250);
   setTimeout(setHomeRoleMode120F, 1000);
 })();
+
+/* =====================================================
+   FIRE-S RC 1.2.1A - Phase 1 Safe Stabilisation Cleanup
+   Purpose: conservative UI cleanup only.
+   - Hide beta readiness panels (Field Ready / Ready for Site)
+   - Remove duplicate Executive Snapshot / dashboard cards above Mission Control
+   - Clarify + New button label
+   - Keep filter logic untouched
+   ===================================================== */
+(function fireSPhase1SafeStabilisation121A(){
+  const MANAGER_ROLES = new Set(['super_admin', 'company_owner', 'owner', 'manager', 'management', 'admin', 'viewer']);
+
+  function getRole(){
+    try {
+      if (typeof window.getCurrentUserRole === 'function') return String(window.getCurrentUserRole() || '').toLowerCase();
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.role) return String(currentUserProfile.role || '').toLowerCase();
+      if (window.currentUserProfile && window.currentUserProfile.role) return String(window.currentUserProfile.role || '').toLowerCase();
+    } catch (error) {}
+    return 'inspector';
+  }
+
+  function isInspector(){
+    const role = getRole();
+    return role === 'inspector' || role === 'field_inspector' || role === 'field-inspector' || role === 'guest' || !MANAGER_ROLES.has(role);
+  }
+
+  function safeHide(el){
+    if (!el) return;
+    el.setAttribute('aria-hidden', 'true');
+    el.style.display = 'none';
+  }
+
+  function cleanupBetaReadiness(){
+    safeHide(document.getElementById('offlineReadinessBanner'));
+    safeHide(document.getElementById('siteReadyPreflightChecklist'));
+
+    document.querySelectorAll('.offline-readiness-banner, .site-ready-preflight').forEach(safeHide);
+  }
+
+  function removeDuplicateExecutivePanels(){
+    // Keep Mission Control. Remove duplicate executive/dashboard panels that render above/inside it.
+    ['complianceHeroCard', 'executiveSnapshotCard', 'executiveSnapshotPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
+
+    document.querySelectorAll('.compliance-hero-card, .fire-s-exec-mini-dashboard, .fire-s-exec-dashboard-v1115').forEach(el => {
+      const main = document.getElementById('mainCommandCentre');
+      if (main && main.contains(el)) el.remove();
+    });
+  }
+
+  function clarifyNewInspectionButton(){
+    const btn = document.getElementById('newProjectBtn');
+    if (!btn) return;
+
+    btn.setAttribute('title', 'Start a new inspection at a new site');
+    btn.setAttribute('aria-label', 'New inspection at new site');
+
+    // Preserve icon if present; only correct readable text.
+    const labelTargets = btn.querySelectorAll('.btn-label, .button-label, span, strong');
+    let changed = false;
+    labelTargets.forEach(target => {
+      const text = String(target.textContent || '').trim();
+      if (/^\+?\s*new$/i.test(text) || /new project/i.test(text)) {
+        target.textContent = '+ New Inspection at New Site';
+        changed = true;
+      }
+    });
+
+    if (!changed && /(^|\s)\+?\s*new(\s|$)/i.test(String(btn.textContent || '').trim())) {
+      btn.textContent = '+ New Inspection at New Site';
+    }
+  }
+
+  function applyRoleVisibility(){
+    const inspector = isInspector();
+    document.body?.classList.toggle('fire-s-phase1-inspector', inspector);
+    document.body?.classList.toggle('fire-s-phase1-management', !inspector);
+
+    // Inspectors do field work; management stats remain for management/admin roles.
+    if (inspector) {
+      const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+      if (stats) safeHide(stats);
+      const metrics = document.getElementById('dashboardMetrics');
+      if (metrics) metrics.innerHTML = '';
+    }
+  }
+
+  function applyPhase1Cleanup(){
+    cleanupBetaReadiness();
+    removeDuplicateExecutivePanels();
+    clarifyNewInspectionButton();
+    applyRoleVisibility();
+  }
+
+  // Make beta render functions harmless without breaking callers.
+  window.updateOfflineReadinessBanner = function fireSNoBetaOfflineReadiness121A(){ cleanupBetaReadiness(); };
+  window.updateSiteReadyPreflightChecklist = function fireSNoBetaSiteReadiness121A(){ cleanupBetaReadiness(); };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyPhase1Cleanup, { once: true });
+  } else {
+    applyPhase1Cleanup();
+  }
+
+  [100, 400, 1000, 2000].forEach(delay => setTimeout(applyPhase1Cleanup, delay));
+
+  const startObserver = () => {
+    if (!document.body) return;
+    let timer = null;
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer);
+      timer = setTimeout(applyPhase1Cleanup, 80);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  };
+  if (document.body) startObserver(); else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
+})();

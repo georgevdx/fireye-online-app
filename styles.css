@@ -12665,3 +12665,33 @@ body.fire-s-inspector-mode #cmdInspectionsBtn .command-title {
 body.fire-s-management-mode #mainCommandCentre .main-command-stats {
   display: grid;
 }
+
+/* =====================================================
+   FIRE-S RC 1.2.1A - Phase 1 Safe Stabilisation Cleanup
+   Conservative CSS-only safety net. No filter logic changes.
+   ===================================================== */
+#offlineReadinessBanner,
+#siteReadyPreflightChecklist,
+.offline-readiness-banner,
+.site-ready-preflight {
+  display: none !important;
+}
+
+body.fire-s-phase1-inspector #mainCommandCentre .main-command-stats,
+body.fire-s-phase1-inspector #dashboardMetrics,
+body.fire-s-phase1-inspector .dashboard-metrics,
+body.fire-s-phase1-inspector .compliance-hero-card,
+body.fire-s-phase1-inspector .fire-s-exec-mini-dashboard,
+body.fire-s-phase1-inspector .fire-s-exec-dashboard-v1115 {
+  display: none !important;
+}
+
+#newProjectBtn {
+  white-space: normal;
+  min-height: 42px;
+}
+
+#mainCommandCentre {
+  min-height: 180px;
+  contain: layout paint;
+}
