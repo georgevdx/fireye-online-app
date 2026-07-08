@@ -27394,3 +27394,217 @@ function fireSApplyLifecycleUxLabels() {
   if (document.body) startObserver(); else document.addEventListener('DOMContentLoaded', startObserver, { once: true });
 })();
 
+
+// =====================================================
+// FIRE-S RC 1.2.1E - Inspector Home Lock Persistence
+// Purpose: when Back to Home re-renders Mission Control, keep inspector
+//          view locked to Inspection Gateway + Schedule/New Site only.
+// =====================================================
+(function fireSInspectorHomeLockPersistence121E(){
+  const HIDDEN_IDS = [
+    'cmdReportsBtn',
+    'cmdCompanyBtn',
+    'cmdServicesBtn',
+    'cmdDashboardBtn',
+    'cmdFindingsBtn',
+    'cmdOverdueBtn'
+  ];
+
+  const VISIBLE_IDS = ['cmdInspectionsBtn', 'cmdScheduleBtn'];
+
+  function readText(id){
+    return String(document.getElementById(id)?.textContent || '').toLowerCase();
+  }
+
+  function readRole(){
+    try {
+      if (typeof getCurrentUserRole === 'function') {
+        return String(getCurrentUserRole() || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile?.role) {
+        return String(currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    try {
+      if (window.currentUserProfile?.role) {
+        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+      }
+    } catch (error) {}
+
+    return '';
+  }
+
+  function isExplicitInspector(){
+    const body = document.body;
+    const accessText = readText('mainCommandAccessStatus');
+    const modeText = readText('complianceModePill');
+    const role = readRole();
+
+    return Boolean(
+      role === 'inspector' ||
+      body?.classList.contains('fire-s-role-inspector') ||
+      body?.classList.contains('fire-s-inspector-access-121c') ||
+      body?.classList.contains('fire-s-inspector-mission-lock-121d') ||
+      accessText.includes('inspector') ||
+      modeText.includes('inspector')
+    );
+  }
+
+  function isExplicitManagement(){
+    const role = readRole();
+    const accessText = readText('mainCommandAccessStatus');
+    const modeText = readText('complianceModePill');
+    const managementRole = ['super_admin', 'company_owner', 'owner', 'manager', 'viewer', 'admin'].includes(role);
+
+    return Boolean(
+      managementRole ||
+      accessText.includes('manager') ||
+      accessText.includes('owner') ||
+      accessText.includes('admin') ||
+      modeText.includes('management') ||
+      modeText.includes('owner') ||
+      modeText.includes('control')
+    );
+  }
+
+  function shouldLockInspectorHome(){
+    if (isExplicitInspector()) {
+      try { sessionStorage.setItem('fireSInspectorHomeLock121E', '1'); } catch (error) {}
+      return true;
+    }
+
+    // If the previous render confirmed inspector mode, keep it locked during
+    // Back-to-Home re-renders where the old full Mission Control is rebuilt.
+    try {
+      if (sessionStorage.getItem('fireSInspectorHomeLock121E') === '1' && !isExplicitManagement()) {
+        return true;
+      }
+    } catch (error) {}
+
+    return false;
+  }
+
+  function hideButton(id){
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.classList.add('fire-s-inspector-hidden-card-121d', 'fire-s-inspector-hidden-card-121e');
+    button.style.setProperty('display', 'none', 'important');
+    button.setAttribute('hidden', 'hidden');
+    button.setAttribute('aria-hidden', 'true');
+    button.setAttribute('tabindex', '-1');
+  }
+
+  function showButton(id){
+    const button = document.getElementById(id);
+    if (!button) return;
+    button.classList.remove('fire-s-inspector-hidden-card-121d', 'fire-s-inspector-hidden-card-121e');
+    button.style.removeProperty('display');
+    button.removeAttribute('hidden');
+    button.removeAttribute('aria-hidden');
+    button.removeAttribute('tabindex');
+  }
+
+  function setButtonText(id, title, copy){
+    const button = document.getElementById(id);
+    if (!button) return;
+
+    const titleEl = button.querySelector('.command-title, strong, h3, h4, .card-title');
+    const copyEl = button.querySelector('.command-copy, p, small, .card-copy');
+
+    if (titleEl) titleEl.textContent = title;
+    if (copyEl) copyEl.textContent = copy;
+    button.setAttribute('aria-label', title);
+  }
+
+  function closeCloudIfOpen(){
+    ['cloudDropdown', 'cloudMenu', 'cloudPanel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+
+    try {
+      if (typeof closeCloudDropdown === 'function') closeCloudDropdown();
+    } catch (error) {}
+  }
+
+  function applyInspectorHomeLock(){
+    if (!document.body) return;
+
+    if (!shouldLockInspectorHome()) {
+      return;
+    }
+
+    document.body.classList.add('fire-s-inspector-mission-lock-121d', 'fire-s-inspector-mission-lock-121e');
+    document.body.classList.remove('fire-s-management-mission-lock-121d');
+
+    VISIBLE_IDS.forEach(showButton);
+    HIDDEN_IDS.forEach(hideButton);
+
+    setButtonText('cmdInspectionsBtn', 'Inspection Gateway', 'Search, open or continue inspection work.');
+    setButtonText('cmdScheduleBtn', 'Schedule / New Site', 'Schedule or start a new inspection at a new site.');
+
+    const stats = document.querySelector('#mainCommandCentre .main-command-stats');
+    if (stats) stats.style.setProperty('display', 'none', 'important');
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) subtitle.textContent = 'Search a premises, continue an inspection, or start a new inspection at a new site.';
+
+    const access = document.getElementById('mainCommandAccessStatus');
+    if (access) access.textContent = 'Inspector access';
+
+    closeCloudIfOpen();
+  }
+
+  function scheduleApply(){
+    [0, 40, 120, 300, 700].forEach(delay => setTimeout(applyInspectorHomeLock, delay));
+  }
+
+  // Back-to-Home and other UI rebuilds can recreate the full button list.
+  // Re-apply immediately after those actions complete.
+  document.addEventListener('click', event => {
+    const target = event.target?.closest?.('button, a, [role="button"]');
+    const text = String(target?.textContent || '').toLowerCase();
+
+    if (text.includes('back to home') || text === 'home' || text.includes('mission control')) {
+      scheduleApply();
+    }
+
+    const blocked = event.target?.closest?.('#cmdReportsBtn, #cmdCompanyBtn, #cmdServicesBtn');
+    if (blocked && shouldLockInspectorHome()) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+      closeCloudIfOpen();
+      applyInspectorHomeLock();
+    }
+  }, true);
+
+  ['showHome', 'renderHomeCommandCentre', 'initHomeCommandCentre'].forEach(name => {
+    try {
+      const fn = window[name] || eval(name);
+      if (typeof fn !== 'function' || fn.__fireS121EWrapped) return;
+
+      const wrapped = function fireS121EHomeWrapped(){
+        const result = fn.apply(this, arguments);
+        scheduleApply();
+        return result;
+      };
+      wrapped.__fireS121EWrapped = true;
+
+      window[name] = wrapped;
+      try { eval(`${name} = window.${name}`); } catch (error) {}
+    } catch (error) {}
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', scheduleApply, { once: true });
+  } else {
+    scheduleApply();
+  }
+
+  window.fireSApplyInspectorHomeLock121E = applyInspectorHomeLock;
+})();

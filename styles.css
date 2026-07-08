@@ -12868,3 +12868,28 @@ body.fire-s-role-management #mainCommandCentre .main-command-stats {
   }
 }
 
+
+/* FIRE-S RC 1.2.1E - persistent inspector home lock after Back to Home */
+.fire-s-inspector-mission-lock-121e #cmdReportsBtn,
+.fire-s-inspector-mission-lock-121e #cmdCompanyBtn,
+.fire-s-inspector-mission-lock-121e #cmdServicesBtn,
+.fire-s-inspector-mission-lock-121e #cmdDashboardBtn,
+.fire-s-inspector-mission-lock-121e #cmdFindingsBtn,
+.fire-s-inspector-mission-lock-121e #cmdOverdueBtn,
+.fire-s-inspector-hidden-card-121e {
+  display: none !important;
+}
+
+.fire-s-inspector-mission-lock-121e #mainCommandCentre .main-command-stats {
+  display: none !important;
+}
+
+.fire-s-inspector-mission-lock-121e #mainCommandCentre .main-command-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .fire-s-inspector-mission-lock-121e #mainCommandCentre .main-command-grid {
+    grid-template-columns: 1fr;
+  }
+}
