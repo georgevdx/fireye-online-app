@@ -27783,3 +27783,261 @@ function fireSApplyLifecycleUxLabels() {
 
   window.fireSSyncManagementCards132 = syncManagementCards;
 })();
+
+// =====================================================
+// FIRE-S RC 1.3.3 - MANAGEMENT KPI SCOPE + FILTER FIX
+// Purpose:
+// - KPI counts and card filters use one shared scoped dataset.
+// - Add Scheduled Inspections as a management KPI.
+// - Fix Inspections This Month card with a hard gateway filter.
+// - Improve role-test consistency for super_admin testing.
+// =====================================================
+(function fireSManagementKpiScopeFilterFix133(){
+  const ROLE_PREF_KEY = 'fireS.viewAsRole.v131';
+
+  function actualRole(){
+    try { return String(currentUserProfile?.role || window.currentUserProfile?.role || 'inspector').toLowerCase().trim(); } catch (_) {}
+    return 'inspector';
+  }
+
+  function viewAsRole(){
+    const real = actualRole();
+    if (real !== 'super_admin') return real;
+    try { return String(localStorage.getItem(ROLE_PREF_KEY) || real).toLowerCase().trim(); } catch (_) { return real; }
+  }
+
+  function rawProjects(){
+    try { return Array.isArray(getProjects()) ? getProjects() : []; } catch (_) { return []; }
+  }
+
+  function scopedProjects(){
+    const all = rawProjects();
+    const role = viewAsRole();
+    const real = actualRole();
+
+    // In Role Test Mode, super_admin must be able to compare the UI without
+    // accidentally changing the physical dataset. Therefore manager/company_owner/
+    // super_admin use the same management scope; inspector uses the inspector scope.
+    if (real === 'super_admin' && role !== 'inspector') {
+      return all;
+    }
+
+    try {
+      if (typeof getVisibleProjectsForCurrentUser === 'function') {
+        return getVisibleProjectsForCurrentUser(all);
+      }
+    } catch (_) {}
+    return all;
+  }
+
+  function dateOnly(value){
+    if (!value) return '';
+    return String(value).slice(0, 10);
+  }
+
+  function parseDate(value){
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function projectDateForMonth(project){
+    return (
+      project?.completedAt ||
+      project?.archivedAt ||
+      project?.inspectionDate ||
+      project?.lastSaved ||
+      project?.updatedAt ||
+      project?.createdAt ||
+      project?.scheduledDate ||
+      project?.followUpDate ||
+      project?.nextInspectionDate ||
+      ''
+    );
+  }
+
+  function isThisMonth(project){
+    const d = parseDate(projectDateForMonth(project));
+    if (!d) return false;
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+
+  function isScheduledInspection(project){
+    if (!project) return false;
+    if (String(project.scheduledStatus || '').toLowerCase() === 'scheduled') return true;
+    if (project.scheduledDate && !project.completedAt && !project.archivedAt) return true;
+    return false;
+  }
+
+  function matchesOriginal(project, filter){
+    try {
+      if (typeof window.__fireSOriginalGatewayFilter133 === 'function') {
+        return window.__fireSOriginalGatewayFilter133(project, filter);
+      }
+    } catch (_) {}
+    return filter === 'all';
+  }
+
+  if (typeof projectMatchesInspectionGatewayQuickFilter === 'function' && !window.__fireSOriginalGatewayFilter133) {
+    try { window.__fireSOriginalGatewayFilter133 = projectMatchesInspectionGatewayQuickFilter; } catch (_) {}
+  }
+
+  window.projectMatchesInspectionGatewayQuickFilter = function fireSGatewayFilter133(project, filter){
+    const active = filter || 'all';
+    if (active === 'scheduled' || active === 'scheduled-inspections') return isScheduledInspection(project);
+    if (active === 'month' || active === 'inspections-month') return isThisMonth(project);
+    return matchesOriginal(project, active);
+  };
+  try { projectMatchesInspectionGatewayQuickFilter = window.projectMatchesInspectionGatewayQuickFilter; } catch (_) {}
+
+  function count(filter){
+    return scopedProjects().filter(project => window.projectMatchesInspectionGatewayQuickFilter(project, filter)).length;
+  }
+
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if (el) el.textContent = String(value);
+  }
+
+  function setLabel(buttonId, label){
+    const btn = document.getElementById(buttonId);
+    if (!btn) return;
+    const labelEl = btn.querySelector('.stat-label, strong, .command-title');
+    if (labelEl) labelEl.textContent = label;
+    btn.setAttribute('aria-label', label);
+    btn.title = label;
+  }
+
+  function showGatewayWithFilter(filter, message){
+    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
+    try { currentFilter = filter || 'all'; } catch (_) {}
+    try { window.currentFilter = filter || 'all'; } catch (_) {}
+    try { currentProjectPage = 1; } catch (_) {}
+    try { window.currentProjectPage = 1; } catch (_) {}
+
+    setTimeout(() => {
+      try { currentFilter = filter || 'all'; } catch (_) {}
+      try { window.currentFilter = filter || 'all'; } catch (_) {}
+      try { currentProjectPage = 1; } catch (_) {}
+      try { window.currentProjectPage = 1; } catch (_) {}
+      try { if (typeof renderProjectsList === 'function') renderProjectsList(); } catch (_) {}
+      try { if (typeof updateDashboardSelection === 'function') updateDashboardSelection(); } catch (_) {}
+      try { if (typeof closeFilterPanel === 'function') closeFilterPanel(); } catch (_) {}
+      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(message || ''); } catch (_) {}
+      try {
+        const section = document.getElementById('projectListSection') || document.getElementById('projectsSection') || document.getElementById('projectsList');
+        if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    }, 80);
+  }
+
+  function bindHard(id, filter, message){
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.onclick = function fireS133KpiClick(event){
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      showGatewayWithFilter(filter, message);
+      return false;
+    };
+  }
+
+  function refreshKpis(){
+    const role = viewAsRole();
+    if (role === 'inspector') return;
+
+    const requiringAction = count('inspection-attention');
+    const scheduled = count('scheduled');
+    const compliant = count('compliant');
+    const month = count('month');
+
+    setText('cmdOpenFindings', requiringAction);
+    setText('cmdOverdueItems', scheduled);
+    setText('cmdTotalInspections', compliant);
+    setText('cmdPhotoCount', month);
+
+    setLabel('cmdFindingsBtn', 'Premises Requiring Action');
+    setLabel('cmdOverdueBtn', 'Scheduled Inspections');
+    setLabel('cmdDashboardBtn', 'Compliant Sites');
+    setLabel('cmdInspectionsBtn', 'Inspections This Month');
+
+    setText('cmdComplianceOpenFindings', requiringAction);
+    setText('cmdComplianceOverdueActions', scheduled);
+    setText('cmdComplianceSites', compliant);
+    setText('cmdComplianceInspections', month);
+
+    setLabel('cmdComplianceFindingsBtn', 'Premises Requiring Action');
+    setLabel('cmdComplianceOverdueBtn', 'Scheduled Inspections');
+    setLabel('cmdComplianceSitesBtn', 'Compliant Sites');
+    setLabel('cmdComplianceInspectionsBtn', 'Inspections This Month');
+
+    bindHard('cmdFindingsBtn', 'inspection-attention', 'Showing premises requiring action.');
+    bindHard('cmdOverdueBtn', 'scheduled', 'Showing scheduled inspections.');
+    bindHard('cmdDashboardBtn', 'compliant', 'Showing compliant sites.');
+    bindHard('cmdInspectionsBtn', 'month', 'Showing inspections from this month.');
+
+    bindHard('cmdComplianceFindingsBtn', 'inspection-attention', 'Showing premises requiring action.');
+    bindHard('cmdComplianceOverdueBtn', 'scheduled', 'Showing scheduled inspections.');
+    bindHard('cmdComplianceSitesBtn', 'compliant', 'Showing compliant sites.');
+    bindHard('cmdComplianceInspectionsBtn', 'month', 'Showing inspections from this month.');
+
+    const subtitle = document.getElementById('mainCommandSubtitle');
+    if (subtitle) {
+      subtitle.textContent = `${requiringAction} premises require action · ${scheduled} scheduled · ${compliant} compliant · ${month} this month.`;
+    }
+
+    const access = document.getElementById('mainCommandAccessStatus');
+    if (access && actualRole() === 'super_admin') {
+      access.textContent = `Local / Personal Workspace · actual: super_admin · viewing: ${role} · scope: ${role === 'inspector' ? 'inspector access' : 'management scope'}`;
+    }
+  }
+
+  // Capture click fallback: prevents older handlers from winning after re-render.
+  document.addEventListener('click', function(event){
+    const btn = event.target && event.target.closest && event.target.closest('#cmdInspectionsBtn, #cmdComplianceInspectionsBtn, #cmdOverdueBtn, #cmdComplianceOverdueBtn');
+    if (!btn || viewAsRole() === 'inspector') return;
+    if (btn.id === 'cmdInspectionsBtn' || btn.id === 'cmdComplianceInspectionsBtn') {
+      event.preventDefault(); event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+      showGatewayWithFilter('month', 'Showing inspections from this month.');
+    }
+    if (btn.id === 'cmdOverdueBtn' || btn.id === 'cmdComplianceOverdueBtn') {
+      event.preventDefault(); event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+      showGatewayWithFilter('scheduled', 'Showing scheduled inspections.');
+    }
+  }, true);
+
+  const previousController = window.fireSRenderHomeController130;
+  if (typeof previousController === 'function' && !previousController.__fireS133KpiFix) {
+    const wrapped = function fireSRenderHomeController133(){
+      previousController();
+      setTimeout(refreshKpis, 40);
+    };
+    wrapped.__fireS133KpiFix = true;
+    window.fireSRenderHomeController130 = wrapped;
+    try { renderHomeCommandCentre = wrapped; } catch (_) {}
+    try { initHomeCommandCentre = wrapped; } catch (_) {}
+  }
+
+  const previousShowHome = window.showHome;
+  if (typeof previousShowHome === 'function' && !previousShowHome.__fireS133KpiFix) {
+    const wrappedShowHome = function fireSShowHome133(){
+      previousShowHome();
+      setTimeout(refreshKpis, 40);
+    };
+    wrappedShowHome.__fireS133KpiFix = true;
+    window.showHome = wrappedShowHome;
+    try { showHome = wrappedShowHome; } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(refreshKpis, 100);
+    setTimeout(refreshKpis, 500);
+  });
+
+  window.fireSRefreshManagementKpis133 = refreshKpis;
+})();

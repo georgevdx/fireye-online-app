@@ -11292,3 +11292,123 @@ body.fire-s-home-resolved-inspector-121j #cmdScheduleBtn {
     font-size: 11px !important;
   }
 }
+
+/* FIRE-S RC 1.3.3 - Management KPI readability and mobile wrap */
+#cmdFindingsBtn,
+#cmdOverdueBtn,
+#cmdDashboardBtn,
+#cmdInspectionsBtn,
+#cmdComplianceFindingsBtn,
+#cmdComplianceOverdueBtn,
+#cmdComplianceSitesBtn,
+#cmdComplianceInspectionsBtn {
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08) !important;
+  min-height: 92px !important;
+}
+
+#cmdFindingsBtn .stat-number,
+#cmdOverdueBtn .stat-number,
+#cmdDashboardBtn .stat-number,
+#cmdInspectionsBtn .stat-number,
+#cmdComplianceFindingsBtn .stat-number,
+#cmdComplianceOverdueBtn .stat-number,
+#cmdComplianceSitesBtn .stat-number,
+#cmdComplianceInspectionsBtn .stat-number,
+#cmdOpenFindings,
+#cmdOverdueItems,
+#cmdTotalInspections,
+#cmdPhotoCount,
+#cmdComplianceOpenFindings,
+#cmdComplianceOverdueActions,
+#cmdComplianceSites,
+#cmdComplianceInspections {
+  color: #b71c1c !important;
+  font-size: 26px !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+#cmdFindingsBtn .stat-label,
+#cmdOverdueBtn .stat-label,
+#cmdDashboardBtn .stat-label,
+#cmdInspectionsBtn .stat-label,
+#cmdComplianceFindingsBtn .stat-label,
+#cmdComplianceOverdueBtn .stat-label,
+#cmdComplianceSitesBtn .stat-label,
+#cmdComplianceInspectionsBtn .stat-label {
+  color: #334155 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.15 !important;
+  font-size: 11px !important;
+  max-width: 100% !important;
+}
+
+#cmdOverdueBtn,
+#cmdComplianceOverdueBtn {
+  border-left: 5px solid #1565c0 !important;
+}
+
+#cmdDashboardBtn,
+#cmdComplianceSitesBtn {
+  border-left: 5px solid #2e7d32 !important;
+}
+
+#cmdInspectionsBtn,
+#cmdComplianceInspectionsBtn {
+  border-left: 5px solid #7c3aed !important;
+}
+
+#cmdFindingsBtn,
+#cmdComplianceFindingsBtn {
+  border-left: 5px solid #b71c1c !important;
+}
+
+@media (max-width: 640px) {
+  #cmdFindingsBtn,
+  #cmdOverdueBtn,
+  #cmdDashboardBtn,
+  #cmdInspectionsBtn,
+  #cmdComplianceFindingsBtn,
+  #cmdComplianceOverdueBtn,
+  #cmdComplianceSitesBtn,
+  #cmdComplianceInspectionsBtn {
+    min-height: 84px !important;
+    padding: 9px 7px !important;
+  }
+
+  #cmdFindingsBtn .stat-number,
+  #cmdOverdueBtn .stat-number,
+  #cmdDashboardBtn .stat-number,
+  #cmdInspectionsBtn .stat-number,
+  #cmdComplianceFindingsBtn .stat-number,
+  #cmdComplianceOverdueBtn .stat-number,
+  #cmdComplianceSitesBtn .stat-number,
+  #cmdComplianceInspectionsBtn .stat-number,
+  #cmdOpenFindings,
+  #cmdOverdueItems,
+  #cmdTotalInspections,
+  #cmdPhotoCount,
+  #cmdComplianceOpenFindings,
+  #cmdComplianceOverdueActions,
+  #cmdComplianceSites,
+  #cmdComplianceInspections {
+    font-size: 22px !important;
+  }
+
+  #cmdFindingsBtn .stat-label,
+  #cmdOverdueBtn .stat-label,
+  #cmdDashboardBtn .stat-label,
+  #cmdInspectionsBtn .stat-label,
+  #cmdComplianceFindingsBtn .stat-label,
+  #cmdComplianceOverdueBtn .stat-label,
+  #cmdComplianceSitesBtn .stat-label,
+  #cmdComplianceInspectionsBtn .stat-label {
+    font-size: 10px !important;
+    line-height: 1.12 !important;
+  }
+}
