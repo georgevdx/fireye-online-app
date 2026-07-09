@@ -11726,3 +11726,55 @@ button,
     font-size: 24px !important;
   }
 }
+
+/* FIRE-S RC 1.3.6A.2 - Current KPI Filter label */
+.fire-s-current-kpi-filter-banner {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #bfdbfe;
+  border-left: 5px solid #2563eb;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+.fire-s-current-kpi-filter-banner strong {
+  display: block;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.fire-s-current-kpi-filter-banner span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.fire-s-current-kpi-filter-banner button {
+  width: auto;
+  max-width: none;
+  min-width: 92px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1d4ed8;
+  border: 1px solid #93c5fd;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: normal;
+  line-height: 1.15;
+}
+@media (max-width: 640px) {
+  .fire-s-current-kpi-filter-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .fire-s-current-kpi-filter-banner button {
+    width: 100%;
+  }
+}
