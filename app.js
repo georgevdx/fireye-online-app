@@ -29978,407 +29978,486 @@ function fireSApplyLifecycleUxLabels() {
 })();
 
 /* =====================================================
-   FIRE-S RC 1.3.6A.4 - AUTHORITATIVE KPI FILTER ENGINE
-   Purpose:
-   - KPI card count and Projects result cards use exactly the same matcher.
-   - Scheduled excludes overdue.
-   - Adds a visible Current KPI Filter label above result cards.
-   - Keeps project card click behaviour intact.
+   FIRE-S RC 1.3.6A.5 - Mission Control Authoritative Renderer
+   Scope: fixes KPI filter routing + card rendering mismatch only.
+   Rule: count === filtered dataset === pagination === visible cards.
    ===================================================== */
-(function fireSAuthoritativeKpiFilterEngine136A4(){
+(function fireS136A5MissionControlAuthoritativeRenderer(){
   'use strict';
-  if (window.fireSAuthoritativeKpiFilterEngine136A4Applied) return;
-  window.fireSAuthoritativeKpiFilterEngine136A4Applied = true;
 
-  const FILTER = {
-    all: 'all',
-    compliant: 'compliant',
-    scheduled: 'scheduled-new',
-    overdue: 'overdue',
-    month: 'month',
-    action: 'inspection-attention'
+  const FILTER_ALIASES = {
+    'fs-kpi-compliant': 'compliant',
+    'kpi-compliant': 'compliant',
+    'compliant-sites': 'compliant',
+    'compliant': 'compliant',
+
+    'fs-kpi-scheduled': 'scheduled-new',
+    'kpi-scheduled': 'scheduled-new',
+    'scheduled': 'scheduled-new',
+    'scheduled-inspections': 'scheduled-new',
+    'scheduled-new': 'scheduled-new',
+
+    'fs-kpi-overdue': 'overdue',
+    'kpi-overdue': 'overdue',
+    'overdue-inspections': 'overdue',
+    'overdue': 'overdue',
+
+    'fs-kpi-month': 'month',
+    'kpi-month': 'month',
+    'this-month': 'month',
+    'inspections-this-month': 'month',
+    'inspections-month': 'month',
+    'month': 'month',
+
+    'inspection-attention': 'inspection-attention',
+    'action-required': 'inspection-attention',
+    'actions-required': 'inspection-attention',
+    'risk': 'inspection-attention',
+
+    'all': 'all',
+    'gateway': 'all'
   };
 
-  const LABELS = {
-    all: 'All inspections',
+  const FILTER_LABELS = {
+    all: 'All Premises',
     compliant: 'Compliant Sites',
     'scheduled-new': 'Scheduled Inspections',
-    scheduled: 'Scheduled Inspections',
     overdue: 'Overdue Inspections',
     month: 'Inspections This Month',
     'inspection-attention': 'Premises Requiring Action',
-    risk: 'Open Action Items',
-    'expiry-overdue': 'Expired Equipment',
-    'expiry-soon': 'Equipment Due Soon',
-    'expiry-scheduled': 'Valid Equipment',
-    'expiry-missing': 'Equipment Date Missing'
+    'new-premise': 'New Premises',
+    'inspection-progress': 'Continue / Edit Current',
+    'existing-history': 'Previous Cycles',
+    'archive-new-cycle': 'Archive / New Cycle',
+    'expiry-overdue': 'Expiry Overdue',
+    'expiry-soon': 'Expiry Due Soon',
+    'expiry-scheduled': 'Valid Expiry',
+    'expiry-missing': 'Expiry Missing'
   };
 
+  const PAGE_SIZE = 10;
+
   function esc(value){
-    if (typeof escapeHtml === 'function') return escapeHtml(value);
-    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    if (typeof window.escapeHtml === 'function') return window.escapeHtml(value ?? '');
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
-  function norm(value){ return String(value || '').trim().toLowerCase(); }
-  function dateKey(value){ return String(value || '').slice(0, 10); }
-  function todayKey(){ return new Date().toISOString().slice(0, 10); }
-  function parseDate(value){
-    const key = dateKey(value);
-    if (!key) return null;
-    const date = new Date(key + 'T00:00:00');
-    return Number.isNaN(date.getTime()) ? null : date;
+  function norm(filter){
+    const key = String(filter || 'all').trim();
+    return FILTER_ALIASES[key] || key || 'all';
   }
 
-  function normaliseFilter(filter){
-    const key = norm(filter || 'all');
-    if (!key || key === 'gateway' || key === 'fs-kpi-gateway') return FILTER.all;
-    if (key === 'scheduled' || key === 'scheduled-inspections' || key === 'fs-kpi-scheduled') return FILTER.scheduled;
-    if (key === 'overdue' || key === 'overdue-inspections' || key === 'inspection-overdue' || key === 'fs-kpi-overdue') return FILTER.overdue;
-    if (key === 'this-month' || key === 'inspections-month' || key === 'inspections-this-month' || key === 'fs-kpi-month') return FILTER.month;
-    if (key === 'compliant-sites' || key === 'clear-completed' || key === 'inspection-complete' || key === 'fs-kpi-compliant') return FILTER.compliant;
-    if (key === 'actions-required' || key === 'action-required' || key === 'premises-requiring-action') return FILTER.action;
-    return key;
-  }
-
-  function getAllProjects(){
-    let list = [];
-    try {
-      list = typeof getProjects === 'function'
-        ? getProjects()
-        : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
-    } catch (_) { list = []; }
-    if (!Array.isArray(list)) list = [];
-    try {
-      if (typeof getVisibleProjectsForCurrentUser === 'function') {
-        const visible = getVisibleProjectsForCurrentUser(list);
-        if (Array.isArray(visible)) list = visible;
-      }
-    } catch (_) {}
-    return list;
-  }
-
-  function answerValue(answer){ return norm(answer && answer.answer); }
-  function answers(project){ return Array.isArray(project && project.answers) ? project.answers : []; }
-  function noCount(project){ return answers(project).filter(answer => answerValue(answer) === 'no').length; }
-  function hasAnyAnswer(project){ return answers(project).some(answer => Boolean(answerValue(answer))); }
-
-  function isClosed(project){
-    const status = norm(project && project.status);
-    const scheduledStatus = norm(project && project.scheduledStatus);
-    const archiveStatus = norm(project && project.archiveStatus);
-    const inspectionStatus = norm(project && project.inspectionStatus);
-    return Boolean(
-      project && (
-        project.completedAt ||
-        project.archivedAt ||
-        status === 'completed' || status === 'closed' || status === 'archived' ||
-        scheduledStatus === 'completed' || scheduledStatus === 'closed' ||
-        archiveStatus === 'completed' || archiveStatus === 'archived' ||
-        inspectionStatus === 'closed'
-      )
-    );
-  }
-
-  function scheduleDate(project){
-    return project?.scheduledDate || project?.nextInspectionDate || project?.followUpDate || '';
-  }
-
-  function monthDate(project){
-    return project?.inspectionDate || project?.scheduledDate || project?.completedAt || project?.archivedAt || project?.lastSaved || project?.updatedAt || project?.updated_at || project?.createdAt || project?.created_at || '';
-  }
-
-  function latestDate(project){
-    return project?.lastSaved || project?.updatedAt || project?.updated_at || project?.completedAt || project?.archivedAt || project?.inspectionDate || project?.scheduledDate || project?.followUpDate || project?.createdAt || project?.created_at || '';
-  }
-
-  function isOverdue(project){
-    if (!project || isClosed(project)) return false;
-    const key = dateKey(scheduleDate(project));
-    return Boolean(key && key < todayKey());
-  }
-
-  function isScheduled(project){
-    if (!project || isClosed(project) || isOverdue(project)) return false;
-    const key = dateKey(scheduleDate(project));
-    return Boolean(key && key >= todayKey());
-  }
-
-  function isThisMonth(project){
-    const date = parseDate(monthDate(project));
-    if (!date) return false;
-    const now = new Date();
-    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
-  }
-
-  function hasActionRequired(project){
-    if (!project) return false;
-    if (noCount(project) > 0) return true;
-    try { if (typeof hasProjectOpenActionItems === 'function' && hasProjectOpenActionItems(project)) return true; } catch (_) {}
-    return false;
-  }
-
-  function hasMeaningfulInspectionData(project){
-    return Boolean(
-      hasAnyAnswer(project) ||
-      (Array.isArray(project?.photos) && project.photos.length) ||
-      project?.completedAt || project?.archivedAt || project?.lastSaved || project?.inspectionDate
-    );
-  }
-
-  function isCompliant(project){
-    if (!project || !hasMeaningfulInspectionData(project)) return false;
-    try { if (typeof isProjectCompliantForGateway === 'function' && isProjectCompliantForGateway(project)) return true; } catch (_) {}
-    return isClosed(project) && noCount(project) === 0;
-  }
-
-  function expiryCounts(project){
-    try { if (typeof getProjectExpiryCounts === 'function') return getProjectExpiryCounts(project) || {}; } catch (_) {}
-    return {};
-  }
-
-  const oldMatcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
-
-  function matchesKpiFilter(project, filter){
-    const key = normaliseFilter(filter);
-    if (key === FILTER.all) return true;
-    if (key === FILTER.compliant) return isCompliant(project);
-    if (key === FILTER.scheduled) return isScheduled(project);
-    if (key === FILTER.overdue) return isOverdue(project);
-    if (key === FILTER.month) return isThisMonth(project);
-    if (key === FILTER.action || key === 'risk') return hasActionRequired(project);
-    if (key === 'expiry-overdue') return Number(expiryCounts(project).overdue || 0) > 0;
-    if (key === 'expiry-soon') return Number(expiryCounts(project).soon || 0) > 0;
-    if (key === 'expiry-scheduled') return Number(expiryCounts(project).scheduled || 0) > 0;
-    if (key === 'expiry-missing') return Number(expiryCounts(project).missing || 0) > 0;
-    if (oldMatcher && oldMatcher !== matchesKpiFilter) {
-      try { return oldMatcher(project, key); } catch (_) {}
-    }
-    return true;
-  }
-
-  function projectMatchesBase(project){
-    try {
-      const searchText = String(document.getElementById('projectSearch')?.value || '').trim().toLowerCase();
-      if (searchText) {
-        const haystack = [
-          project?.projectName,
-          project?.organisationName,
-          project?.siteName,
-          project?.projectAddress,
-          project?.addressLine,
-          project?.inspectionNumber,
-          project?.inspectorName,
-          project?.contactPerson,
-          project?.contactTel
-        ].join(' ').toLowerCase();
-        if (!haystack.includes(searchText)) return false;
-      }
-    } catch (_) {}
-
-    try {
-      if (typeof fireSPremisesDropdownFilter !== 'undefined' && fireSPremisesDropdownFilter && typeof fireSGetPremisesKey === 'function') {
-        if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) return false;
-      }
-    } catch (_) {}
-
-    try {
-      if (typeof projectMatchesInspectionDateFilter === 'function') return projectMatchesInspectionDateFilter(project);
-    } catch (_) {}
-
-    return true;
-  }
-
-  function getBaseProjects(){ return getAllProjects().filter(projectMatchesBase); }
-  function countFor(filter){ return getBaseProjects().filter(project => matchesKpiFilter(project, filter)).length; }
-
-  function title(project){
-    return project?.projectName || [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') || project?.siteName || 'Untitled Premises';
-  }
-
-  function fmtDate(value){
-    if (!value) return 'Not set';
-    try {
-      if (typeof fireSUltraDateText === 'function') return fireSUltraDateText(value);
-    } catch (_) {}
-    const date = parseDate(value);
-    return date ? date.toLocaleDateString() : (String(value).slice(0, 10) || 'Not set');
-  }
-
-  function statusFor(project){
-    if (isOverdue(project)) return { label: 'Overdue', tone: 'Critical', className: 'ultra-status-overdue', priority: 1 };
-    if (hasActionRequired(project)) return { label: 'Action Required', tone: 'Action', className: 'ultra-status-action', priority: 2 };
-    if (isScheduled(project)) return { label: 'Scheduled', tone: 'Scheduled', className: 'ultra-status-due', priority: 3 };
-    if (isCompliant(project)) return { label: 'Compliant', tone: 'Compliant', className: 'ultra-status-compliant', priority: 4 };
-    return { label: 'In Progress', tone: 'In Progress', className: 'ultra-status-due', priority: 5 };
-  }
-
-  function getActiveFilter(){
-    return normaliseFilter(window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all') || 'all');
-  }
-
-  function setActiveFilter(filter){
-    const key = normaliseFilter(filter);
+  function setState(filter){
+    const key = norm(filter);
     window.currentFilter = key;
-    try { currentFilter = key; } catch (_) {}
     window.__fireSActiveKpiFilter = key;
     window.__fireSPendingKpiFilter = key;
+    try { currentFilter = key; } catch (_) {}
     window.currentProjectPage = 1;
     try { currentProjectPage = 1; } catch (_) {}
     return key;
   }
 
-  function labelFor(filter){ return LABELS[normaliseFilter(filter)] || String(filter || 'Filter'); }
+  function currentKey(){
+    try { return norm(window.__fireSActiveKpiFilter || window.currentFilter || currentFilter || 'all'); }
+    catch (_) { return norm(window.__fireSActiveKpiFilter || window.currentFilter || 'all'); }
+  }
 
-  function quickFiltersHtml(base){
-    const filters = [
-      [FILTER.all, 'All'],
-      [FILTER.action, 'Action Required'],
-      [FILTER.compliant, 'Compliant'],
-      [FILTER.scheduled, 'Scheduled'],
-      [FILTER.overdue, 'Overdue'],
-      [FILTER.month, 'This Month']
+  function title(project){
+    if (typeof window.fireSUltraCardTitle === 'function') return window.fireSUltraCardTitle(project);
+    return project?.projectName || [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') || project?.siteName || 'Untitled Premises';
+  }
+
+  function address(project){
+    return project?.projectAddress || project?.addressLine || project?.address || project?.siteAddress || '';
+  }
+
+  function dateKey(value){
+    if (!value) return '';
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed || /^not\s*set$/i.test(trimmed) || /^n\/?a$/i.test(trimmed)) return '';
+    }
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value).slice(0, 10);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function dateText(value){
+    const key = dateKey(value);
+    if (!key) return 'Not set';
+    const d = new Date(key + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return key;
+    return d.toLocaleDateString();
+  }
+
+  function todayKey(){
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    return d.toISOString().slice(0,10);
+  }
+
+  function plannedDate(project){
+    return dateKey(project?.scheduledDate || project?.followUpDate || project?.nextInspectionDate || project?.nextDate || project?.inspectionDueDate || project?.dueDate);
+  }
+
+  function inspectionActivityDate(project){
+    return dateKey(project?.inspectionDate || project?.completedAt || project?.lastSaved || project?.createdAt || project?.scheduledDate || project?.followUpDate);
+  }
+
+  function lastInspectionDate(project){
+    const historyDates = Array.isArray(project?.inspectionHistory)
+      ? project.inspectionHistory.map(item => item?.completedAt || item?.inspectionDate || item?.archivedAt).filter(Boolean)
+      : [];
+    const dates = [project?.completedAt, project?.inspectionDate, project?.lastSaved, ...historyDates].map(dateKey).filter(Boolean).sort();
+    return dates.length ? dates[dates.length - 1] : '';
+  }
+
+  function isCompleted(project){
+    const status = String(project?.status || project?.inspectionStatus || '').toLowerCase();
+    return Boolean(project?.completedAt || project?.finalisedAt || project?.archivedAt || status.includes('complete') || status.includes('closed') || status.includes('archived'));
+  }
+
+  function isArchived(project){
+    const status = String(project?.status || project?.inspectionStatus || '').toLowerCase();
+    return Boolean(project?.archivedAt || status.includes('archived'));
+  }
+
+  function hasOpenActions(project){
+    const answers = Array.isArray(project?.answers) ? project.answers : [];
+    if (answers.some(a => String(a?.answer || '').trim().toLowerCase() === 'no')) return true;
+    const findings = Array.isArray(project?.findings) ? project.findings : [];
+    if (findings.some(f => !/closed|complete|resolved/i.test(String(f?.status || '')))) return true;
+    const actions = Array.isArray(project?.actions) ? project.actions : [];
+    return actions.some(a => !/closed|complete|resolved/i.test(String(a?.status || '')));
+  }
+
+  function hasHistory(project){
+    return isCompleted(project) || (Array.isArray(project?.inspectionHistory) && project.inspectionHistory.length > 0);
+  }
+
+  function isThisMonth(project){
+    const key = inspectionActivityDate(project);
+    if (!key) return false;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0,10);
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0,10);
+    return key >= start && key <= end;
+  }
+
+  function expiryStatus(project){
+    const raw = project?.expiryDate || project?.equipmentExpiryDate || project?.serviceExpiryDate || project?.nextServiceDate || project?.extinguisherExpiryDate || project?.fireEquipmentExpiryDate;
+    const key = dateKey(raw);
+    if (!key) return 'expiry-missing';
+    const today = todayKey();
+    if (key < today) return 'expiry-overdue';
+    const d = new Date(key + 'T00:00:00');
+    const t = new Date(today + 'T00:00:00');
+    const days = Math.ceil((d - t) / 86400000);
+    if (!Number.isFinite(days)) return 'expiry-missing';
+    if (days <= 30) return 'expiry-soon';
+    return 'expiry-scheduled';
+  }
+
+  function matchProject(project, filter){
+    const key = norm(filter);
+    const today = todayKey();
+    const plan = plannedDate(project);
+    if (key === 'all') return true;
+    if (key === 'compliant') return !hasOpenActions(project) && !isArchived(project);
+    if (key === 'scheduled-new') return Boolean(plan && plan >= today && !isCompleted(project) && !isArchived(project));
+    if (key === 'overdue') return Boolean(plan && plan < today && !isCompleted(project) && !isArchived(project));
+    if (key === 'month') return isThisMonth(project);
+    if (key === 'inspection-attention') return hasOpenActions(project);
+    if (key === 'new-premise') return !hasHistory(project);
+    if (key === 'inspection-progress') return !isCompleted(project) && !isArchived(project) && Array.isArray(project?.answers) && project.answers.length > 0;
+    if (key === 'existing-history') return hasHistory(project);
+    if (key === 'archive-new-cycle') return hasHistory(project) && !hasOpenActions(project);
+    if (key === 'expiry-overdue' || key === 'expiry-soon' || key === 'expiry-scheduled' || key === 'expiry-missing') return expiryStatus(project) === key;
+    return true;
+  }
+
+  function getVisibleProjects(){
+    let list = [];
+    try { list = typeof window.getProjects === 'function' ? window.getProjects() : (typeof getProjects === 'function' ? getProjects() : JSON.parse(localStorage.getItem('fireyeProjects') || '[]')); }
+    catch (_) { list = []; }
+    if (!Array.isArray(list)) list = [];
+    try {
+      if (typeof window.getVisibleProjectsForCurrentUser === 'function') list = window.getVisibleProjectsForCurrentUser(list) || [];
+      else if (typeof getVisibleProjectsForCurrentUser === 'function') list = getVisibleProjectsForCurrentUser(list) || [];
+    } catch (_) {}
+    return Array.isArray(list) ? list : [];
+  }
+
+  function baseFilteredProjects(){
+    const projects = getVisibleProjects();
+    const searchText = (document.getElementById('projectSearch')?.value || '').trim().toLowerCase();
+    return projects.filter(project => {
+      try {
+        if (typeof window.fireSPremisesDropdownFilter !== 'undefined' && window.fireSPremisesDropdownFilter && typeof window.fireSGetPremisesKey === 'function') {
+          if (window.fireSGetPremisesKey(project) !== window.fireSPremisesDropdownFilter) return false;
+        }
+      } catch (_) {}
+      if (searchText) {
+        const haystack = [project?.projectName, project?.organisationName, project?.siteName, project?.projectAddress, project?.addressLine, project?.inspectionNumber, project?.inspectorName, project?.contactPerson, project?.contactTel]
+          .join(' ').toLowerCase();
+        if (!haystack.includes(searchText)) return false;
+      }
+      try {
+        if (typeof window.projectMatchesInspectionDateFilter === 'function' && !window.projectMatchesInspectionDateFilter(project)) return false;
+        else if (typeof projectMatchesInspectionDateFilter === 'function' && !projectMatchesInspectionDateFilter(project)) return false;
+      } catch (_) {}
+      return true;
+    });
+  }
+
+  function filteredProjects(filter){
+    const key = norm(filter || currentKey());
+    return baseFilteredProjects().filter(project => matchProject(project, key));
+  }
+
+  function count(filter){
+    return filteredProjects(filter).length;
+  }
+
+  function getSortValue(project){
+    return dateKey(project?.lastSaved || project?.updatedAt || project?.completedAt || project?.inspectionDate || project?.createdAt);
+  }
+
+  function sortProjects(list){
+    const sortSelect = document.getElementById('projectSortSelect') || Array.from(document.querySelectorAll('select')).find(sel => Array.from(sel.options || []).some(o => /last modified/i.test(o.textContent || '')));
+    const sortValue = String(sortSelect?.value || '').toLowerCase();
+    const copy = list.slice();
+    if (sortValue.includes('name') || sortValue.includes('alpha')) {
+      copy.sort((a,b) => title(a).localeCompare(title(b)));
+      if (sortValue.includes('z')) copy.reverse();
+      return copy;
+    }
+    if (sortValue.includes('old')) return copy.sort((a,b) => getSortValue(a).localeCompare(getSortValue(b)));
+    return copy.sort((a,b) => getSortValue(b).localeCompare(getSortValue(a)));
+  }
+
+  function renderFilterButtons(base){
+    const keys = [
+      ['all', 'All'],
+      ['inspection-attention', 'Action Required'],
+      ['compliant', 'Compliant'],
+      ['scheduled-new', 'Scheduled'],
+      ['overdue', 'Overdue'],
+      ['month', 'This Month']
     ];
-    const active = getActiveFilter();
-    return `<div class="gateway-quick-filter-bar" aria-label="Inspection quick filters">${filters.map(([key, label]) => {
-      const count = base.filter(project => matchesKpiFilter(project, key)).length;
-      return `<button type="button" class="${active === key ? 'gateway-filter-active' : ''}" onclick="setInspectionGatewayQuickFilter('${esc(key)}')"><strong>${count}</strong><span>${esc(label)}</span></button>`;
-    }).join('')}</div>`;
+    const active = currentKey();
+    return `
+      <div class="fire-s-136a5-filter-grid" aria-label="Mission Control KPI filters">
+        ${keys.map(([key,label]) => {
+          const n = base.filter(project => matchProject(project, key)).length;
+          return `<button type="button" class="fire-s-136a5-filter ${active === key ? 'active' : ''}" data-filter="${esc(key)}" onclick="fireSApplyMissionFilter136A5('${esc(key)}')"><strong>${n}</strong><span>${esc(label)}</span></button>`;
+        }).join('')}
+      </div>`;
   }
 
-  function filterBannerHtml(total){
-    const active = getActiveFilter();
-    if (active === FILTER.all) return '';
-    return `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner" style="display:flex"><div><strong>Current KPI Filter</strong><span>${esc(labelFor(active))} · Showing ${total} card${total === 1 ? '' : 's'}</span></div><button type="button" onclick="clearProjectSearchAndFilter()">Clear Filter</button></div>`;
+  function renderCurrentLabel(total){
+    const key = currentKey();
+    if (key === 'all') return '';
+    return `
+      <div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner fire-s-136a5-banner">
+        <div><strong>Current KPI Filter</strong><span>${esc(FILTER_LABELS[key] || key)} · Showing ${total} card${total === 1 ? '' : 's'}</span></div>
+        <button type="button" onclick="fireSApplyMissionFilter136A5('all')">Clear Filter</button>
+      </div>
+      <div class="fire-s-136a5-result-note">${esc(FILTER_LABELS[key] || key)}: ${total} matching card${total === 1 ? '' : 's'}.</div>`;
   }
 
-  function renderProjectsAuthoritative(){
+  function statusClass(project){
+    if (matchProject(project, 'overdue')) return 'overdue';
+    if (matchProject(project, 'scheduled-new')) return 'scheduled';
+    if (hasOpenActions(project)) return 'action';
+    if (matchProject(project, 'compliant')) return 'compliant';
+    return 'neutral';
+  }
+
+  function statusLabel(project){
+    if (matchProject(project, 'overdue')) return 'OVERDUE';
+    if (matchProject(project, 'scheduled-new')) return 'SCHEDULED';
+    if (hasOpenActions(project)) return 'ACTION';
+    if (hasHistory(project)) return 'COMPLIANT / HISTORY';
+    return 'NOT ASSESSED';
+  }
+
+  function cardHtml(project){
+    const id = JSON.stringify(project?.id || '');
+    const actions = Array.isArray(project?.answers) ? project.answers.filter(a => String(a?.answer || '').trim().toLowerCase() === 'no').length : 0;
+    const photos = Array.isArray(project?.photos) ? project.photos.length : 0;
+    const cls = statusClass(project);
+    return `
+      <article class="fire-s-136a5-card ${cls}" data-project-id="${esc(project?.id || '')}" role="button" tabindex="0" onclick='fireSOpenProjectCard136A5(${id})' onkeydown='if(event.key==="Enter"||event.key===" "){event.preventDefault();fireSOpenProjectCard136A5(${id});}'>
+        <div class="fire-s-136a5-strip"></div>
+        <div class="fire-s-136a5-card-body">
+          <div class="fire-s-136a5-card-top">
+            <strong>${esc(title(project))}</strong>
+            <span>${esc(statusLabel(project))}</span>
+          </div>
+          ${address(project) ? `<p>${esc(address(project))}</p>` : ''}
+          <div class="fire-s-136a5-card-meta">
+            <div><small>Last</small><b>${esc(dateText(lastInspectionDate(project)))}</b></div>
+            <div><small>Next</small><b>${esc(dateText(plannedDate(project)))}</b></div>
+            <div><small>Actions</small><b>${actions}</b></div>
+            <div><small>Photos</small><b>${photos}</b></div>
+          </div>
+          <div class="fire-s-136a5-open">Open →</div>
+        </div>
+      </article>`;
+  }
+
+  function renderProjectsListAuthoritative(){
     const container = document.getElementById('projectsList');
     if (!container) return;
-
-    try { if (typeof updateAppInfo === 'function') updateAppInfo(); } catch (_) {}
-    try { if (typeof updateOfflineReadinessBanner === 'function') updateOfflineReadinessBanner(); } catch (_) {}
-    try { if (typeof updateSiteReadyPreflightChecklist === 'function') updateSiteReadyPreflightChecklist(); } catch (_) {}
-    try { if (typeof updatePostSiteSyncReminder === 'function') updatePostSiteSyncReminder(); } catch (_) {}
-
-    const active = getActiveFilter();
-    const base = getBaseProjects();
-    const filtered = base.filter(project => matchesKpiFilter(project, active));
-
-    filtered.sort((a, b) => {
-      const s = statusFor(a).priority - statusFor(b).priority;
-      if (s !== 0) return s;
-      const aDate = dateKey(scheduleDate(a)) || '9999-12-31';
-      const bDate = dateKey(scheduleDate(b)) || '9999-12-31';
-      if (aDate !== bDate) return aDate.localeCompare(bDate);
-      return String(latestDate(b)).localeCompare(String(latestDate(a)));
-    });
-
-    const perPage = typeof PROJECTS_PER_PAGE !== 'undefined' ? PROJECTS_PER_PAGE : 25;
-    const page = Math.max(1, Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1));
-    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-    const currentPage = Math.min(page, totalPages);
-    window.currentProjectPage = currentPage;
-    try { currentProjectPage = currentPage; } catch (_) {}
-    const start = (currentPage - 1) * perPage;
-    const visible = filtered.slice(start, start + perPage);
+    try { if (typeof window.updateAppInfo === 'function') window.updateAppInfo(); else if (typeof updateAppInfo === 'function') updateAppInfo(); } catch (_) {}
+    const base = baseFilteredProjects();
+    const key = currentKey();
+    const filtered = sortProjects(base.filter(project => matchProject(project, key)));
+    const total = filtered.length;
+    let page = Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1);
+    const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > totalPages) page = totalPages;
+    if (page < 1) page = 1;
+    window.currentProjectPage = page;
+    try { currentProjectPage = page; } catch (_) {}
+    const start = (page - 1) * PAGE_SIZE;
+    const visible = filtered.slice(start, start + PAGE_SIZE);
     window.currentProjectsListView = visible;
+    window.__fireS136A5FilteredProjects = filtered;
 
-    const paging = document.getElementById('projectPagingControls');
-    if (paging) {
-      paging.innerHTML = `<button type="button" onclick="previousProjectPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button><span>Showing ${filtered.length === 0 ? 0 : start + 1} - ${Math.min(start + perPage, filtered.length)} of ${filtered.length}</span><button type="button" onclick="nextProjectPage()" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>`;
+    const pagingControls = document.getElementById('projectPagingControls');
+    if (pagingControls) {
+      pagingControls.innerHTML = `
+        <button type="button" onclick="previousProjectPage()" ${page <= 1 ? 'disabled' : ''}>Previous</button>
+        <span>Showing ${total === 0 ? 0 : start + 1} - ${Math.min(start + PAGE_SIZE, total)} of ${total}</span>
+        <button type="button" onclick="nextProjectPage()" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
     }
 
-    try { if (typeof updateActiveFilterStatus === 'function') updateActiveFilterStatus(filtered.length); } catch (_) {}
+    const select = document.getElementById('projectStatusFilter');
+    if (select) {
+      const values = Array.from(select.options || []).map(o => o.value);
+      select.value = values.includes(key) ? key : 'all';
+    }
 
-    const html = `${quickFiltersHtml(base)}${filterBannerHtml(filtered.length)}${filtered.length === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div class="smart-card-note">${esc(labelFor(active))}: ${filtered.length} matching card${filtered.length === 1 ? '' : 's'}.</div><div id="projectListView" class="ultra-premises-list smart-premises-list">${visible.map(project => {
-      const status = statusFor(project);
-      const id = JSON.stringify(project?.id || '');
-      const actions = noCount(project);
-      const photos = Array.isArray(project?.photos) ? project.photos.length : 0;
-      const ans = answers(project).filter(a => answerValue(a)).length;
-      const subline = [project?.inspectionNumber, project?.inspectorName, project?.projectAddress || project?.addressLine].filter(Boolean).join(' · ');
-      return `<article class="ultra-premises-card smart-premises-card ${esc(status.className)}" role="button" tabindex="0" title="Open ${esc(title(project))}" data-project-id='${esc(project?.id || '')}' onclick='event.stopPropagation(); window.fireSOpenProjectCard(${id})' onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); window.fireSOpenProjectCard(${id}); }'><div class="ultra-status-strip"></div><div class="ultra-premises-body smart-premises-body"><div class="smart-card-main"><div class="ultra-premises-title-row smart-title-row"><strong class="ultra-premises-title">${esc(title(project))}</strong><span class="ultra-status-keyword">${esc(status.tone)}</span></div>${subline ? `<div class="smart-card-subline">${esc(subline)}</div>` : ''}<div class="ultra-premises-dates smart-date-row"><span><small>Last</small><b>${esc(fmtDate(monthDate(project)))}</b></span><span><small>Next</small><b>${esc(fmtDate(scheduleDate(project)))}</b></span></div></div><div class="smart-card-side"><div class="smart-metric-row" aria-label="Inspection summary"><span><b>${ans}</b><small>Answers</small></span><span><b>${photos}</b><small>Photos</small></span><span class="${actions ? 'smart-action-count' : ''}"><b>${actions}</b><small>Actions</small></span></div><div class="ultra-premises-open-hint smart-open-hint">Open →</div></div></div></article>`;
-    }).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
-
-    container.innerHTML = html;
+    container.innerHTML = `
+      ${renderFilterButtons(base)}
+      ${renderCurrentLabel(total)}
+      ${total === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div id="projectListView" class="fire-s-136a5-card-list">${visible.map(cardHtml).join('')}</div>`}
+      <div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
   }
 
-  function renderKpiCardsAuthoritative(){
-    const row = document.querySelector('#mainCommandCentre .main-command-stats') || document.querySelector('.main-command-stats');
-    if (!row) return;
-    const base = getBaseProjects();
-    const cards = [
-      ['compliant', FILTER.compliant, 'Compliant Sites', '✅'],
-      ['scheduled', FILTER.scheduled, 'Scheduled Inspections', '🗓️'],
-      ['overdue', FILTER.overdue, 'Overdue Inspections', '⚠️'],
-      ['month', FILTER.month, 'Inspections This Month', '📆']
-    ];
-    row.classList.add('fs-kpi-row');
-    row.innerHTML = cards.map(([type, filter, title, icon]) => {
-      const count = base.filter(project => matchesKpiFilter(project, filter)).length;
-      return `<button type="button" class="fs-kpi-card fs-kpi-${type}" data-fs-kpi-filter="${esc(filter)}" aria-label="${esc(title)}"><span class="fs-kpi-icon" aria-hidden="true">${icon}</span><span class="fs-kpi-number">${count}</span><span class="fs-kpi-title">${esc(title)}</span><span class="fs-kpi-action">View</span><span class="fs-kpi-filter-label">Filter: ${esc(labelFor(filter))}</span></button>`;
-    }).join('');
+  function openProjects(){
+    try { if (typeof window.showProjectList === 'function') { window.showProjectList(); return; } } catch (_) {}
+    try { if (typeof showProjectList === 'function') { showProjectList(); return; } } catch (_) {}
+    try { if (typeof window.showProjects === 'function') { window.showProjects(); return; } } catch (_) {}
+    try { if (typeof showProjects === 'function') { showProjects(); return; } } catch (_) {}
+    try { document.getElementById('projectListSection').style.display = 'block'; } catch (_) {}
   }
 
-  function openProjectsWithFilter(filter){
-    const key = setActiveFilter(filter);
-    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
-    [0, 80, 180, 400].forEach(delay => setTimeout(() => {
-      setActiveFilter(key);
-      renderProjectsAuthoritative();
-      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(`${labelFor(key)} filter active.`); } catch (_) {}
-      try { document.getElementById('projectListSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+  window.fireSApplyMissionFilter136A5 = function(filter, alreadyInProjects){
+    const key = setState(filter);
+    if (!alreadyInProjects) openProjects();
+    [0, 50, 180].forEach(delay => setTimeout(() => {
+      setState(key);
+      renderProjectsListAuthoritative();
+      try { const sec = document.getElementById('projectListSection'); if (sec) sec.scrollIntoView({behavior:'smooth', block:'start'}); } catch (_) {}
     }, delay));
-  }
+  };
 
-  function clearAllFilters(){
-    setActiveFilter(FILTER.all);
-    const search = document.getElementById('projectSearch');
-    if (search) search.value = '';
-    try { if (typeof clearInspectionDateFilter === 'function') clearInspectionDateFilter(); } catch (_) {}
-    renderProjectsAuthoritative();
-  }
+  window.fireSOpenProjectCard136A5 = function(projectId){
+    if (!projectId) return;
+    try { if (typeof window.fireSOpenProjectCard === 'function' && window.fireSOpenProjectCard !== window.fireSOpenProjectCard136A5) return window.fireSOpenProjectCard(projectId); } catch (_) {}
+    try { if (typeof window.openProject === 'function') return window.openProject(projectId); } catch (_) {}
+    try { if (typeof openProject === 'function') return openProject(projectId); } catch (_) {}
+  };
 
-  window.projectMatchesInspectionGatewayQuickFilter = matchesKpiFilter;
-  try { projectMatchesInspectionGatewayQuickFilter = matchesKpiFilter; } catch (_) {}
+  window.projectMatchesInspectionGatewayQuickFilter = function(project, filter){ return matchProject(project, filter); };
+  try { projectMatchesInspectionGatewayQuickFilter = window.projectMatchesInspectionGatewayQuickFilter; } catch (_) {}
   window.getInspectionGatewayQuickFilterCounts = function(projects){
-    const base = (Array.isArray(projects) ? projects : getBaseProjects()).filter(projectMatchesBase);
+    const base = Array.isArray(projects) ? projects : baseFilteredProjects();
+    const c = key => base.filter(project => matchProject(project, key)).length;
     return {
       all: base.length,
-      compliant: base.filter(project => matchesKpiFilter(project, FILTER.compliant)).length,
-      'scheduled-new': base.filter(project => matchesKpiFilter(project, FILTER.scheduled)).length,
-      scheduled: base.filter(project => matchesKpiFilter(project, FILTER.scheduled)).length,
-      overdue: base.filter(project => matchesKpiFilter(project, FILTER.overdue)).length,
-      month: base.filter(project => matchesKpiFilter(project, FILTER.month)).length,
-      'inspection-attention': base.filter(project => matchesKpiFilter(project, FILTER.action)).length,
-      risk: base.filter(project => matchesKpiFilter(project, 'risk')).length
+      compliant: c('compliant'),
+      'scheduled-new': c('scheduled-new'),
+      scheduled: c('scheduled-new'),
+      overdue: c('overdue'),
+      month: c('month'),
+      'inspection-attention': c('inspection-attention'),
+      risk: c('inspection-attention'),
+      'new-premise': c('new-premise'),
+      'inspection-progress': c('inspection-progress'),
+      'existing-history': c('existing-history'),
+      'archive-new-cycle': c('archive-new-cycle'),
+      'expiry-overdue': c('expiry-overdue'),
+      'expiry-soon': c('expiry-soon'),
+      'expiry-scheduled': c('expiry-scheduled'),
+      'expiry-missing': c('expiry-missing')
     };
   };
-  window.setFilter = function(filter){ setActiveFilter(filter); renderProjectsAuthoritative(); };
+
+  window.setFilter = function(filter){ window.fireSApplyMissionFilter136A5(filter, true); };
   window.setInspectionGatewayQuickFilter = window.setFilter;
-  window.clearProjectSearchAndFilter = clearAllFilters;
-  window.renderProjectsList = renderProjectsAuthoritative;
-  try { renderProjectsList = renderProjectsAuthoritative; } catch (_) {}
   try { setFilter = window.setFilter; } catch (_) {}
-  try { setInspectionGatewayQuickFilter = window.setInspectionGatewayQuickFilter; } catch (_) {}
-  try { clearProjectSearchAndFilter = clearAllFilters; } catch (_) {}
+  try { setInspectionGatewayQuickFilter = window.setFilter; } catch (_) {}
+
+  window.renderProjectsList = renderProjectsListAuthoritative;
+  try { renderProjectsList = renderProjectsListAuthoritative; } catch (_) {}
 
   document.addEventListener('click', function(event){
-    const card = event.target && event.target.closest && event.target.closest('.fs-kpi-card[data-fs-kpi-filter]');
+    const card = event.target && event.target.closest && event.target.closest('.fs-kpi-card, [data-fs-kpi-filter], .main-stat-card, .compliance-breakdown-card');
     if (!card) return;
+    const text = (card.textContent || '').toLowerCase();
+    let key = norm(card.getAttribute('data-fs-kpi-filter') || card.getAttribute('data-filter') || '');
+    if (!key || key === 'all') {
+      if (text.includes('scheduled')) key = 'scheduled-new';
+      else if (text.includes('overdue')) key = 'overdue';
+      else if (text.includes('this month')) key = 'month';
+      else if (text.includes('compliant')) key = 'compliant';
+      else if (text.includes('action')) key = 'inspection-attention';
+      else key = 'all';
+    }
     event.preventDefault();
     event.stopPropagation();
     if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
-    openProjectsWithFilter(card.getAttribute('data-fs-kpi-filter') || FILTER.all);
+    window.fireSApplyMissionFilter136A5(key, false);
   }, true);
 
-  const refresh = () => {
-    renderKpiCardsAuthoritative();
-    try { if (document.getElementById('projectsList')) renderProjectsAuthoritative(); } catch (_) {}
-  };
-  window.fireSRefreshAuthoritativeKpis136A4 = refresh;
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refresh);
-  else refresh();
-  setTimeout(refresh, 250);
-  setTimeout(refresh, 900);
+  document.addEventListener('change', function(event){
+    if (event.target && event.target.id === 'projectStatusFilter') window.fireSApplyMissionFilter136A5(event.target.value || 'all', true);
+  }, true);
+
+  function refreshKpiNumbers(){
+    const map = [
+      ['compliant', 'compliant'],
+      ['scheduled', 'scheduled-new'],
+      ['overdue', 'overdue'],
+      ['month', 'month']
+    ];
+    document.querySelectorAll('.fs-kpi-card, [data-fs-kpi-filter], .main-stat-card').forEach(card => {
+      const text = (card.textContent || '').toLowerCase();
+      let key = '';
+      if (text.includes('compliant')) key = 'compliant';
+      else if (text.includes('scheduled')) key = 'scheduled-new';
+      else if (text.includes('overdue')) key = 'overdue';
+      else if (text.includes('this month')) key = 'month';
+      if (!key) return;
+      card.setAttribute('data-fs-kpi-filter', key);
+      const num = card.querySelector('.fs-kpi-number, .stat-number, .metric-number, strong');
+      if (num) num.textContent = String(count(key));
+    });
+  }
+
+  function start(){ refreshKpiNumbers(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+  setTimeout(start, 200);
+  setTimeout(start, 900);
 })();
