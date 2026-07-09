@@ -8230,15 +8230,48 @@ banner.innerHTML =
   `Reminder: You have <strong>${soon}</strong> inspection${soon === 1 ? '' : 's'} due soon.`;
 }
 
+function normalizeExpiryDateValue(expiryDate) {
+  const raw = String(expiryDate || '').trim();
+  if (!raw) return '';
+
+  const lowered = raw.toLowerCase();
+  if (
+    lowered === 'not set' ||
+    lowered === 'notset' ||
+    lowered === 'n/a' ||
+    lowered === 'na' ||
+    lowered === 'none' ||
+    lowered === 'missing' ||
+    lowered === '-' ||
+    lowered === '—'
+  ) {
+    return '';
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  // Keep YYYY-MM-DD style values stable and comparable across browsers.
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  return parsed.toISOString().slice(0, 10);
+}
+
 function getExpiryStatus(expiryDate) {
 
-  if (!expiryDate) {
+  const expiryKey = normalizeExpiryDateValue(expiryDate);
+
+  if (!expiryKey) {
     return 'none';
   }
 
-  const today = new Date();
+  const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00');
 
-  const expiry = new Date(expiryDate);
+  const expiry = new Date(expiryKey + 'T00:00:00');
+
+  if (Number.isNaN(expiry.getTime())) {
+    return 'none';
+  }
 
   const diffDays =
     Math.ceil(
@@ -8305,13 +8338,15 @@ function getProjectExpiryCounts(project) {
     if (!isExpiryTrackedChecklistItem(checklistItem)) return;
     if (!isExpiryApplicableAnswer(answer.answer)) return;
 
-    if (!answer.expiryDate) {
+    const expiryKey = normalizeExpiryDateValue(answer.expiryDate);
+
+    if (!expiryKey) {
       counts.missing++;
       return;
     }
 
     const status =
-      getExpiryStatus(answer.expiryDate);
+      getExpiryStatus(expiryKey);
 
     if (status === 'overdue') {
       counts.overdue++;
@@ -8345,11 +8380,15 @@ function getProjectExpiryAnswer(project, expiryStatus) {
     if (!isExpiryTrackedChecklistItem(checklistItem)) return false;
     if (!isExpiryApplicableAnswer(answer.answer)) return false;
 
+    const expiryKey = normalizeExpiryDateValue(answer.expiryDate);
+
     if (expiryStatus === 'missing') {
-      return !answer.expiryDate;
+      return !expiryKey;
     }
 
-    return getExpiryStatus(answer.expiryDate) === expiryStatus;
+    if (!expiryKey) return false;
+
+    return getExpiryStatus(expiryKey) === expiryStatus;
   });
 }
 
