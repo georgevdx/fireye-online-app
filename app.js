@@ -28845,3 +28845,111 @@ function fireSApplyLifecycleUxLabels() {
   else scheduleRender();
   setTimeout(scheduleRender, 700);
 })();
+
+/* =====================================================
+   FIRE-S RC 1.3.6D - Mission Control Status Count Fix
+   Purpose:
+   - Prevent legacy count hotfixes from overwriting Status dropdown counts with 0.
+   - Status counts now use the same visible dataset as the current Mission Control list.
+   - Keeps All / Continue / Scheduled / New Premises / Previous Cycles aligned.
+   ===================================================== */
+(function installFireS136DStatusCountFix(){
+  'use strict';
+  if (window.fireS136DStatusCountFixApplied) return;
+  window.fireS136DStatusCountFixApplied = true;
+
+  function getVisibleDataset(){
+    let list = [];
+    try {
+      list = typeof window.getProjects === 'function' ? window.getProjects() : (Array.isArray(window.projects) ? window.projects : []);
+    } catch (_) {
+      list = Array.isArray(window.projects) ? window.projects : [];
+    }
+
+    try {
+      if (typeof window.getVisibleProjectsForCurrentUser === 'function') {
+        list = window.getVisibleProjectsForCurrentUser(list);
+      }
+    } catch (_) {}
+
+    const searchField = document.getElementById('projectSearch');
+    const searchText = searchField ? String(searchField.value || '').trim().toLowerCase() : '';
+    if (searchText) {
+      const matchesSearch = window.matchesProjectSearch || window.fireSProjectMatchesSearch || null;
+      list = list.filter(project => {
+        if (typeof matchesSearch === 'function') return matchesSearch(project, searchText);
+        const haystack = [
+          project?.projectName,
+          project?.organisationName,
+          project?.siteName,
+          project?.projectAddress,
+          project?.addressLine,
+          project?.streetNumber,
+          project?.projectNumber,
+          project?.inspectionNumber,
+          project?.clientName
+        ].filter(Boolean).join(' ').toLowerCase();
+        return haystack.includes(searchText);
+      });
+    }
+
+    try {
+      if (typeof window.projectMatchesInspectionDateFilter === 'function') {
+        list = list.filter(project => window.projectMatchesInspectionDateFilter(project));
+      }
+    } catch (_) {}
+
+    return Array.isArray(list) ? list : [];
+  }
+
+  function countForFilter(list, key){
+    const filterKey = String(key || 'all');
+    if (filterKey === 'all') return list.length;
+    const matcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
+    if (typeof matcher !== 'function') return 0;
+    return list.filter(project => {
+      try { return Boolean(matcher(project, filterKey)); }
+      catch (_) { return false; }
+    }).length;
+  }
+
+  function updateStatusDropdownCounts(){
+    const statusSelect = Array.from(document.querySelectorAll('select')).find(select => {
+      const values = Array.from(select.options || []).map(option => option.value);
+      return values.includes('all') && values.includes('inspection-progress') && values.includes('existing-history');
+    });
+    if (!statusSelect) return;
+
+    const list = getVisibleDataset();
+    const labels = {
+      all: 'All',
+      'inspection-progress': 'Continue',
+      'scheduled-new': 'Scheduled',
+      'new-premise': 'New Premises',
+      'existing-history': 'Previous Cycles',
+      'archive-new-cycle': 'Archive / New Cycle'
+    };
+
+    Array.from(statusSelect.options || []).forEach(option => {
+      const key = option.value;
+      if (!Object.prototype.hasOwnProperty.call(labels, key)) return;
+      option.textContent = `${labels[key]} (${countForFilter(list, key)})`;
+    });
+  }
+
+  window.fireSRefreshMissionControlStatusCounts136D = updateStatusDropdownCounts;
+
+  const previousRender = window.renderProjectsList || (typeof renderProjectsList === 'function' ? renderProjectsList : null);
+  if (typeof previousRender === 'function' && !previousRender.__fireS136DStatusCountWrapped) {
+    const wrapped = function fireS136DRenderProjectsList(){
+      const result = previousRender.apply(this, arguments);
+      setTimeout(updateStatusDropdownCounts, 0);
+      return result;
+    };
+    wrapped.__fireS136DStatusCountWrapped = true;
+    window.renderProjectsList = wrapped;
+    try { renderProjectsList = wrapped; } catch (_) {}
+  }
+
+  document.addEventListener('DOMContentLoaded', () => setTimeout(updateStatusDropdownCounts, 0));
+})();
