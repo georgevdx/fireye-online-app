@@ -11829,3 +11829,101 @@ button,
     width: 100%;
   }
 }
+
+/* FIRE-S RC 1.3.6A.4 - KPI filter label and stable KPI cards */
+.fire-s-current-kpi-filter-banner {
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1e3a8a;
+}
+.fire-s-current-kpi-filter-banner strong,
+.fire-s-current-kpi-filter-banner span { display: block; }
+.fire-s-current-kpi-filter-banner strong {
+  font-size: 11px;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.fire-s-current-kpi-filter-banner span {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 850;
+  line-height: 1.3;
+}
+.fire-s-current-kpi-filter-banner button {
+  width: auto;
+  max-width: none;
+  min-width: 92px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1e3a8a;
+  border: 1px solid #93c5fd;
+  font-size: 12px;
+  font-weight: 900;
+}
+.fs-kpi-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  gap: 10px !important;
+}
+.fs-kpi-card {
+  min-width: 0 !important;
+  min-height: 132px !important;
+  padding: 12px !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border: 1px solid #e5e7eb !important;
+  border-top: 5px solid #94a3b8 !important;
+  box-shadow: 0 6px 18px rgba(15,23,42,.08) !important;
+  display: grid !important;
+  gap: 4px !important;
+  text-align: center !important;
+  align-content: center !important;
+  white-space: normal !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+.fs-kpi-card span { word-break: normal !important; overflow-wrap: normal !important; }
+.fs-kpi-compliant { border-top-color: #16a34a !important; }
+.fs-kpi-scheduled { border-top-color: #2563eb !important; }
+.fs-kpi-overdue { border-top-color: #dc2626 !important; }
+.fs-kpi-month { border-top-color: #7c3aed !important; }
+.fs-kpi-number {
+  display: block;
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: 1;
+  font-weight: 950;
+  color: #111827;
+}
+.fs-kpi-title {
+  display: block;
+  font-size: 13px;
+  line-height: 1.18;
+  font-weight: 950;
+  color: #111827;
+}
+.fs-kpi-action,
+.fs-kpi-filter-label,
+.fs-kpi-icon {
+  display: block;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: #64748b;
+}
+@media (max-width: 700px) {
+  .fs-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+  .fs-kpi-card { min-height: 112px !important; padding: 10px 8px !important; }
+  .fs-kpi-number { font-size: 30px; }
+  .fs-kpi-title { font-size: 12px; }
+  .fire-s-current-kpi-filter-banner { display: grid !important; grid-template-columns: 1fr; }
+  .fire-s-current-kpi-filter-banner button { width: 100%; }
+}

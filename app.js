@@ -29976,3 +29976,409 @@ function fireSApplyLifecycleUxLabels() {
   setTimeout(start, 900);
   setInterval(updateKpiCardAttributesAndCounts, 2500);
 })();
+
+/* =====================================================
+   FIRE-S RC 1.3.6A.4 - AUTHORITATIVE KPI FILTER ENGINE
+   Purpose:
+   - KPI card count and Projects result cards use exactly the same matcher.
+   - Scheduled excludes overdue.
+   - Adds a visible Current KPI Filter label above result cards.
+   - Keeps project card click behaviour intact.
+   ===================================================== */
+(function fireSAuthoritativeKpiFilterEngine136A4(){
+  'use strict';
+  if (window.fireSAuthoritativeKpiFilterEngine136A4Applied) return;
+  window.fireSAuthoritativeKpiFilterEngine136A4Applied = true;
+
+  const FILTER = {
+    all: 'all',
+    compliant: 'compliant',
+    scheduled: 'scheduled-new',
+    overdue: 'overdue',
+    month: 'month',
+    action: 'inspection-attention'
+  };
+
+  const LABELS = {
+    all: 'All inspections',
+    compliant: 'Compliant Sites',
+    'scheduled-new': 'Scheduled Inspections',
+    scheduled: 'Scheduled Inspections',
+    overdue: 'Overdue Inspections',
+    month: 'Inspections This Month',
+    'inspection-attention': 'Premises Requiring Action',
+    risk: 'Open Action Items',
+    'expiry-overdue': 'Expired Equipment',
+    'expiry-soon': 'Equipment Due Soon',
+    'expiry-scheduled': 'Valid Equipment',
+    'expiry-missing': 'Equipment Date Missing'
+  };
+
+  function esc(value){
+    if (typeof escapeHtml === 'function') return escapeHtml(value);
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  }
+
+  function norm(value){ return String(value || '').trim().toLowerCase(); }
+  function dateKey(value){ return String(value || '').slice(0, 10); }
+  function todayKey(){ return new Date().toISOString().slice(0, 10); }
+  function parseDate(value){
+    const key = dateKey(value);
+    if (!key) return null;
+    const date = new Date(key + 'T00:00:00');
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function normaliseFilter(filter){
+    const key = norm(filter || 'all');
+    if (!key || key === 'gateway' || key === 'fs-kpi-gateway') return FILTER.all;
+    if (key === 'scheduled' || key === 'scheduled-inspections' || key === 'fs-kpi-scheduled') return FILTER.scheduled;
+    if (key === 'overdue' || key === 'overdue-inspections' || key === 'inspection-overdue' || key === 'fs-kpi-overdue') return FILTER.overdue;
+    if (key === 'this-month' || key === 'inspections-month' || key === 'inspections-this-month' || key === 'fs-kpi-month') return FILTER.month;
+    if (key === 'compliant-sites' || key === 'clear-completed' || key === 'inspection-complete' || key === 'fs-kpi-compliant') return FILTER.compliant;
+    if (key === 'actions-required' || key === 'action-required' || key === 'premises-requiring-action') return FILTER.action;
+    return key;
+  }
+
+  function getAllProjects(){
+    let list = [];
+    try {
+      list = typeof getProjects === 'function'
+        ? getProjects()
+        : JSON.parse(localStorage.getItem('fireyeProjects') || '[]');
+    } catch (_) { list = []; }
+    if (!Array.isArray(list)) list = [];
+    try {
+      if (typeof getVisibleProjectsForCurrentUser === 'function') {
+        const visible = getVisibleProjectsForCurrentUser(list);
+        if (Array.isArray(visible)) list = visible;
+      }
+    } catch (_) {}
+    return list;
+  }
+
+  function answerValue(answer){ return norm(answer && answer.answer); }
+  function answers(project){ return Array.isArray(project && project.answers) ? project.answers : []; }
+  function noCount(project){ return answers(project).filter(answer => answerValue(answer) === 'no').length; }
+  function hasAnyAnswer(project){ return answers(project).some(answer => Boolean(answerValue(answer))); }
+
+  function isClosed(project){
+    const status = norm(project && project.status);
+    const scheduledStatus = norm(project && project.scheduledStatus);
+    const archiveStatus = norm(project && project.archiveStatus);
+    const inspectionStatus = norm(project && project.inspectionStatus);
+    return Boolean(
+      project && (
+        project.completedAt ||
+        project.archivedAt ||
+        status === 'completed' || status === 'closed' || status === 'archived' ||
+        scheduledStatus === 'completed' || scheduledStatus === 'closed' ||
+        archiveStatus === 'completed' || archiveStatus === 'archived' ||
+        inspectionStatus === 'closed'
+      )
+    );
+  }
+
+  function scheduleDate(project){
+    return project?.scheduledDate || project?.nextInspectionDate || project?.followUpDate || '';
+  }
+
+  function monthDate(project){
+    return project?.inspectionDate || project?.scheduledDate || project?.completedAt || project?.archivedAt || project?.lastSaved || project?.updatedAt || project?.updated_at || project?.createdAt || project?.created_at || '';
+  }
+
+  function latestDate(project){
+    return project?.lastSaved || project?.updatedAt || project?.updated_at || project?.completedAt || project?.archivedAt || project?.inspectionDate || project?.scheduledDate || project?.followUpDate || project?.createdAt || project?.created_at || '';
+  }
+
+  function isOverdue(project){
+    if (!project || isClosed(project)) return false;
+    const key = dateKey(scheduleDate(project));
+    return Boolean(key && key < todayKey());
+  }
+
+  function isScheduled(project){
+    if (!project || isClosed(project) || isOverdue(project)) return false;
+    const key = dateKey(scheduleDate(project));
+    return Boolean(key && key >= todayKey());
+  }
+
+  function isThisMonth(project){
+    const date = parseDate(monthDate(project));
+    if (!date) return false;
+    const now = new Date();
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }
+
+  function hasActionRequired(project){
+    if (!project) return false;
+    if (noCount(project) > 0) return true;
+    try { if (typeof hasProjectOpenActionItems === 'function' && hasProjectOpenActionItems(project)) return true; } catch (_) {}
+    return false;
+  }
+
+  function hasMeaningfulInspectionData(project){
+    return Boolean(
+      hasAnyAnswer(project) ||
+      (Array.isArray(project?.photos) && project.photos.length) ||
+      project?.completedAt || project?.archivedAt || project?.lastSaved || project?.inspectionDate
+    );
+  }
+
+  function isCompliant(project){
+    if (!project || !hasMeaningfulInspectionData(project)) return false;
+    try { if (typeof isProjectCompliantForGateway === 'function' && isProjectCompliantForGateway(project)) return true; } catch (_) {}
+    return isClosed(project) && noCount(project) === 0;
+  }
+
+  function expiryCounts(project){
+    try { if (typeof getProjectExpiryCounts === 'function') return getProjectExpiryCounts(project) || {}; } catch (_) {}
+    return {};
+  }
+
+  const oldMatcher = window.projectMatchesInspectionGatewayQuickFilter || (typeof projectMatchesInspectionGatewayQuickFilter === 'function' ? projectMatchesInspectionGatewayQuickFilter : null);
+
+  function matchesKpiFilter(project, filter){
+    const key = normaliseFilter(filter);
+    if (key === FILTER.all) return true;
+    if (key === FILTER.compliant) return isCompliant(project);
+    if (key === FILTER.scheduled) return isScheduled(project);
+    if (key === FILTER.overdue) return isOverdue(project);
+    if (key === FILTER.month) return isThisMonth(project);
+    if (key === FILTER.action || key === 'risk') return hasActionRequired(project);
+    if (key === 'expiry-overdue') return Number(expiryCounts(project).overdue || 0) > 0;
+    if (key === 'expiry-soon') return Number(expiryCounts(project).soon || 0) > 0;
+    if (key === 'expiry-scheduled') return Number(expiryCounts(project).scheduled || 0) > 0;
+    if (key === 'expiry-missing') return Number(expiryCounts(project).missing || 0) > 0;
+    if (oldMatcher && oldMatcher !== matchesKpiFilter) {
+      try { return oldMatcher(project, key); } catch (_) {}
+    }
+    return true;
+  }
+
+  function projectMatchesBase(project){
+    try {
+      const searchText = String(document.getElementById('projectSearch')?.value || '').trim().toLowerCase();
+      if (searchText) {
+        const haystack = [
+          project?.projectName,
+          project?.organisationName,
+          project?.siteName,
+          project?.projectAddress,
+          project?.addressLine,
+          project?.inspectionNumber,
+          project?.inspectorName,
+          project?.contactPerson,
+          project?.contactTel
+        ].join(' ').toLowerCase();
+        if (!haystack.includes(searchText)) return false;
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof fireSPremisesDropdownFilter !== 'undefined' && fireSPremisesDropdownFilter && typeof fireSGetPremisesKey === 'function') {
+        if (fireSGetPremisesKey(project) !== fireSPremisesDropdownFilter) return false;
+      }
+    } catch (_) {}
+
+    try {
+      if (typeof projectMatchesInspectionDateFilter === 'function') return projectMatchesInspectionDateFilter(project);
+    } catch (_) {}
+
+    return true;
+  }
+
+  function getBaseProjects(){ return getAllProjects().filter(projectMatchesBase); }
+  function countFor(filter){ return getBaseProjects().filter(project => matchesKpiFilter(project, filter)).length; }
+
+  function title(project){
+    return project?.projectName || [project?.organisationName, project?.siteName].filter(Boolean).join(' - ') || project?.siteName || 'Untitled Premises';
+  }
+
+  function fmtDate(value){
+    if (!value) return 'Not set';
+    try {
+      if (typeof fireSUltraDateText === 'function') return fireSUltraDateText(value);
+    } catch (_) {}
+    const date = parseDate(value);
+    return date ? date.toLocaleDateString() : (String(value).slice(0, 10) || 'Not set');
+  }
+
+  function statusFor(project){
+    if (isOverdue(project)) return { label: 'Overdue', tone: 'Critical', className: 'ultra-status-overdue', priority: 1 };
+    if (hasActionRequired(project)) return { label: 'Action Required', tone: 'Action', className: 'ultra-status-action', priority: 2 };
+    if (isScheduled(project)) return { label: 'Scheduled', tone: 'Scheduled', className: 'ultra-status-due', priority: 3 };
+    if (isCompliant(project)) return { label: 'Compliant', tone: 'Compliant', className: 'ultra-status-compliant', priority: 4 };
+    return { label: 'In Progress', tone: 'In Progress', className: 'ultra-status-due', priority: 5 };
+  }
+
+  function getActiveFilter(){
+    return normaliseFilter(window.currentFilter || (typeof currentFilter !== 'undefined' ? currentFilter : 'all') || 'all');
+  }
+
+  function setActiveFilter(filter){
+    const key = normaliseFilter(filter);
+    window.currentFilter = key;
+    try { currentFilter = key; } catch (_) {}
+    window.__fireSActiveKpiFilter = key;
+    window.__fireSPendingKpiFilter = key;
+    window.currentProjectPage = 1;
+    try { currentProjectPage = 1; } catch (_) {}
+    return key;
+  }
+
+  function labelFor(filter){ return LABELS[normaliseFilter(filter)] || String(filter || 'Filter'); }
+
+  function quickFiltersHtml(base){
+    const filters = [
+      [FILTER.all, 'All'],
+      [FILTER.action, 'Action Required'],
+      [FILTER.compliant, 'Compliant'],
+      [FILTER.scheduled, 'Scheduled'],
+      [FILTER.overdue, 'Overdue'],
+      [FILTER.month, 'This Month']
+    ];
+    const active = getActiveFilter();
+    return `<div class="gateway-quick-filter-bar" aria-label="Inspection quick filters">${filters.map(([key, label]) => {
+      const count = base.filter(project => matchesKpiFilter(project, key)).length;
+      return `<button type="button" class="${active === key ? 'gateway-filter-active' : ''}" onclick="setInspectionGatewayQuickFilter('${esc(key)}')"><strong>${count}</strong><span>${esc(label)}</span></button>`;
+    }).join('')}</div>`;
+  }
+
+  function filterBannerHtml(total){
+    const active = getActiveFilter();
+    if (active === FILTER.all) return '';
+    return `<div id="fireSCurrentKpiFilterBanner" class="fire-s-current-kpi-filter-banner" style="display:flex"><div><strong>Current KPI Filter</strong><span>${esc(labelFor(active))} · Showing ${total} card${total === 1 ? '' : 's'}</span></div><button type="button" onclick="clearProjectSearchAndFilter()">Clear Filter</button></div>`;
+  }
+
+  function renderProjectsAuthoritative(){
+    const container = document.getElementById('projectsList');
+    if (!container) return;
+
+    try { if (typeof updateAppInfo === 'function') updateAppInfo(); } catch (_) {}
+    try { if (typeof updateOfflineReadinessBanner === 'function') updateOfflineReadinessBanner(); } catch (_) {}
+    try { if (typeof updateSiteReadyPreflightChecklist === 'function') updateSiteReadyPreflightChecklist(); } catch (_) {}
+    try { if (typeof updatePostSiteSyncReminder === 'function') updatePostSiteSyncReminder(); } catch (_) {}
+
+    const active = getActiveFilter();
+    const base = getBaseProjects();
+    const filtered = base.filter(project => matchesKpiFilter(project, active));
+
+    filtered.sort((a, b) => {
+      const s = statusFor(a).priority - statusFor(b).priority;
+      if (s !== 0) return s;
+      const aDate = dateKey(scheduleDate(a)) || '9999-12-31';
+      const bDate = dateKey(scheduleDate(b)) || '9999-12-31';
+      if (aDate !== bDate) return aDate.localeCompare(bDate);
+      return String(latestDate(b)).localeCompare(String(latestDate(a)));
+    });
+
+    const perPage = typeof PROJECTS_PER_PAGE !== 'undefined' ? PROJECTS_PER_PAGE : 25;
+    const page = Math.max(1, Number(window.currentProjectPage || (typeof currentProjectPage !== 'undefined' ? currentProjectPage : 1) || 1));
+    const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
+    const currentPage = Math.min(page, totalPages);
+    window.currentProjectPage = currentPage;
+    try { currentProjectPage = currentPage; } catch (_) {}
+    const start = (currentPage - 1) * perPage;
+    const visible = filtered.slice(start, start + perPage);
+    window.currentProjectsListView = visible;
+
+    const paging = document.getElementById('projectPagingControls');
+    if (paging) {
+      paging.innerHTML = `<button type="button" onclick="previousProjectPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button><span>Showing ${filtered.length === 0 ? 0 : start + 1} - ${Math.min(start + perPage, filtered.length)} of ${filtered.length}</span><button type="button" onclick="nextProjectPage()" ${currentPage >= totalPages ? 'disabled' : ''}>Next</button>`;
+    }
+
+    try { if (typeof updateActiveFilterStatus === 'function') updateActiveFilterStatus(filtered.length); } catch (_) {}
+
+    const html = `${quickFiltersHtml(base)}${filterBannerHtml(filtered.length)}${filtered.length === 0 ? '<div class="empty-state">No matching premises found.</div>' : `<div class="smart-card-note">${esc(labelFor(active))}: ${filtered.length} matching card${filtered.length === 1 ? '' : 's'}.</div><div id="projectListView" class="ultra-premises-list smart-premises-list">${visible.map(project => {
+      const status = statusFor(project);
+      const id = JSON.stringify(project?.id || '');
+      const actions = noCount(project);
+      const photos = Array.isArray(project?.photos) ? project.photos.length : 0;
+      const ans = answers(project).filter(a => answerValue(a)).length;
+      const subline = [project?.inspectionNumber, project?.inspectorName, project?.projectAddress || project?.addressLine].filter(Boolean).join(' · ');
+      return `<article class="ultra-premises-card smart-premises-card ${esc(status.className)}" role="button" tabindex="0" title="Open ${esc(title(project))}" data-project-id='${esc(project?.id || '')}' onclick='event.stopPropagation(); window.fireSOpenProjectCard(${id})' onkeydown='if (event.key === "Enter" || event.key === " ") { event.preventDefault(); window.fireSOpenProjectCard(${id}); }'><div class="ultra-status-strip"></div><div class="ultra-premises-body smart-premises-body"><div class="smart-card-main"><div class="ultra-premises-title-row smart-title-row"><strong class="ultra-premises-title">${esc(title(project))}</strong><span class="ultra-status-keyword">${esc(status.tone)}</span></div>${subline ? `<div class="smart-card-subline">${esc(subline)}</div>` : ''}<div class="ultra-premises-dates smart-date-row"><span><small>Last</small><b>${esc(fmtDate(monthDate(project)))}</b></span><span><small>Next</small><b>${esc(fmtDate(scheduleDate(project)))}</b></span></div></div><div class="smart-card-side"><div class="smart-metric-row" aria-label="Inspection summary"><span><b>${ans}</b><small>Answers</small></span><span><b>${photos}</b><small>Photos</small></span><span class="${actions ? 'smart-action-count' : ''}"><b>${actions}</b><small>Actions</small></span></div><div class="ultra-premises-open-hint smart-open-hint">Open →</div></div></div></article>`;
+    }).join('')}</div>`}<div id="projectSummaryDetailCard" class="project-summary-detail-card" style="display:none;"></div>`;
+
+    container.innerHTML = html;
+  }
+
+  function renderKpiCardsAuthoritative(){
+    const row = document.querySelector('#mainCommandCentre .main-command-stats') || document.querySelector('.main-command-stats');
+    if (!row) return;
+    const base = getBaseProjects();
+    const cards = [
+      ['compliant', FILTER.compliant, 'Compliant Sites', '✅'],
+      ['scheduled', FILTER.scheduled, 'Scheduled Inspections', '🗓️'],
+      ['overdue', FILTER.overdue, 'Overdue Inspections', '⚠️'],
+      ['month', FILTER.month, 'Inspections This Month', '📆']
+    ];
+    row.classList.add('fs-kpi-row');
+    row.innerHTML = cards.map(([type, filter, title, icon]) => {
+      const count = base.filter(project => matchesKpiFilter(project, filter)).length;
+      return `<button type="button" class="fs-kpi-card fs-kpi-${type}" data-fs-kpi-filter="${esc(filter)}" aria-label="${esc(title)}"><span class="fs-kpi-icon" aria-hidden="true">${icon}</span><span class="fs-kpi-number">${count}</span><span class="fs-kpi-title">${esc(title)}</span><span class="fs-kpi-action">View</span><span class="fs-kpi-filter-label">Filter: ${esc(labelFor(filter))}</span></button>`;
+    }).join('');
+  }
+
+  function openProjectsWithFilter(filter){
+    const key = setActiveFilter(filter);
+    try { if (typeof showProjectList === 'function') showProjectList(); } catch (_) {}
+    [0, 80, 180, 400].forEach(delay => setTimeout(() => {
+      setActiveFilter(key);
+      renderProjectsAuthoritative();
+      try { if (typeof showMainCommandMessage === 'function') showMainCommandMessage(`${labelFor(key)} filter active.`); } catch (_) {}
+      try { document.getElementById('projectListSection')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+    }, delay));
+  }
+
+  function clearAllFilters(){
+    setActiveFilter(FILTER.all);
+    const search = document.getElementById('projectSearch');
+    if (search) search.value = '';
+    try { if (typeof clearInspectionDateFilter === 'function') clearInspectionDateFilter(); } catch (_) {}
+    renderProjectsAuthoritative();
+  }
+
+  window.projectMatchesInspectionGatewayQuickFilter = matchesKpiFilter;
+  try { projectMatchesInspectionGatewayQuickFilter = matchesKpiFilter; } catch (_) {}
+  window.getInspectionGatewayQuickFilterCounts = function(projects){
+    const base = (Array.isArray(projects) ? projects : getBaseProjects()).filter(projectMatchesBase);
+    return {
+      all: base.length,
+      compliant: base.filter(project => matchesKpiFilter(project, FILTER.compliant)).length,
+      'scheduled-new': base.filter(project => matchesKpiFilter(project, FILTER.scheduled)).length,
+      scheduled: base.filter(project => matchesKpiFilter(project, FILTER.scheduled)).length,
+      overdue: base.filter(project => matchesKpiFilter(project, FILTER.overdue)).length,
+      month: base.filter(project => matchesKpiFilter(project, FILTER.month)).length,
+      'inspection-attention': base.filter(project => matchesKpiFilter(project, FILTER.action)).length,
+      risk: base.filter(project => matchesKpiFilter(project, 'risk')).length
+    };
+  };
+  window.setFilter = function(filter){ setActiveFilter(filter); renderProjectsAuthoritative(); };
+  window.setInspectionGatewayQuickFilter = window.setFilter;
+  window.clearProjectSearchAndFilter = clearAllFilters;
+  window.renderProjectsList = renderProjectsAuthoritative;
+  try { renderProjectsList = renderProjectsAuthoritative; } catch (_) {}
+  try { setFilter = window.setFilter; } catch (_) {}
+  try { setInspectionGatewayQuickFilter = window.setInspectionGatewayQuickFilter; } catch (_) {}
+  try { clearProjectSearchAndFilter = clearAllFilters; } catch (_) {}
+
+  document.addEventListener('click', function(event){
+    const card = event.target && event.target.closest && event.target.closest('.fs-kpi-card[data-fs-kpi-filter]');
+    if (!card) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === 'function') event.stopImmediatePropagation();
+    openProjectsWithFilter(card.getAttribute('data-fs-kpi-filter') || FILTER.all);
+  }, true);
+
+  const refresh = () => {
+    renderKpiCardsAuthoritative();
+    try { if (document.getElementById('projectsList')) renderProjectsAuthoritative(); } catch (_) {}
+  };
+  window.fireSRefreshAuthoritativeKpis136A4 = refresh;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', refresh);
+  else refresh();
+  setTimeout(refresh, 250);
+  setTimeout(refresh, 900);
+})();
