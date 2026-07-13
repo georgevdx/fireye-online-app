@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.0P - Core Workflow Stability';
+const APP_VERSION = 'RC 1.2.1L - Target 1 Inspection Lifecycle';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -304,8 +304,180 @@ function setWorkflowGateNoWriteLock(isLocked) {
   window.workflowGateNoWriteLock = workflowGateNoWriteLock;
 }
 
+
+// =====================================================
+// RC 1.2.1L - TARGET 1 INSPECTION LIFECYCLE
+// A new cycle is provisional until Save Draft or Finish Inspection is clicked.
+// =====================================================
+function getCurrentPendingNewInspectionProject() {
+  if (!currentProjectId || typeof getProjects !== 'function') return null;
+
+  return getProjects().find(project =>
+    project.id === currentProjectId &&
+    project._pendingNewInspectionCycle === true
+  ) || null;
+}
+
+function isPendingNewInspectionCycle() {
+  return Boolean(getCurrentPendingNewInspectionProject());
+}
+
+function restorePendingNewInspectionOriginal(projectId = currentProjectId) {
+  if (!projectId || typeof getProjects !== 'function') return false;
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) return false;
+
+  const pendingProject = projects[index];
+  const original = pendingProject?._pendingPreviousInspection;
+
+  if (!pendingProject?._pendingNewInspectionCycle || !original) {
+    return false;
+  }
+
+  projects[index] = cloneInspectionProjectForWorkflow(original);
+  setProjects(projects);
+
+  if (currentProjectId === projectId) {
+    currentProject = projects[index];
+    window.currentProject = currentProject;
+    currentPhotos = currentProject.photos || [];
+  }
+
+  return true;
+}
+
+function commitPendingNewInspectionCycleBeforeSave() {
+  if (!currentProjectId || typeof getProjects !== 'function') return false;
+
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === currentProjectId);
+
+  if (index === -1) return false;
+
+  const pending = projects[index];
+
+  if (
+    pending?._pendingNewInspectionCycle !== true ||
+    !pending?._pendingPreviousInspection
+  ) {
+    return false;
+  }
+
+  const original =
+    cloneInspectionProjectForWorkflow(pending._pendingPreviousInspection);
+
+  const inspectionHistory =
+    archiveCurrentInspectionCycle(
+      original,
+      'new_cycle_committed_on_save'
+    );
+
+  const {
+    _pendingNewInspectionCycle,
+    _pendingPreviousInspection,
+    _pendingStartedAt,
+    ...cleanPending
+  } = pending;
+
+  projects[index] = {
+    ...cleanPending,
+    inspectionHistory,
+    syncPending: true,
+    syncError: false,
+    lastSaved: new Date().toISOString()
+  };
+
+  setProjects(projects);
+
+  currentProject = projects[index];
+  window.currentProject = currentProject;
+
+  currentInspectionSessionWasNew = false;
+  setWorkflowGateNoWriteLock(false);
+
+  return true;
+}
+
+function startProvisionalNewInspectionCycle(projectId) {
+  const projects = getProjects();
+  const index = projects.findIndex(project => project.id === projectId);
+
+  if (index === -1) {
+    alert('Inspection could not be found. Please refresh and try again.');
+    return false;
+  }
+
+  const original =
+    cloneInspectionProjectForWorkflow(projects[index]);
+
+  const today =
+    new Date().toISOString().slice(0, 10);
+
+  projects[index] = {
+    ...original,
+
+    _pendingNewInspectionCycle: true,
+    _pendingPreviousInspection: original,
+    _pendingStartedAt: new Date().toISOString(),
+
+    answers: [],
+    photos: [],
+    actions: [],
+    finalComments: '',
+
+    followUpRequired: 'No',
+    followUpDate: '',
+    followUpNotes: '',
+
+    recurringCycleEnabled: false,
+    recurringCycleNumber: '',
+    recurringCycleUnit: '',
+    recurringCycleNotes: '',
+
+    completedAt: null,
+    archiveStatus: '',
+    archivedAt: null,
+
+    scheduledStatus: 'in_progress',
+    scheduleFreshInspection: false,
+
+    inspectionNumber: generateInspectionNumber(),
+    inspectionDate: today,
+
+    syncPending: false,
+    syncError: false,
+    lastSaved: original.lastSaved || ''
+  };
+
+  setProjects(projects);
+
+  currentProjectId = projectId;
+  window.currentProjectId = projectId;
+  currentProject = projects[index];
+  window.currentProject = currentProject;
+  currentPhotos = [];
+
+  currentInspectionSessionSnapshot = original;
+  currentInspectionSessionWasNew = true;
+
+  clearTimeout(autoSaveTimer);
+  setWorkflowGateNoWriteLock(true);
+
+  return true;
+}
+
+window.addEventListener('beforeunload', event => {
+  if (!isPendingNewInspectionCycle()) return;
+
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 function scheduleAutoSave() {
-  if (workflowGateNoWriteLock) {
+  if (workflowGateNoWriteLock || isPendingNewInspectionCycle()) {
     clearTimeout(autoSaveTimer);
     return;
   }
@@ -319,7 +491,7 @@ function scheduleAutoSave() {
 }
 
 function autoSaveProject() {
-  if (workflowGateNoWriteLock) {
+  if (workflowGateNoWriteLock || isPendingNewInspectionCycle()) {
     return;
   }
   
@@ -12032,50 +12204,7 @@ function closeInspectionOpenGate() {
 }
 
 function archiveProjectCurrentInspectionAndStartBlank(projectId) {
-  const projects = getProjects();
-  const index = projects.findIndex(project => project.id === projectId);
-
-  if (index === -1) {
-    alert('Inspection could not be found. Please refresh and try again.');
-    return false;
-  }
-
-  const original = projects[index];
-  const inspectionHistory = archiveCurrentInspectionCycle(
-    original,
-    'manual_archive_from_open_gate'
-  );
-
-  const today = new Date().toISOString().slice(0, 10);
-
-  projects[index] = {
-    ...original,
-    inspectionHistory,
-    answers: [],
-    photos: [],
-    actions: [],
-    finalComments: '',
-    followUpRequired: 'No',
-    followUpDate: '',
-    followUpNotes: '',
-    recurringCycleEnabled: false,
-    recurringCycleNumber: '',
-    recurringCycleUnit: '',
-    recurringCycleNotes: '',
-    completedAt: null,
-    archiveStatus: '',
-    archivedAt: null,
-    scheduledStatus: 'in_progress',
-    scheduleFreshInspection: false,
-    inspectionNumber: generateInspectionNumber(),
-    inspectionDate: today,
-    syncPending: true,
-    syncError: false,
-    lastSaved: new Date().toISOString()
-  };
-
-  setProjects(projects);
-  return true;
+  return startProvisionalNewInspectionCycle(projectId);
 }
 
 function showInspectionOpenGate(projectId, focusMode) {
@@ -12225,6 +12354,22 @@ function showInspectionOpenGate(projectId, focusMode) {
       closeInspectionOpenGate();
       renderProjectsList();
       openProject(project.id, focusMode, { bypassOpenGate: true });
+
+      const pendingProject = getCurrentPendingNewInspectionProject();
+      if (pendingProject) {
+        currentInspectionSessionSnapshot =
+          cloneInspectionProjectForWorkflow(
+            pendingProject._pendingPreviousInspection
+          );
+        currentInspectionSessionWasNew = true;
+        setWorkflowGateNoWriteLock(true);
+
+        const saveMessage = document.getElementById('saveMessage');
+        if (saveMessage) {
+          saveMessage.textContent =
+            'New inspection started provisionally. It will only be archived and kept after Save Draft or Finish Inspection.';
+        }
+      }
     });
   }
 
@@ -12849,6 +12994,9 @@ function saveProject() {
     );
     return;
   }
+
+  // Explicit Save Draft commits a provisional new inspection cycle.
+  commitPendingNewInspectionCycleBeforeSave();
 
   const organisationName = getEl('organisationName').value.trim();
   const siteName = getEl('siteName').value.trim();
@@ -25951,19 +26099,45 @@ function getProjectPrimaryAction(project) {
 function closeInspectionSession() {
   clearTimeout(autoSaveTimer);
 
-  if (!document.getElementById('projectFormSection') || document.getElementById('projectFormSection').style.display === 'none') {
+  if (
+    !document.getElementById('projectFormSection') ||
+    document.getElementById('projectFormSection').style.display === 'none'
+  ) {
     showProjectList();
     return;
   }
 
-  const hasOpenInspection = Boolean(currentProjectId || currentInspectionSessionWasNew);
+  if (isPendingNewInspectionCycle()) {
+    const discardPending = confirm(
+      'This new inspection has not been saved or finished.\n\n' +
+      'Close and delete the new inspection information?\n\n' +
+      'OK = Delete new inspection and return to Projects\n' +
+      'Cancel = Continue inspection'
+    );
+
+    if (!discardPending) return;
+
+    restorePendingNewInspectionOriginal(currentProjectId);
+    resetInspectionSessionState({ keepProjectId: false });
+    showProjectList();
+    return;
+  }
+
+  const hasOpenInspection =
+    Boolean(currentProjectId || currentInspectionSessionWasNew);
+
   if (!hasOpenInspection) {
     resetInspectionSessionState({ keepProjectId: false });
     showProjectList();
     return;
   }
 
-  const saveAndClose = confirm('Close inspection?\n\nOK = Save & Close\nCancel = choose Discard or Continue');
+  const saveAndClose = confirm(
+    'Close inspection?\n\n' +
+    'OK = Save & Close\n' +
+    'Cancel = choose Discard or Continue'
+  );
+
   if (saveAndClose) {
     saveProject();
     resetInspectionSessionState({ keepProjectId: false });
@@ -25971,13 +26145,23 @@ function closeInspectionSession() {
     return;
   }
 
-  const discard = confirm('Discard changes and close without saving?\n\nOK = Discard & Close\nCancel = Continue Inspection');
+  const discard = confirm(
+    'Discard changes and close without saving?\n\n' +
+    'OK = Discard & Close\n' +
+    'Cancel = Continue Inspection'
+  );
+
   if (!discard) return;
 
   if (currentProjectId && currentInspectionSessionSnapshot) {
-    restoreWorkflowProjectSnapshot(currentProjectId, currentInspectionSessionSnapshot);
+    restoreWorkflowProjectSnapshot(
+      currentProjectId,
+      currentInspectionSessionSnapshot
+    );
   } else if (currentProjectId && currentInspectionSessionWasNew) {
-    const projects = getProjects().filter(project => project.id !== currentProjectId);
+    const projects =
+      getProjects().filter(project => project.id !== currentProjectId);
+
     setProjects(projects);
   }
 
