@@ -27360,21 +27360,40 @@ function fireSApplyLifecycleUxLabels() {
     ? window.getCurrentUserRole.bind(window)
     : null;
 
+  // Mobile renders can briefly lose the profile reference while the selected
+  // workspace is rebuilt. Keep the last confirmed real login role so Role Test
+  // Mode is not removed when viewing the Inspector workspace.
+  let confirmedActualRole131 = '';
+
+  function rememberActualRole131(value){
+    const role = String(value || '').toLowerCase().trim();
+    if (role) confirmedActualRole131 = role;
+    return role;
+  }
+
   function actualRole(){
     try {
       if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.role) {
-        return String(currentUserProfile.role || '').toLowerCase().trim();
+        return rememberActualRole131(currentUserProfile.role);
       }
     } catch (_) {}
     try {
       if (window.currentUserProfile && window.currentUserProfile.role) {
-        return String(window.currentUserProfile.role || '').toLowerCase().trim();
+        return rememberActualRole131(window.currentUserProfile.role);
       }
     } catch (_) {}
+
+    // Once the actual login role has been confirmed, never replace it with the
+    // temporary viewed role during a mobile workspace re-render.
+    if (confirmedActualRole131) return confirmedActualRole131;
+
     try {
-      return originalGetCurrentUserRole ? String(originalGetCurrentUserRole() || '').toLowerCase().trim() : 'inspector';
+      const fallback = originalGetCurrentUserRole
+        ? String(originalGetCurrentUserRole() || '').toLowerCase().trim()
+        : 'inspector';
+      return rememberActualRole131(fallback || 'inspector');
     } catch (_) {}
-    return 'inspector';
+    return confirmedActualRole131 || 'inspector';
   }
 
   function viewAsRole(){
