@@ -2689,18 +2689,24 @@ async function runBackgroundSync(reason = 'background') {
     await safeDownloadNewerCloudInspections();
     await uploadPendingInspections();
 
-    // Preserve scroll position: renderProjectsList() fully rebuilds the
-    // premises list HTML, which resets scroll to the top and causes a
-    // jarring "bounce" every time background sync runs. Save the position
-    // and restore it right after the rebuild so the user's place on the
-    // page isn't disturbed by a sync they didn't initiate.
-    const scrollEl = document.scrollingElement || document.documentElement;
-    const preservedScrollTop = scrollEl.scrollTop;
+    // Do not rebuild the Inspection Gateway during background sync.
+    // Replacing the complete premises list while the user is scrolling
+    // resets layout/scroll anchoring on mobile and causes the page to jump
+    // back to the top. Cloud data still syncs normally; the Gateway refreshes
+    // on the next deliberate filter, navigation or manual refresh action.
+    const projectListSection = document.getElementById('projectListSection');
+    const projectFormSection = document.getElementById('projectFormSection');
+    const gatewayVisible = Boolean(
+      projectListSection &&
+      getComputedStyle(projectListSection).display !== 'none' &&
+      (!projectFormSection || getComputedStyle(projectFormSection).display === 'none')
+    );
 
-    renderProjectsList();
+    if (!gatewayVisible) {
+      renderProjectsList();
+    }
+
     reloadCurrentOpenInspectionAfterSync();
-
-    scrollEl.scrollTop = preservedScrollTop;
 
     if (reason !== 'autosave' && reason !== 'background') {
       setSyncStatusMessage('All changes synced.');
