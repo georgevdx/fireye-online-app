@@ -311,16 +311,47 @@ function scheduleAutoSave() {
   }
 
   clearTimeout(autoSaveTimer);
+  updateProjectReadinessPanel();
 
   autoSaveTimer = setTimeout(() => {
     autoSaveProject();
   }, 800);
 }
 
-// Expiry capture must never navigate or reposition the inspection screen.
-// Autosave only; the inspector remains on the current question.
+// Keep the inspector on the current checklist question when an expiry date is entered.
+// Some post-save panels update after autosave and can otherwise disturb mobile scroll anchoring.
 function handleExpiryDateChange(field) {
+  const row = field?.closest?.('.checklist-row');
+  const rowIndex = row?.dataset?.index || field?.dataset?.index || '';
+  const startY = window.scrollY || document.documentElement.scrollTop || 0;
+  const startX = window.scrollX || document.documentElement.scrollLeft || 0;
+
+  if (rowIndex !== '') {
+    window.__fireSActiveExpiryRowIndex = String(rowIndex);
+  }
+
   scheduleAutoSave();
+
+  const restoreInspectionPosition = () => {
+    const projectForm = document.getElementById('projectFormSection');
+    if (!projectForm || projectForm.classList.contains('hidden')) return;
+
+    // Do not focus or scroll the Smart Action Register during expiry capture.
+    const activeField = document.querySelector(
+      `.expiry-date[data-index="${CSS.escape(String(rowIndex))}"]`
+    );
+
+    window.scrollTo({ left: startX, top: startY, behavior: 'auto' });
+
+    if (activeField && document.activeElement !== activeField) {
+      try { activeField.focus({ preventScroll: true }); } catch (_) {}
+    }
+  };
+
+  // Autosave runs after 800 ms; restore before and after any related panel update.
+  [0, 120, 850, 1000, 1250].forEach(delay => {
+    window.setTimeout(restoreInspectionPosition, delay);
+  });
 }
 
 function autoSaveProject() {
@@ -16057,8 +16088,7 @@ function handleAnswerChange(selectEl, options = {}) {
 
   if (!options.skipAutoSave) {
     scheduleAutoSave();
-    // Do not auto-close the section. Automatic closing changes the page
-    // height and causes mobile users to jump away from the active question.
+    autoCloseSectionIfCompleted(selectEl);
   }
   
 }
@@ -16081,8 +16111,7 @@ function updateAnswerSummary() {
     summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
   }
 
-  // Keep checklist input layout stable. The Command Centre / Smart Actions
-  // is refreshed on explicit navigation/save, not after every answer.
+  updateProjectReadinessPanel();
 }
 
 function generateArchivedInspectionReport(projectId, historyIndex) {
