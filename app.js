@@ -32105,3 +32105,57 @@ function fireSApplyLifecycleUxLabels() {
 
   setTimeout(renderProjects, 250);
 })();
+
+// =====================================================
+// FIRE-S SMALL PATCH - Initial Role Test Dropdown Refresh
+// Purpose:
+// - On first load, the Supabase profile can arrive after the Home render.
+// - Re-run the existing RC 1.3.1 role panel function once the profile is ready.
+// - Does not change role decisions, card visibility, Gateway logic or index.html.
+// =====================================================
+(function fireSInitialRoleDropdownRefresh(){
+  let attempts = 0;
+  const maxAttempts = 12;
+
+  function homeIsVisible(){
+    const home = document.getElementById('homeSection');
+    if (!home) return false;
+    return window.getComputedStyle(home).display !== 'none';
+  }
+
+  function profileRole(){
+    try {
+      return String(
+        (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.role) ||
+        (window.currentUserProfile && window.currentUserProfile.role) ||
+        ''
+      ).toLowerCase().trim();
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function refreshWhenReady(){
+    attempts += 1;
+    const role = profileRole();
+
+    if (role && homeIsVisible()) {
+      try {
+        if (typeof window.fireSApplyRoleAndManagementCards131 === 'function') {
+          window.fireSApplyRoleAndManagementCards131();
+        }
+      } catch (_) {}
+      return;
+    }
+
+    if (attempts < maxAttempts) {
+      setTimeout(refreshWhenReady, 250);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(refreshWhenReady, 150), { once: true });
+  } else {
+    setTimeout(refreshWhenReady, 150);
+  }
+})();
