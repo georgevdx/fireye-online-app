@@ -2774,8 +2774,7 @@ async function uploadSync() {
     return;
   }
 
-  const projects = getProjects();
-  const pendingProjects = projects.filter(project => project?.syncPending === true);
+  const pendingProjects = getQueuedProjects();
 
   if (pendingProjects.length === 0) {
     getEl('syncStatus').textContent = 'Everything is already synced.';
@@ -2792,7 +2791,7 @@ async function uploadSync() {
     }
 
     getEl('syncStatus').textContent =
-      `Synced ${pendingProjects.length} changed inspection(s) to cloud.`;
+      `Synced ${pendingProjects.length} queued inspection(s) to cloud.`;
   } catch (error) {
     console.error('Manual upload sync failed:', error);
 
@@ -4822,14 +4821,161 @@ function applyInspectionDeleteFilter(query, userId) {
   return query.eq('user_id', userId);
 }
 
+const FIRE_S_PENDING_UPLOAD_QUEUE_KEY = 'fireS_pending_upload_queue';
+const FIRE_S_PENDING_UPLOAD_BATCH_SIZE = 10;
+
+function getPendingUploadQueue() {
+  try {
+    const raw = localStorage.getItem(FIRE_S_PENDING_UPLOAD_QUEUE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(item => item && item.inspectionId)
+      .map(item => ({
+        inspectionId: String(item.inspectionId),
+        queuedAt: item.queuedAt || new Date().toISOString(),
+        attempts: Number(item.attempts || 0),
+        lastError: item.lastError || ''
+      }));
+  } catch (error) {
+    console.warn('Pending upload queue could not be read:', error);
+    return [];
+  }
+}
+
+function setPendingUploadQueue(queue) {
+  const deduped = [];
+  const seen = new Set();
+
+  for (const item of Array.isArray(queue) ? queue : []) {
+    const inspectionId = String(item?.inspectionId || '');
+    if (!inspectionId || seen.has(inspectionId)) continue;
+    seen.add(inspectionId);
+    deduped.push({
+      inspectionId,
+      queuedAt: item.queuedAt || new Date().toISOString(),
+      attempts: Number(item.attempts || 0),
+      lastError: item.lastError || ''
+    });
+  }
+
+  localStorage.setItem(
+    FIRE_S_PENDING_UPLOAD_QUEUE_KEY,
+    JSON.stringify(deduped)
+  );
+}
+
+function queueInspectionForUpload(inspectionId) {
+  if (!inspectionId) return;
+
+  const id = String(inspectionId);
+  const queue = getPendingUploadQueue();
+  const existing = queue.find(item => item.inspectionId === id);
+
+  if (existing) {
+    existing.queuedAt = new Date().toISOString();
+    existing.lastError = '';
+  } else {
+    queue.push({
+      inspectionId: id,
+      queuedAt: new Date().toISOString(),
+      attempts: 0,
+      lastError: ''
+    });
+  }
+
+  setPendingUploadQueue(queue);
+}
+
+function removeInspectionFromUploadQueue(inspectionId) {
+  if (!inspectionId) return;
+  const id = String(inspectionId);
+  setPendingUploadQueue(
+    getPendingUploadQueue().filter(item => item.inspectionId !== id)
+  );
+}
+
+function markUploadQueueFailure(inspectionId, error) {
+  const id = String(inspectionId || '');
+  if (!id) return;
+
+  const queue = getPendingUploadQueue();
+  const item = queue.find(entry => entry.inspectionId === id);
+  if (!item) return;
+
+  item.attempts = Number(item.attempts || 0) + 1;
+  item.lastError = String(error?.message || error || 'Upload failed');
+  setPendingUploadQueue(queue);
+}
+
+function getProjectLocalChangeStamp(project) {
+  if (!project) return '';
+  return String(
+    project.lastSaved ||
+    project.updatedAt ||
+    project.updated_at ||
+    project.modifiedAt ||
+    project.completedAt ||
+    project.finalizedAt ||
+    ''
+  );
+}
+
+function capturePendingUploadQueueChanges(previousProjects, nextProjects) {
+  const previousById = new Map(
+    (Array.isArray(previousProjects) ? previousProjects : [])
+      .filter(project => project?.id)
+      .map(project => [String(project.id), project])
+  );
+
+  for (const project of Array.isArray(nextProjects) ? nextProjects : []) {
+    if (!project?.id || project.syncPending !== true) continue;
+
+    const id = String(project.id);
+    const previous = previousById.get(id);
+    const isNew = !previous;
+    const becamePending = previous?.syncPending !== true;
+    const changeStampChanged =
+      getProjectLocalChangeStamp(previous) !== getProjectLocalChangeStamp(project);
+
+    if (isNew || becamePending || changeStampChanged) {
+      queueInspectionForUpload(id);
+    }
+  }
+}
+
+function getQueuedProjects(batchSize = FIRE_S_PENDING_UPLOAD_BATCH_SIZE) {
+  const projectsById = new Map(
+    getProjects()
+      .filter(project => project?.id)
+      .map(project => [String(project.id), project])
+  );
+
+  const queue = getPendingUploadQueue();
+  const validQueue = queue.filter(item => projectsById.has(item.inspectionId));
+
+  if (validQueue.length !== queue.length) {
+    setPendingUploadQueue(validQueue);
+  }
+
+  return validQueue
+    .slice(0, Math.max(1, Number(batchSize || FIRE_S_PENDING_UPLOAD_BATCH_SIZE)))
+    .map(item => projectsById.get(item.inspectionId))
+    .filter(Boolean);
+}
+
 function getProjects() {
   const saved = localStorage.getItem('fireyeProjects');
   return saved ? JSON.parse(saved) : [];
 }
 
 function setProjects(projects) {
+  const previousProjects = getProjects();
+
   try {
     localStorage.setItem('fireyeProjects', JSON.stringify(projects));
+    capturePendingUploadQueueChanges(previousProjects, projects);
   } catch (error) {
     if (error && error.name === 'QuotaExceededError') {
       const compactProjects =
@@ -4839,6 +4985,7 @@ function setProjects(projects) {
         'fireyeProjects',
         JSON.stringify(compactProjects)
       );
+      capturePendingUploadQueueChanges(previousProjects, compactProjects);
 
       console.warn(
         'Storage quota reached. Saved compact inspections without heavy photo data.',
@@ -5705,8 +5852,14 @@ function runSiteReadyPreflight() {
 }
 
 function getPendingUploadCount() {
-  return getVisibleProjectsForCurrentUser(getProjects())
-    .filter(project => project?.syncPending === true).length;
+  const visibleIds = new Set(
+    getVisibleProjectsForCurrentUser(getProjects())
+      .filter(project => project?.id)
+      .map(project => String(project.id))
+  );
+
+  return getPendingUploadQueue()
+    .filter(item => visibleIds.has(String(item.inspectionId))).length;
 }
 
 function updatePostSiteSyncReminder() {
@@ -5731,7 +5884,7 @@ function updatePostSiteSyncReminder() {
       <strong>Post-site sync reminder</strong>
       <span>
         ${pendingUploads} inspection${pendingUploads === 1 ? '' : 's'}
-        still waiting to upload. Sync before closing the app.
+        waiting in the local upload queue. Up to 10 are processed per sync run.
       </span>
     </div>
 
@@ -12816,10 +12969,12 @@ const { error } = await supabaseClient
   }, { onConflict: 'id' });
     if (error) {
       console.error('Single upload failed:', error);
+      markUploadQueueFailure(project.id, error);
       if (syncStatus) syncStatus.textContent = `Cloud upload failed: ${error.message}`;
       return;
     }
 
+    removeInspectionFromUploadQueue(project.id);
     markInspectionSynced(project.id);
 
     if (syncStatus && project.syncPending === false) {
@@ -12827,19 +12982,15 @@ const { error } = await supabaseClient
     }
   } catch (err) {
     console.error('Single upload failed:', err);
+    markUploadQueueFailure(project.id, err);
     if (syncStatus) syncStatus.textContent = 'Saved locally. Cloud upload failed.';
   }
 }
 
 async function uploadPendingInspections() {
-
   if (!navigator.onLine) return;
 
-  const projects = getProjects();
-
-  const pendingProjects = projects.filter(
-    project => project?.syncPending === true
-  );
+  const pendingProjects = getQueuedProjects();
 
   for (const project of pendingProjects) {
     await uploadSingleInspection(project);
@@ -12862,6 +13013,7 @@ async function uploadAllLocalInspections() {
 }
 
 function markInspectionSynced(projectId) {
+  removeInspectionFromUploadQueue(projectId);
   const projects = getProjects();
 
   const index = projects.findIndex(
