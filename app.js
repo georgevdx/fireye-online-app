@@ -32414,3 +32414,107 @@ function fireSApplyLifecycleUxLabels() {
   `;
   document.head.appendChild(style);
 })();
+
+/* =====================================================
+   FIRE-S STEP 11 - Mobile Gateway initial-load handoff
+   Scope: mobile Inspection Gateway only.
+   Keeps the immediately available/local card list usable while cloud data
+   completes loading. A background full-list refresh is deferred until the
+   user has stopped scrolling, while explicit filters/paging remain immediate.
+   ===================================================== */
+(function fireSStep11MobileGatewayInitialLoadHandoff(){
+  'use strict';
+  if (window.__fireSStep11MobileGatewayInitialLoadHandoffInstalled) return;
+  window.__fireSStep11MobileGatewayInitialLoadHandoffInstalled = true;
+
+  const isMobile = () => !!(window.matchMedia && window.matchMedia('(max-width: 768px)').matches);
+  const gatewayVisible = () => {
+    const section = document.getElementById('projectListSection');
+    return !!(section && getComputedStyle(section).display !== 'none');
+  };
+  const hasVisibleCards = () => !!document.querySelector('#projectsList .fire-s-136a8-card, #projectsList .fire-s-136a5-card, #projectsList .project-card');
+
+  let lastUserMotionAt = 0;
+  let explicitActionUntil = 0;
+  let pendingArgs = null;
+  let pendingThis = null;
+  let idleTimer = 0;
+
+  const markMotion = () => {
+    if (!isMobile() || !gatewayVisible()) return;
+    lastUserMotionAt = Date.now();
+  };
+
+  const markExplicit = () => {
+    explicitActionUntil = Date.now() + 1400;
+  };
+
+  window.addEventListener('touchstart', markMotion, { passive: true, capture: true });
+  window.addEventListener('touchmove', markMotion, { passive: true, capture: true });
+  window.addEventListener('scroll', markMotion, { passive: true, capture: true });
+
+  document.addEventListener('click', event => {
+    const el = event.target && event.target.closest ? event.target.closest(
+      '[data-gateway-filter], .fire-s-136a8-filter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"]'
+    ) : null;
+    if (el) markExplicit();
+  }, true);
+
+  document.addEventListener('change', event => {
+    const id = event.target && event.target.id;
+    if (id === 'projectStatusFilter' || id === 'inspectionDateFrom' || id === 'inspectionDateTo') markExplicit();
+  }, true);
+
+  const previousRenderer = window.renderProjectsList;
+  if (typeof previousRenderer !== 'function') return;
+
+  function runPending(){
+    clearTimeout(idleTimer);
+    idleTimer = 0;
+    if (!pendingArgs) return;
+
+    const quietFor = Date.now() - lastUserMotionAt;
+    if (quietFor < 650) {
+      idleTimer = setTimeout(runPending, 650 - quietFor);
+      return;
+    }
+
+    const args = pendingArgs;
+    const ctx = pendingThis;
+    pendingArgs = null;
+    pendingThis = null;
+
+    const beforeY = window.scrollY || document.documentElement.scrollTop || 0;
+    previousRenderer.apply(ctx, args);
+    requestAnimationFrame(() => {
+      const afterY = window.scrollY || document.documentElement.scrollTop || 0;
+      if (beforeY > 0 && afterY < beforeY - 80) {
+        try { window.scrollTo(0, beforeY); } catch (_) {}
+      }
+    });
+  }
+
+  const deferredRenderer = function fireSStep11DeferredGatewayRender(){
+    const explicit = Date.now() < explicitActionUntil;
+    const userRecentlyMoved = Date.now() - lastUserMotionAt < 650;
+
+    // The first usable list must always render immediately. Only defer later
+    // background replacements once cards are already available to the user.
+    if (isMobile() && gatewayVisible() && hasVisibleCards() && userRecentlyMoved && !explicit) {
+      pendingThis = this;
+      pendingArgs = Array.from(arguments);
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(runPending, 680);
+      return false;
+    }
+
+    pendingArgs = null;
+    pendingThis = null;
+    clearTimeout(idleTimer);
+    idleTimer = 0;
+    return previousRenderer.apply(this, arguments);
+  };
+
+  window.renderProjectsList = deferredRenderer;
+  try { renderProjectsList = deferredRenderer; } catch (_) {}
+})();
