@@ -311,7 +311,15 @@ function scheduleAutoSave() {
   }
 
   clearTimeout(autoSaveTimer);
-  updateProjectReadinessPanel();
+
+  // Do not rebuild the Smart Action / readiness panel while the inspector is
+  // actively answering checklist questions. That panel sits above the
+  // checklist; changing its height causes mobile browsers to jump to a random
+  // scroll position. The panel is refreshed after the inspector leaves the
+  // active input flow or when the form is rendered again.
+  if (!window.__fireSChecklistInputActive) {
+    updateProjectReadinessPanel();
+  }
 
   autoSaveTimer = setTimeout(() => {
     autoSaveProject();
@@ -16074,6 +16082,13 @@ function collapseAllSections() {
 
 function handleAnswerChange(selectEl, options = {}) {
   const row = selectEl.closest(".checklist-row");
+  const rowTopBefore = row ? row.getBoundingClientRect().top : null;
+
+  // Mark checklist input as active so panels above the checklist are not
+  // rebuilt while the inspector is answering. This is especially important
+  // on mobile, where a height change above the current question causes a jump.
+  window.__fireSChecklistInputActive = true;
+  clearTimeout(window.__fireSChecklistInputReleaseTimer);
 
   if (row) {
     row.classList.remove("has-yes", "has-no", "has-na");
@@ -16084,13 +16099,32 @@ function handleAnswerChange(selectEl, options = {}) {
   }
 
   updateExpiryInputState(selectEl);
+
   updateAnswerSummary();
 
   if (!options.skipAutoSave) {
     scheduleAutoSave();
-    autoCloseSectionIfCompleted(selectEl);
+    // Do not auto-close sections while answers are captured. The inspector
+    // decides when to move to the next question or section.
   }
-  
+
+  const restoreRowPosition = () => {
+    if (!row || rowTopBefore === null || !document.body.contains(row)) return;
+    const rowTopAfter = row.getBoundingClientRect().top;
+    const delta = rowTopAfter - rowTopBefore;
+    if (Math.abs(delta) > 1) {
+      window.scrollBy({ top: delta, left: 0, behavior: 'auto' });
+    }
+  };
+
+  requestAnimationFrame(() => {
+    restoreRowPosition();
+    requestAnimationFrame(restoreRowPosition);
+  });
+
+  window.__fireSChecklistInputReleaseTimer = setTimeout(() => {
+    window.__fireSChecklistInputActive = false;
+  }, 1400);
 }
 
 function updateAnswerSummary() {
@@ -16111,7 +16145,9 @@ function updateAnswerSummary() {
     summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
   }
 
-  updateProjectReadinessPanel();
+  if (!window.__fireSChecklistInputActive) {
+    updateProjectReadinessPanel();
+  }
 }
 
 function generateArchivedInspectionReport(projectId, historyIndex) {
