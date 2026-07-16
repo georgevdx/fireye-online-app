@@ -318,6 +318,42 @@ function scheduleAutoSave() {
   }, 800);
 }
 
+// Keep the inspector on the current checklist question when an expiry date is entered.
+// Some post-save panels update after autosave and can otherwise disturb mobile scroll anchoring.
+function handleExpiryDateChange(field) {
+  const row = field?.closest?.('.checklist-row');
+  const rowIndex = row?.dataset?.index || field?.dataset?.index || '';
+  const startY = window.scrollY || document.documentElement.scrollTop || 0;
+  const startX = window.scrollX || document.documentElement.scrollLeft || 0;
+
+  if (rowIndex !== '') {
+    window.__fireSActiveExpiryRowIndex = String(rowIndex);
+  }
+
+  scheduleAutoSave();
+
+  const restoreInspectionPosition = () => {
+    const projectForm = document.getElementById('projectFormSection');
+    if (!projectForm || projectForm.classList.contains('hidden')) return;
+
+    // Do not focus or scroll the Smart Action Register during expiry capture.
+    const activeField = document.querySelector(
+      `.expiry-date[data-index="${CSS.escape(String(rowIndex))}"]`
+    );
+
+    window.scrollTo({ left: startX, top: startY, behavior: 'auto' });
+
+    if (activeField && document.activeElement !== activeField) {
+      try { activeField.focus({ preventScroll: true }); } catch (_) {}
+    }
+  };
+
+  // Autosave runs after 800 ms; restore before and after any related panel update.
+  [0, 120, 850, 1000, 1250].forEach(delay => {
+    window.setTimeout(restoreInspectionPosition, delay);
+  });
+}
+
 function autoSaveProject() {
   if (workflowGateNoWriteLock) {
     return;
@@ -14073,7 +14109,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
               type="date"
               class="expiry-date"
               data-index="${originalIndex}"
-              onchange="scheduleAutoSave()"
+              onchange="handleExpiryDateChange(this)"
             >
           </div>
         ` : ''}
