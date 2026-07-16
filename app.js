@@ -32301,3 +32301,116 @@ function fireSApplyLifecycleUxLabels() {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', install, { once: true });
   else install();
 })();
+
+/* =====================================================
+   FIRE-S STEP 10 - Mobile Gateway scroll position guard
+   Scope: mobile Inspection Gateway only.
+   Prevents legacy timers/renderers and programmatic scrolling from
+   resetting the user's position while finger scrolling.
+   ===================================================== */
+(function fireSStep10MobileGatewayScrollGuard(){
+  'use strict';
+  if (window.__fireSStep10MobileGatewayScrollGuardInstalled) return;
+  window.__fireSStep10MobileGatewayScrollGuardInstalled = true;
+
+  const isMobile = () => window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  const gatewayVisible = () => {
+    const section = document.getElementById('projectListSection');
+    return !!(section && getComputedStyle(section).display !== 'none');
+  };
+
+  let userScrollUntil = 0;
+  let explicitRenderUntil = 0;
+  let lastStableY = 0;
+  let restoreFrame = 0;
+
+  const markUserScroll = () => {
+    if (!isMobile() || !gatewayVisible()) return;
+    userScrollUntil = Date.now() + 700;
+    lastStableY = window.scrollY || document.documentElement.scrollTop || 0;
+  };
+
+  const markExplicitRender = () => {
+    explicitRenderUntil = Date.now() + 1200;
+  };
+
+  window.__fireSGatewayMobileUserScrolling = () =>
+    isMobile() && gatewayVisible() && Date.now() < userScrollUntil;
+
+  window.__fireSGatewayExplicitRender = markExplicitRender;
+
+  window.addEventListener('touchstart', markUserScroll, { passive: true, capture: true });
+  window.addEventListener('touchmove', markUserScroll, { passive: true, capture: true });
+  window.addEventListener('scroll', () => {
+    if (!isMobile() || !gatewayVisible()) return;
+    markUserScroll();
+    cancelAnimationFrame(restoreFrame);
+    restoreFrame = requestAnimationFrame(() => {
+      lastStableY = window.scrollY || document.documentElement.scrollTop || 0;
+    });
+  }, { passive: true, capture: true });
+
+  document.addEventListener('click', event => {
+    const target = event.target && event.target.closest
+      ? event.target.closest('.fire-s-136a8-filter[data-filter], #projectStatusFilter, #nextProjectPageBtn, #previousProjectPageBtn, [onclick*="nextProjectPage"], [onclick*="previousProjectPage"]')
+      : null;
+    if (target) markExplicitRender();
+  }, true);
+
+  document.addEventListener('change', event => {
+    if (event.target && (
+      event.target.id === 'projectStatusFilter' ||
+      event.target.id === 'inspectionDateFrom' ||
+      event.target.id === 'inspectionDateTo'
+    )) markExplicitRender();
+  }, true);
+
+  // Block programmatic scrolling only while the user is actively scrolling
+  // the mobile Gateway. Normal navigation/filter scroll remains available.
+  const originalScrollTo = window.scrollTo.bind(window);
+  window.scrollTo = function fireSStep10SafeScrollTo(){
+    if (window.__fireSGatewayMobileUserScrolling() && Date.now() >= explicitRenderUntil) return;
+    return originalScrollTo.apply(window, arguments);
+  };
+
+  const originalScrollIntoView = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function fireSStep10SafeScrollIntoView(){
+    if (window.__fireSGatewayMobileUserScrolling() && Date.now() >= explicitRenderUntil) return;
+    return originalScrollIntoView.apply(this, arguments);
+  };
+
+  // Prevent legacy background calls from replacing the list while the finger
+  // is moving. Explicit filters/paging still render immediately.
+  const currentRenderer = window.renderProjectsList;
+  if (typeof currentRenderer === 'function') {
+    const guardedRenderer = function fireSStep10GuardedProjectsRender(){
+      if (window.__fireSGatewayMobileUserScrolling() && Date.now() >= explicitRenderUntil) {
+        return false;
+      }
+      const beforeY = window.scrollY || document.documentElement.scrollTop || 0;
+      const result = currentRenderer.apply(this, arguments);
+      if (isMobile() && gatewayVisible() && beforeY > 0 && Date.now() >= explicitRenderUntil) {
+        requestAnimationFrame(() => {
+          const afterY = window.scrollY || document.documentElement.scrollTop || 0;
+          if (afterY < beforeY - 80) originalScrollTo(0, beforeY);
+        });
+      }
+      return result;
+    };
+    window.renderProjectsList = guardedRenderer;
+    try { renderProjectsList = guardedRenderer; } catch (_) {}
+  }
+
+  const style = document.createElement('style');
+  style.id = 'fire-s-step10-mobile-scroll-guard-style';
+  style.textContent = `
+    @media (max-width: 768px) {
+      #projectListSection,
+      #projectsList,
+      #projectListView {
+        overflow-anchor: none !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+})();
