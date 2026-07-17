@@ -353,7 +353,28 @@
     });
   }
 
+  function isInspectorRole() {
+    try {
+      const role = typeof window.getCurrentUserRole === 'function'
+        ? window.getCurrentUserRole()
+        : (window.currentUserProfile?.role || document.body?.dataset?.fireSResolvedRole || '');
+      return String(role || '').trim().toLowerCase() === 'inspector';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function removeInspectorWorkspace() {
+    const wrapper = document.getElementById('fireSPremisesWorkspaceV105');
+    if (wrapper) wrapper.remove();
+  }
+
   function inject(force = false) {
+    if (isInspectorRole()) {
+      removeInspectorWorkspace();
+      return;
+    }
+
     const form = document.getElementById('projectFormSection');
     if (!form || form.style.display === 'none') return;
 

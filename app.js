@@ -21838,7 +21838,23 @@ if (!window.fireSMobileSmartCardsApplied) {
     `;
   }
 
+  function isInspectorRole() {
+    try {
+      const role = typeof window.getCurrentUserRole === 'function'
+        ? window.getCurrentUserRole()
+        : (window.currentUserProfile?.role || document.body?.dataset?.fireSResolvedRole || '');
+      return String(role || '').trim().toLowerCase() === 'inspector';
+    } catch (_) {
+      return false;
+    }
+  }
+
   function ensureCentre() {
+    if (isInspectorRole()) {
+      document.getElementById('fireSBuildingHealthCentre')?.remove();
+      return;
+    }
+
     const project = currentProject();
     const form = document.getElementById('projectFormSection');
     if (!project || !form || form.style.display === 'none') return;
@@ -23487,7 +23503,23 @@ if (!window.fireSMobileSmartCardsApplied) {
     `;
   }
 
+  function isInspectorRole() {
+    try {
+      const role = typeof window.getCurrentUserRole === 'function'
+        ? window.getCurrentUserRole()
+        : (window.currentUserProfile?.role || document.body?.dataset?.fireSResolvedRole || '');
+      return String(role || '').trim().toLowerCase() === 'inspector';
+    } catch (_) {
+      return false;
+    }
+  }
+
   function renderWorkspace() {
+    if (isInspectorRole()) {
+      document.getElementById('fireSPremisesWorkspaceModule1113')?.remove();
+      return;
+    }
+
     const project = getCurrentPremises();
     const commandShell = document.getElementById('inspectionCommandShell');
     const detailsCard = document.getElementById('projectDetailsCard');
@@ -23802,7 +23834,23 @@ if (!window.fireSMobileSmartCardsApplied) {
     return items.slice(0, 4);
   }
 
+  function isInspectorRole() {
+    try {
+      const role = typeof window.getCurrentUserRole === 'function'
+        ? window.getCurrentUserRole()
+        : (window.currentUserProfile?.role || document.body?.dataset?.fireSResolvedRole || '');
+      return String(role || '').trim().toLowerCase() === 'inspector';
+    } catch (_) {
+      return false;
+    }
+  }
+
   function ensureHost() {
+    if (isInspectorRole()) {
+      document.getElementById('fireSBuildingHealthCentre1114')?.remove();
+      return null;
+    }
+
     const workspace = document.getElementById('fireSPremisesWorkspaceModule1113');
     const commandShell = document.getElementById('inspectionCommandShell');
     if (!workspace && !commandShell) return null;
@@ -23887,6 +23935,10 @@ if (!window.fireSMobileSmartCardsApplied) {
   }
 
   function openHealthCentre() {
+    if (isInspectorRole()) {
+      document.getElementById('fireSBuildingHealthCentre1114')?.remove();
+      return;
+    }
     render();
     const host = document.getElementById('fireSBuildingHealthCentre1114');
     if (host) host.scrollIntoView({ behavior: 'smooth', block: 'start' });
