@@ -32,6 +32,9 @@ let followUpFindingModeActive = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
+// Checklist opens fully expanded by default. The mode only changes when the
+// inspector explicitly chooses Expand All or Collapse All.
+let checklistViewMode = 'expanded';
 const PROJECTS_PER_PAGE = 10;
 function setFilter(filter) {
   currentFilter =
@@ -2052,7 +2055,8 @@ function closeChecklistSection(sectionIndex) {
   }
 }
 
-function closeAllChecklistSections() {
+function closeAllChecklistSections(options = {}) {
+  if (!options.preserveMode) checklistViewMode = 'collapsed';
   document.querySelectorAll('.section-group').forEach(section => {
     section.classList.add('hidden');
   });
@@ -2091,7 +2095,11 @@ function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
     return;
   }
 
-  closeAllChecklistSections();
+  // Expanded mode keeps every section visible. Collapsed mode behaves like a
+  // stable accordion and opens only the section explicitly selected.
+  if (checklistViewMode === 'collapsed') {
+    closeAllChecklistSections({ preserveMode: true });
+  }
 
   const section = document.getElementById(`section_${sectionIndex}`);
   const arrow = document.getElementById(`arrow_${sectionIndex}`);
@@ -2137,6 +2145,16 @@ function toggleSection(sectionIndex) {
   if (!section) return;
 
   const isClosed = section.classList.contains('hidden');
+
+  if (checklistViewMode === 'expanded') {
+    // In expanded mode a section tab is a navigation aid, not an accordion
+    // command. Keep all questions visible and move only on an explicit tap.
+    section.classList.remove('hidden');
+    activeChecklistSectionIndex = sectionIndex;
+    const top = section.getBoundingClientRect().top + window.scrollY - 100;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
+    return;
+  }
 
   if (isClosed) {
     openChecklistSection(sectionIndex, true);
@@ -7269,7 +7287,7 @@ function applyFollowUpFindingMode(project) {
   document
     .querySelectorAll('.section-group')
     .forEach(section => {
-      section.classList.add('hidden');
+      section.classList.toggle('hidden', checklistViewMode === 'collapsed');
     });
 }
 
@@ -13985,7 +14003,7 @@ html += `
         type="button"
         class="checklist-section-tab"
         data-section-index="${sectionIndex}"
-        onclick="openChecklistSection(${sectionIndex}, true)"
+        onclick="toggleSection(${sectionIndex})"
       >
         ${sectionIndex === activeChecklistSectionIndex ? '∨' : '›'}
         ${escapeHtml(sectionName.toUpperCase())}
@@ -14003,7 +14021,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 
   html += `
     <div
-      class="section-group hidden"
+      class="section-group ${checklistViewMode === 'collapsed' ? 'hidden' : ''}"
       id="section_${sectionIndex}"
       data-section-name="${escapeHtml(sectionName)}"
     >
@@ -14090,6 +14108,15 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 });
        
   chkDiv.innerHTML = html;
+
+  // A freshly rendered inspection must remain fully expanded unless the
+  // inspector explicitly selected Collapse All during this session.
+  if (checklistViewMode === 'expanded') {
+    document.querySelectorAll('.section-group').forEach(section => {
+      section.classList.remove('hidden');
+    });
+  }
+
   updateAnswerSummary();
   updateProjectReadinessPanel();
 }
@@ -16128,6 +16155,8 @@ ${checklistText || 'No checklist answers or notes captured.'}`;
 
 
 function expandAllSections() {
+  checklistViewMode = 'expanded';
+
   document.querySelectorAll('.section-group').forEach(section => {
     section.classList.remove('hidden');
   });
@@ -16150,7 +16179,8 @@ function expandAllSections() {
 }
 
 function collapseAllSections() {
-  closeAllChecklistSections();
+  checklistViewMode = 'collapsed';
+  closeAllChecklistSections({ preserveMode: true });
 }
 
 function handleAnswerChange(selectEl, options = {}) {
