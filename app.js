@@ -32925,3 +32925,74 @@ function fireSApplyLifecycleUxLabels() {
   `;
   document.head.appendChild(style);
 })();
+
+/* Fire-S Phase 5.4D: Android/PWA direct camera-gallery activation guard.
+   Keeps the existing runtime camera pipeline and adds a touch-safe binding
+   that does not depend on the main initialization sequence completing. */
+(function installFireSPhotoActivationGuard() {
+  let lastTouchAt = 0;
+
+  function showImmediatePhotoStatus(message) {
+    const status = document.getElementById('photoUploadStatus');
+    if (status) status.textContent = message;
+  }
+
+  function bindActivation(buttonId, actionName) {
+    const button = document.getElementById(buttonId);
+    if (!button || button.dataset.fireSPhotoGuardBound === 'true') return;
+
+    button.dataset.fireSPhotoGuardBound = 'true';
+
+    const activate = async event => {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      const action = window[actionName];
+      if (typeof action !== 'function') {
+        showImmediatePhotoStatus('Photo control is still loading. Close Fire-S completely and reopen it.');
+        return;
+      }
+
+      try {
+        await action();
+      } catch (error) {
+        console.error(`Fire-S ${actionName} activation failed:`, error);
+        showImmediatePhotoStatus(
+          actionName === 'openDeviceCamera'
+            ? 'Camera could not open. Check Fire-S camera permission in the phone settings.'
+            : 'Gallery could not open. Check Fire-S photo/file permission in the phone settings.'
+        );
+      }
+    };
+
+    button.addEventListener('touchend', event => {
+      lastTouchAt = Date.now();
+      activate(event);
+    }, { passive: false });
+
+    button.addEventListener('click', event => {
+      if (Date.now() - lastTouchAt < 700) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      activate(event);
+    });
+  }
+
+  function bindPhotoControls() {
+    bindActivation('takePhotoBtn', 'openDeviceCamera');
+    bindActivation('chooseGalleryBtn', 'openDeviceGallery');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindPhotoControls, { once: true });
+  } else {
+    bindPhotoControls();
+  }
+
+  window.addEventListener('pageshow', bindPhotoControls);
+  setTimeout(bindPhotoControls, 750);
+})();
