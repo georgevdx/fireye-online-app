@@ -15115,6 +15115,7 @@ async function openDeviceCamera() {
     closeDeviceCamera();
     modal.classList.remove('hidden');
     modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('camera-workspace-open');
     setCameraStatus('Opening camera...');
 
     activeCameraStream = await navigator.mediaDevices.getUserMedia({
@@ -15146,6 +15147,7 @@ function closeDeviceCamera() {
     modal.classList.add('hidden');
     modal.setAttribute('aria-hidden', 'true');
   }
+  document.body.classList.remove('camera-workspace-open');
 }
 
 async function captureCameraFrame() {
