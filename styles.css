@@ -2763,15 +2763,27 @@ button.readiness-chip:focus {
 }
 
 .take-photo-btn {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  border: 0;
   background: #b71c1c;
   color: #ffffff;
   border-radius: 10px;
   padding: 10px 14px;
+  min-height: 44px;
+  font: inherit;
   font-weight: 700;
+  line-height: 1.2;
   cursor: pointer;
   text-align: center;
   margin-bottom: 8px;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: normal;
+  hyphens: none;
+  touch-action: manipulation;
 }
 
 .checklist-tab-hint {

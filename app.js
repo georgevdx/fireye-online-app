@@ -4254,7 +4254,29 @@ if (cancelScheduledInspectionBtn) {
   if (floatingBackToProjectsBtn) {
     floatingBackToProjectsBtn.addEventListener('click', closeInspectionSession);
   }
-  getEl('photoInput').addEventListener('change', handlePhotoUpload);
+  const photoInput = document.getElementById('photoInput');
+  const takePhotoBtn = document.getElementById('takePhotoBtn');
+
+  if (photoInput) {
+    photoInput.addEventListener('change', handlePhotoUpload);
+  }
+
+  if (takePhotoBtn && photoInput) {
+    takePhotoBtn.addEventListener('click', () => {
+      // Clear the previous selection so Android can capture the same image/file again.
+      photoInput.value = '';
+
+      try {
+        // Keep this call directly inside the user click gesture. This is required
+        // by mobile browsers and also works while the app is offline.
+        photoInput.click();
+      } catch (error) {
+        console.error('Camera/file picker could not be opened:', error);
+        updatePhotoUploadStatus('Camera could not be opened. Please try again.');
+      }
+    });
+  }
+
   const downloadAllPhotosBtn =
     document.getElementById('downloadAllPhotosBtn');
 

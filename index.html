@@ -867,9 +867,14 @@
 
   <section class="card" id="photoEvidenceCard">
   <h2>Photo Evidence</h2>
-  <label for="photoInput" class="take-photo-btn">
+  <button
+  type="button"
+  id="takePhotoBtn"
+  class="take-photo-btn"
+  aria-controls="photoInput"
+>
   Take Photo
-</label>
+</button>
 
 <input
   type="file"
@@ -877,6 +882,7 @@
   accept="image/*"
   capture="environment"
   class="hidden-photo-input"
+  tabindex="-1"
 >
 
 <button
@@ -1005,7 +1011,7 @@
   <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
-  <script src="app.js?v=rc-1-2-0O-mobile-stable"></script>
+  <script src="app.js?v=production-hardening-s1-phase4-photo-button"></script>
   <script src="risk-engine.js?v=108-2-category-intelligence"></script>
   <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
   <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>
