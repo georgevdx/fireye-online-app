@@ -13080,3 +13080,102 @@ textarea {
     font-size: 13px !important;
   }
 }
+
+/* =========================================================
+   FIRE-S PHASE 5.4E — MOBILE CAMERA VIEWPORT FIT
+   Keeps the complete camera frame visible on small screens.
+   Presentation only; capture logic is unchanged.
+   ========================================================= */
+.camera-capture-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+  background: rgba(0, 0, 0, 0.88);
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+.camera-capture-modal.hidden {
+  display: none !important;
+}
+
+.camera-capture-panel {
+  width: min(100%, 720px);
+  max-height: calc(100dvh - 20px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: #111;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#cameraPreview {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: calc(100dvh - 155px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  aspect-ratio: 3 / 4;
+  object-fit: contain;
+  object-position: center;
+  background: #000;
+  border-radius: 10px;
+}
+
+.camera-capture-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.camera-capture-actions button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  white-space: nowrap !important;
+}
+
+#cameraStatus {
+  margin: 0;
+  color: #fff;
+  text-align: center;
+  line-height: 1.3;
+}
+
+@media (max-width: 700px) {
+  .camera-capture-modal {
+    align-items: stretch;
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .camera-capture-panel {
+    width: 100%;
+    max-height: calc(100dvh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  #cameraPreview {
+    max-height: calc(100dvh - 145px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    aspect-ratio: auto;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  .camera-capture-panel {
+    width: min(100%, 900px);
+  }
+
+  #cameraPreview {
+    max-height: calc(100dvh - 120px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    aspect-ratio: auto;
+  }
+}
