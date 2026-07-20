@@ -4257,15 +4257,8 @@ if (cancelScheduledInspectionBtn) {
   const photoInput = document.getElementById('photoInput');
 
   if (photoInput) {
-    // The file input physically covers the visible Take Photo control. This keeps
-    // camera opening as a native user action and avoids unreliable programmatic
-    // input.click() behaviour in Android/PWA/offline mode.
-    const resetPhotoSelection = () => {
-      try { photoInput.value = ''; } catch (_) {}
-    };
-
-    photoInput.addEventListener('pointerdown', resetPhotoSelection);
-    photoInput.addEventListener('touchstart', resetPhotoSelection, { passive: true });
+    // Keep the camera trigger fully native. The separate <label for="photoInput">
+    // opens Android's file/camera chooser even if application JavaScript is busy.
     photoInput.addEventListener('change', handlePhotoUpload);
   }
 
