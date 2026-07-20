@@ -4254,7 +4254,17 @@ if (cancelScheduledInspectionBtn) {
   if (floatingBackToProjectsBtn) {
     floatingBackToProjectsBtn.addEventListener('click', closeInspectionSession);
   }
-  getEl('photoInput').addEventListener('change', handlePhotoUpload);
+  const photoInput = getEl('photoInput');
+  const takePhotoBtn = document.getElementById('takePhotoBtn');
+  const chooseGalleryBtn = document.getElementById('chooseGalleryBtn');
+  const capturePhotoBtn = document.getElementById('capturePhotoBtn');
+  const closeCameraBtn = document.getElementById('closeCameraBtn');
+
+  if (photoInput) photoInput.addEventListener('change', handlePhotoUpload);
+  if (takePhotoBtn) takePhotoBtn.addEventListener('click', openDeviceCamera);
+  if (chooseGalleryBtn) chooseGalleryBtn.addEventListener('click', openDeviceGallery);
+  if (capturePhotoBtn) capturePhotoBtn.addEventListener('click', captureCameraFrame);
+  if (closeCameraBtn) closeCameraBtn.addEventListener('click', closeDeviceCamera);
   const downloadAllPhotosBtn =
     document.getElementById('downloadAllPhotosBtn');
 
@@ -15081,6 +15091,118 @@ function createLocalPhotoFallback(file) {
 
     reader.readAsDataURL(file);
   });
+}
+
+let activeCameraStream = null;
+
+function setCameraStatus(message) {
+  const status = document.getElementById('cameraStatus');
+  if (status) status.textContent = message || '';
+}
+
+async function openDeviceCamera() {
+  const modal = document.getElementById('cameraCaptureModal');
+  const video = document.getElementById('cameraPreview');
+
+  if (!modal || !video) return;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    updatePhotoUploadStatus('Camera access is not supported in this browser. Open Fire-S in Chrome over HTTPS.');
+    return;
+  }
+
+  try {
+    closeDeviceCamera();
+    modal.classList.remove('hidden');
+    modal.setAttribute('aria-hidden', 'false');
+    setCameraStatus('Opening camera...');
+
+    activeCameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false
+    });
+
+    video.srcObject = activeCameraStream;
+    await video.play();
+    setCameraStatus('Camera ready. Frame the evidence and press Capture Photo.');
+  } catch (error) {
+    console.error('Camera open failed:', error);
+    closeDeviceCamera();
+    updatePhotoUploadStatus('Camera could not open. Allow camera permission for Fire-S in the phone browser/app settings, then try again.');
+  }
+}
+
+function closeDeviceCamera() {
+  const modal = document.getElementById('cameraCaptureModal');
+  const video = document.getElementById('cameraPreview');
+
+  if (activeCameraStream) {
+    activeCameraStream.getTracks().forEach(track => track.stop());
+    activeCameraStream = null;
+  }
+
+  if (video) video.srcObject = null;
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+}
+
+async function captureCameraFrame() {
+  const video = document.getElementById('cameraPreview');
+  const canvas = document.getElementById('cameraCanvas');
+
+  if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
+    setCameraStatus('Camera is not ready yet. Please wait a moment and try again.');
+    return;
+  }
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const context = canvas.getContext('2d');
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
+  if (!blob) {
+    setCameraStatus('Photo could not be captured. Please try again.');
+    return;
+  }
+
+  const file = new File([blob], `fire-s-camera-${Date.now()}.jpg`, {
+    type: 'image/jpeg',
+    lastModified: Date.now()
+  });
+
+  closeDeviceCamera();
+  await handlePhotoUpload({ target: { files: [file], value: '' }, photoSource: 'camera' });
+}
+
+async function openDeviceGallery() {
+  try {
+    if (typeof window.showOpenFilePicker === 'function') {
+      const handles = await window.showOpenFilePicker({
+        multiple: true,
+        types: [{
+          description: 'Images',
+          accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'] }
+        }]
+      });
+      const files = await Promise.all(handles.map(handle => handle.getFile()));
+      if (files.length) {
+        await handlePhotoUpload({ target: { files, value: '' }, photoSource: 'gallery' });
+      }
+      return;
+    }
+  } catch (error) {
+    if (error && error.name === 'AbortError') return;
+    console.warn('Gallery picker API failed, using native input fallback:', error);
+  }
+
+  const input = document.getElementById('photoInput');
+  if (!input) return;
+  input.removeAttribute('capture');
+  input.value = '';
+  input.click();
 }
 
 async function handlePhotoUpload(event) {
