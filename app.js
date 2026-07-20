@@ -32,9 +32,6 @@ let followUpFindingModeActive = false;
 
 let activeChecklistSectionIndex = null;
 let activeChecklistQuestionPosition = 0;
-// Checklist opens fully expanded by default. The mode only changes when the
-// inspector explicitly chooses Expand All or Collapse All.
-let checklistViewMode = 'expanded';
 const PROJECTS_PER_PAGE = 10;
 function setFilter(filter) {
   currentFilter =
@@ -2055,8 +2052,7 @@ function closeChecklistSection(sectionIndex) {
   }
 }
 
-function closeAllChecklistSections(options = {}) {
-  if (!options.preserveMode) checklistViewMode = 'collapsed';
+function closeAllChecklistSections() {
   document.querySelectorAll('.section-group').forEach(section => {
     section.classList.add('hidden');
   });
@@ -2095,11 +2091,7 @@ function openChecklistSection(sectionIndex, focusFirstQuestion = false) {
     return;
   }
 
-  // Expanded mode keeps every section visible. Collapsed mode behaves like a
-  // stable accordion and opens only the section explicitly selected.
-  if (checklistViewMode === 'collapsed') {
-    closeAllChecklistSections({ preserveMode: true });
-  }
+  closeAllChecklistSections();
 
   const section = document.getElementById(`section_${sectionIndex}`);
   const arrow = document.getElementById(`arrow_${sectionIndex}`);
@@ -2145,16 +2137,6 @@ function toggleSection(sectionIndex) {
   if (!section) return;
 
   const isClosed = section.classList.contains('hidden');
-
-  if (checklistViewMode === 'expanded') {
-    // In expanded mode a section tab is a navigation aid, not an accordion
-    // command. Keep all questions visible and move only on an explicit tap.
-    section.classList.remove('hidden');
-    activeChecklistSectionIndex = sectionIndex;
-    const top = section.getBoundingClientRect().top + window.scrollY - 100;
-    window.scrollTo({ top: Math.max(0, top), behavior: 'auto' });
-    return;
-  }
 
   if (isClosed) {
     openChecklistSection(sectionIndex, true);
@@ -4272,17 +4254,7 @@ if (cancelScheduledInspectionBtn) {
   if (floatingBackToProjectsBtn) {
     floatingBackToProjectsBtn.addEventListener('click', closeInspectionSession);
   }
-  const photoInput = getEl('photoInput');
-  const takePhotoBtn = document.getElementById('takePhotoBtn');
-  const chooseGalleryBtn = document.getElementById('chooseGalleryBtn');
-  const capturePhotoBtn = document.getElementById('capturePhotoBtn');
-  const closeCameraBtn = document.getElementById('closeCameraBtn');
-
-  if (photoInput) photoInput.addEventListener('change', handlePhotoUpload);
-  if (takePhotoBtn) takePhotoBtn.addEventListener('click', openDeviceCamera);
-  if (chooseGalleryBtn) chooseGalleryBtn.addEventListener('click', openDeviceGallery);
-  if (capturePhotoBtn) capturePhotoBtn.addEventListener('click', captureCameraFrame);
-  if (closeCameraBtn) closeCameraBtn.addEventListener('click', closeDeviceCamera);
+  getEl('photoInput').addEventListener('change', handlePhotoUpload);
   const downloadAllPhotosBtn =
     document.getElementById('downloadAllPhotosBtn');
 
@@ -7287,7 +7259,7 @@ function applyFollowUpFindingMode(project) {
   document
     .querySelectorAll('.section-group')
     .forEach(section => {
-      section.classList.toggle('hidden', checklistViewMode === 'collapsed');
+      section.classList.add('hidden');
     });
 }
 
@@ -13953,8 +13925,8 @@ function renderChecklist(selected) {
 
   let html = `
     <div class="checklist-toolbar">
-      <button type="button" onclick="expandAllSections()">Expand All</button>
-      <button type="button" onclick="collapseAllSections()">Collapse All</button>
+      <button type="button" onclick="expandAllSections()">Expand</button>
+      <button type="button" onclick="collapseAllSections()">Collapse</button>
       <div id="answerSummary" class="answer-summary">Yes: 0 | No: 0 | N/A: 0</div>
     </div>
   `;
@@ -13999,21 +13971,18 @@ const orderedSectionNames = [
 html += `
   <div class="checklist-section-tabs">
     ${orderedSectionNames.map((sectionName, sectionIndex) => `
-      <button
-        type="button"
-        class="checklist-section-tab"
+      <div
+        class="checklist-section-tab checklist-section-label"
         data-section-index="${sectionIndex}"
-        onclick="toggleSection(${sectionIndex})"
+        role="status"
+        aria-live="polite"
       >
-        ${sectionIndex === activeChecklistSectionIndex ? '∨' : '›'}
-        ${escapeHtml(sectionName.toUpperCase())}
-      </button>
+        <span class="checklist-section-label-name">${escapeHtml(sectionName.toUpperCase())}</span>
+        <span class="checklist-section-label-status" data-section-status="${sectionIndex}">0/${(groupedSections.get(sectionName) || []).length}</span>
+      </div>
     `).join('')}
   </div>
 
-  <div class="checklist-tab-hint">
-    Slide left for next checklist sections →
-  </div>
 `;
 
 orderedSectionNames.forEach((sectionName, sectionIndex) => {
@@ -14021,7 +13990,7 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 
   html += `
     <div
-      class="section-group ${checklistViewMode === 'collapsed' ? 'hidden' : ''}"
+      class="section-group hidden"
       id="section_${sectionIndex}"
       data-section-name="${escapeHtml(sectionName)}"
     >
@@ -14108,15 +14077,6 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
 });
        
   chkDiv.innerHTML = html;
-
-  // A freshly rendered inspection must remain fully expanded unless the
-  // inspector explicitly selected Collapse All during this session.
-  if (checklistViewMode === 'expanded') {
-    document.querySelectorAll('.section-group').forEach(section => {
-      section.classList.remove('hidden');
-    });
-  }
-
   updateAnswerSummary();
   updateProjectReadinessPanel();
 }
@@ -15101,118 +15061,6 @@ function createLocalPhotoFallback(file) {
   });
 }
 
-let activeCameraStream = null;
-
-function setCameraStatus(message) {
-  const status = document.getElementById('cameraStatus');
-  if (status) status.textContent = message || '';
-}
-
-async function openDeviceCamera() {
-  const modal = document.getElementById('cameraCaptureModal');
-  const video = document.getElementById('cameraPreview');
-
-  if (!modal || !video) return;
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    updatePhotoUploadStatus('Camera access is not supported in this browser. Open Fire-S in Chrome over HTTPS.');
-    return;
-  }
-
-  try {
-    closeDeviceCamera();
-    modal.classList.remove('hidden');
-    modal.setAttribute('aria-hidden', 'false');
-    setCameraStatus('Opening camera...');
-
-    activeCameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' } },
-      audio: false
-    });
-
-    video.srcObject = activeCameraStream;
-    await video.play();
-    setCameraStatus('Camera ready. Frame the evidence and press Capture Photo.');
-  } catch (error) {
-    console.error('Camera open failed:', error);
-    closeDeviceCamera();
-    updatePhotoUploadStatus('Camera could not open. Allow camera permission for Fire-S in the phone browser/app settings, then try again.');
-  }
-}
-
-function closeDeviceCamera() {
-  const modal = document.getElementById('cameraCaptureModal');
-  const video = document.getElementById('cameraPreview');
-
-  if (activeCameraStream) {
-    activeCameraStream.getTracks().forEach(track => track.stop());
-    activeCameraStream = null;
-  }
-
-  if (video) video.srcObject = null;
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.setAttribute('aria-hidden', 'true');
-  }
-}
-
-async function captureCameraFrame() {
-  const video = document.getElementById('cameraPreview');
-  const canvas = document.getElementById('cameraCanvas');
-
-  if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
-    setCameraStatus('Camera is not ready yet. Please wait a moment and try again.');
-    return;
-  }
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  const context = canvas.getContext('2d');
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.9));
-  if (!blob) {
-    setCameraStatus('Photo could not be captured. Please try again.');
-    return;
-  }
-
-  const file = new File([blob], `fire-s-camera-${Date.now()}.jpg`, {
-    type: 'image/jpeg',
-    lastModified: Date.now()
-  });
-
-  closeDeviceCamera();
-  await handlePhotoUpload({ target: { files: [file], value: '' }, photoSource: 'camera' });
-}
-
-async function openDeviceGallery() {
-  try {
-    if (typeof window.showOpenFilePicker === 'function') {
-      const handles = await window.showOpenFilePicker({
-        multiple: true,
-        types: [{
-          description: 'Images',
-          accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'] }
-        }]
-      });
-      const files = await Promise.all(handles.map(handle => handle.getFile()));
-      if (files.length) {
-        await handlePhotoUpload({ target: { files, value: '' }, photoSource: 'gallery' });
-      }
-      return;
-    }
-  } catch (error) {
-    if (error && error.name === 'AbortError') return;
-    console.warn('Gallery picker API failed, using native input fallback:', error);
-  }
-
-  const input = document.getElementById('photoInput');
-  if (!input) return;
-  input.removeAttribute('capture');
-  input.value = '';
-  input.click();
-}
-
 async function handlePhotoUpload(event) {
   const files = Array.from(event.target.files || []);
 
@@ -16155,8 +16003,6 @@ ${checklistText || 'No checklist answers or notes captured.'}`;
 
 
 function expandAllSections() {
-  checklistViewMode = 'expanded';
-
   document.querySelectorAll('.section-group').forEach(section => {
     section.classList.remove('hidden');
   });
@@ -16179,8 +16025,7 @@ function expandAllSections() {
 }
 
 function collapseAllSections() {
-  checklistViewMode = 'collapsed';
-  closeAllChecklistSections({ preserveMode: true });
+  closeAllChecklistSections();
 }
 
 function handleAnswerChange(selectEl, options = {}) {
@@ -16296,6 +16141,32 @@ function handleAnswerChange(selectEl, options = {}) {
   }
 })();
 
+function updateChecklistSectionLabels() {
+  document.querySelectorAll('.checklist-section-label').forEach(label => {
+    const sectionIndex = Number(label.dataset.sectionIndex);
+    const rows = getChecklistSectionRows(sectionIndex);
+    const total = rows.length;
+    let answered = 0;
+    let noCount = 0;
+
+    rows.forEach(row => {
+      const answer = row.querySelector('.answer-select')?.value || '';
+      if (answer) answered += 1;
+      if (answer === 'No') noCount += 1;
+    });
+
+    const status = label.querySelector('.checklist-section-label-status');
+    if (status) {
+      status.textContent = `${answered}/${total}`;
+    }
+
+    label.classList.toggle('section-complete', total > 0 && answered === total && noCount === 0);
+    label.classList.toggle('section-action-required', noCount > 0);
+    label.classList.toggle('section-in-progress', answered > 0 && answered < total && noCount === 0);
+    label.classList.toggle('section-not-started', answered === 0);
+  });
+}
+
 function updateAnswerSummary() {
   const answers = document.querySelectorAll(".answer-select");
 
@@ -16313,6 +16184,8 @@ function updateAnswerSummary() {
   if (summary) {
     summary.textContent = `Yes: ${yes} | No: ${no} | N/A: ${na}`;
   }
+
+  updateChecklistSectionLabels();
 
   if (!window.__fireSChecklistInputActive) {
     updateProjectReadinessPanel();

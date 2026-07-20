@@ -12364,53 +12364,96 @@ button,
   }
 }
 
-/* Fire-S camera runtime patch: true in-app camera + separate gallery picker */
-.photo-source-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
+/* Sprint 1 Phase 5.1: checklist section status labels */
+.checklist-section-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  overflow: visible;
+  scroll-snap-type: none;
+  align-items: stretch;
 }
 
-.camera-capture-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 30000;
+.checklist-section-tab.checklist-section-label {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 14px;
-  background: rgba(0, 0, 0, 0.92);
-}
-
-.camera-capture-modal.hidden {
-  display: none !important;
-}
-
-.camera-capture-panel {
-  width: min(100%, 720px);
-  max-height: 96vh;
-  overflow: auto;
-  background: #111;
-  border-radius: 14px;
-  padding: 12px;
-}
-
-#cameraPreview {
-  display: block;
-  width: 100%;
-  max-height: 72vh;
-  object-fit: contain;
-  background: #000;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid #d5d5d5;
   border-radius: 10px;
+  background: #f7f7f7;
+  color: #333;
+  white-space: normal;
+  cursor: default;
+  user-select: none;
+  pointer-events: none;
 }
 
-.camera-capture-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
+.checklist-section-label-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
-.camera-capture-actions button {
-  flex: 1 1 0;
+.checklist-section-label-status {
+  flex: 0 0 auto;
+  min-width: 42px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: #e6e6e6;
+  color: #444;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.checklist-section-label.section-in-progress {
+  border-color: #d6a63b;
+  background: #fff9e8;
+}
+
+.checklist-section-label.section-in-progress .checklist-section-label-status {
+  background: #f5d987;
+  color: #5d4600;
+}
+
+.checklist-section-label.section-complete {
+  border-color: #5b9b67;
+  background: #eef8f0;
+}
+
+.checklist-section-label.section-complete .checklist-section-label-status {
+  background: #cce8d1;
+  color: #20552a;
+}
+
+.checklist-section-label.section-action-required {
+  border-color: #b71c1c;
+  background: #fff0f0;
+}
+
+.checklist-section-label.section-action-required .checklist-section-label-status {
+  background: #b71c1c;
+  color: #fff;
+}
+
+@media (max-width: 700px) {
+  .checklist-section-tabs {
+    grid-template-columns: 1fr 1fr;
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .checklist-section-tabs {
+    grid-template-columns: 1fr;
+  }
 }
