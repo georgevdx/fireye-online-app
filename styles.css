@@ -12923,3 +12923,160 @@ textarea {
     transition: none !important;
   }
 }
+
+/* =========================================================
+   FIRE-S PHASE 5.4B — MOBILE ACTION CARD LAYOUT SAFETY
+   Fixes word splitting and cramped inspector action cards.
+   Presentation only; no application logic changes.
+   ========================================================= */
+
+/* Never split words inside cards, buttons, labels or status elements. */
+:where(
+  button,
+  button *,
+  .main-command-card,
+  .main-command-card *,
+  .main-stat-card,
+  .main-stat-card *,
+  .command-centre-card,
+  .command-centre-card *,
+  .startup-route-card,
+  .startup-route-card *,
+  .inspection-card-action,
+  .inspection-card-action *,
+  .quick-link-chip,
+  .quick-link-chip *,
+  .pill,
+  .chip,
+  .badge,
+  .tag,
+  .status-pill,
+  .status-chip,
+  .main-command-status
+) {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  hyphens: none !important;
+}
+
+/* Text may wrap only at natural spaces where a control needs more than one line. */
+.main-command-card,
+.main-command-card .command-title,
+.main-command-card .command-copy,
+.main-stat-card .stat-label,
+.command-centre-card,
+.startup-route-card,
+.inspection-card-action,
+.main-command-status {
+  white-space: normal !important;
+}
+
+@media (max-width: 700px) {
+  #mainCommandCentre {
+    padding: 14px !important;
+  }
+
+  #mainCommandCentre .main-command-top h3 {
+    font-size: clamp(27px, 8vw, 36px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -0.02em;
+  }
+
+  #mainCommandCentre .main-command-top p {
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+  }
+
+  #mainCommandCentre .main-command-status {
+    display: block;
+    width: 100%;
+    max-width: 100% !important;
+    padding: 10px 14px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    text-align: left;
+  }
+
+  #mainCommandCentre .main-command-grid,
+  body.fire-s-role-inspector #mainCommandCentre .main-command-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Mobile action cards: icon on the left, title and description stacked on the right. */
+  #mainCommandCentre .main-command-card,
+  body.fire-s-role-inspector #cmdInspectionsBtn,
+  body.fire-s-role-inspector #cmdScheduleBtn {
+    display: grid !important;
+    grid-template-columns: 58px minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    column-gap: 14px !important;
+    row-gap: 4px !important;
+    align-items: center !important;
+    min-height: 112px !important;
+    padding: 16px !important;
+    text-align: left !important;
+  }
+
+  #mainCommandCentre .main-command-card .command-icon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-self: center;
+    margin: 0 !important;
+    font-size: 38px !important;
+    line-height: 1 !important;
+  }
+
+  #mainCommandCentre .main-command-card .command-title {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    min-width: 0;
+    margin: 0 !important;
+    font-size: 18px !important;
+    line-height: 1.18 !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.01em;
+  }
+
+  #mainCommandCentre .main-command-card .command-copy {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: start;
+    min-width: 0;
+    margin: 0 !important;
+    font-size: 14px !important;
+    line-height: 1.35 !important;
+  }
+
+  /* Keep compact controls compact, while retaining readable captions. */
+  .checklist-toolbar.checklist-toolbar-compact button,
+  .checklist-view-controls button {
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    overflow-wrap: normal !important;
+  }
+}
+
+@media (max-width: 390px) {
+  #mainCommandCentre .main-command-card,
+  body.fire-s-role-inspector #cmdInspectionsBtn,
+  body.fire-s-role-inspector #cmdScheduleBtn {
+    grid-template-columns: 48px minmax(0, 1fr) !important;
+    column-gap: 11px !important;
+    padding: 14px 12px !important;
+  }
+
+  #mainCommandCentre .main-command-card .command-icon {
+    font-size: 32px !important;
+  }
+
+  #mainCommandCentre .main-command-card .command-title {
+    font-size: 16px !important;
+  }
+
+  #mainCommandCentre .main-command-card .command-copy {
+    font-size: 13px !important;
+  }
+}
