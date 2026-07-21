@@ -7,7 +7,7 @@
           {
             "Item Number": "1",
             "Assessment": "Presence",
-            "Checklist Item": "Presence",
+            "Checklist Item": "Are the required portable fire extinguishers present and adequately distributed throughout the premises?",
             "Description": "Suitable portable fire extinguishers are present where required.",
             "Non Compliance Text": "Required portable fire extinguishers are missing or insufficient.",
             "Corrective Action": "Provide the required number and distribution of suitable portable fire extinguishers.",
@@ -22,7 +22,7 @@
           {
             "Item Number": "2",
             "Assessment": "Suitability",
-            "Checklist Item": "Suitability",
+            "Checklist Item": "Are the extinguisher type, capacity and fire rating suitable for the occupancy and identified fire hazards?",
             "Description": "The extinguisher type and rating are suitable for the occupancy and identified fire hazards.",
             "Non Compliance Text": "Portable fire extinguishers are unsuitable in type, size or rating for the applicable hazards.",
             "Corrective Action": "Replace or supplement extinguishers with suitable types and ratings for the occupancy and hazards.",
@@ -37,7 +37,7 @@
           {
             "Item Number": "3",
             "Assessment": "Installation",
-            "Checklist Item": "Installation",
+            "Checklist Item": "Are the portable fire extinguishers correctly mounted, positioned and identified with appropriate signage?",
             "Description": "Extinguishers are correctly mounted, positioned and installed.",
             "Non Compliance Text": "Portable fire extinguishers are incorrectly installed, mounted or positioned.",
             "Corrective Action": "Install and position extinguishers correctly in compliant locations.",
@@ -52,7 +52,7 @@
           {
             "Item Number": "4",
             "Assessment": "Accessibility",
-            "Checklist Item": "Accessibility",
+            "Checklist Item": "Are all portable fire extinguishers clearly visible and immediately accessible without obstruction?",
             "Description": "Extinguishers are visible, identified and readily accessible without obstruction.",
             "Non Compliance Text": "Portable fire extinguishers are obstructed, concealed or not readily accessible.",
             "Corrective Action": "Remove obstructions and maintain clear, visible access to all extinguishers.",
@@ -67,7 +67,7 @@
           {
             "Item Number": "5",
             "Assessment": "Physical Condition",
-            "Checklist Item": "Physical Condition",
+            "Checklist Item": "Are the extinguishers, seals, pins, hoses, gauges and cylinders in sound physical condition?",
             "Description": "Extinguishers and associated components are in sound physical condition.",
             "Non Compliance Text": "Portable fire extinguishers show damage, corrosion, discharge, pressure loss or other defects.",
             "Corrective Action": "Have defective extinguishers inspected, repaired or replaced by a competent service provider.",
@@ -82,7 +82,7 @@
           {
             "Item Number": "6",
             "Assessment": "Maintenance & Servicing",
-            "Checklist Item": "Maintenance & Servicing",
+            "Checklist Item": "Are the portable fire extinguishers serviced, sealed and within the valid service period?",
             "Description": "Service records, seals, tags and maintenance status are current and acceptable.",
             "Non Compliance Text": "Portable fire extinguishers are overdue for service or maintenance records are incomplete.",
             "Corrective Action": "Arrange inspection and servicing by a competent service provider and retain updated records.",
@@ -102,7 +102,7 @@
           {
             "Item Number": "7",
             "Assessment": "Presence",
-            "Checklist Item": "Presence",
+            "Checklist Item": "Are the required fire hose reels present and adequately distributed to provide the necessary coverage?",
             "Description": "Fire hose reels are present where required and adequately distributed.",
             "Non Compliance Text": "Required fire hose reels are missing or insufficiently distributed.",
             "Corrective Action": "Provide the required hose reels in suitable locations.",
@@ -117,7 +117,7 @@
           {
             "Item Number": "8",
             "Assessment": "Suitability",
-            "Checklist Item": "Suitability",
+            "Checklist Item": "Are the fire hose reels suitable for the premises, required coverage and expected firefighting use?",
             "Description": "Hose reels are suitable for the premises, coverage and expected firefighting use.",
             "Non Compliance Text": "Fire hose reels are unsuitable for the premises or do not provide adequate coverage.",
             "Corrective Action": "Upgrade, reposition or supplement hose reels to provide suitable coverage.",
@@ -132,7 +132,7 @@
           {
             "Item Number": "9",
             "Assessment": "Installation",
-            "Checklist Item": "Installation",
+            "Checklist Item": "Are the hose reel, cabinet, valve, hose and nozzle correctly installed and complete?",
             "Description": "Hose reels, cabinets, valves, hoses and nozzles are correctly installed.",
             "Non Compliance Text": "Fire hose reel components are incorrectly installed or incomplete.",
             "Corrective Action": "Correct the installation using a competent fire equipment contractor.",
@@ -147,7 +147,7 @@
           {
             "Item Number": "10",
             "Assessment": "Accessibility",
-            "Checklist Item": "Accessibility",
+            "Checklist Item": "Are all fire hose reels clearly visible, identified and immediately accessible without obstruction?",
             "Description": "Hose reels are visible, identified and unobstructed.",
             "Non Compliance Text": "Fire hose reels are obstructed, concealed or inaccessible.",
             "Corrective Action": "Remove obstructions and keep hose reels visible and readily accessible.",
@@ -162,7 +162,7 @@
           {
             "Item Number": "11",
             "Assessment": "Physical Condition",
-            "Checklist Item": "Physical Condition",
+            "Checklist Item": "Are the hose, drum, cabinet, valve and nozzle intact and free from visible damage or deterioration?",
             "Description": "Hose, drum, cabinet, valve and nozzle are intact and free from obvious damage.",
             "Non Compliance Text": "Fire hose reel equipment is damaged, deteriorated or incomplete.",
             "Corrective Action": "Repair or replace damaged hose reel components.",
@@ -177,7 +177,7 @@
           {
             "Item Number": "12",
             "Assessment": "Functional Condition",
-            "Checklist Item": "Functional Condition",
+            "Checklist Item": "Does the fire hose reel appear operational and can the hose and nozzle be deployed for immediate use?",
             "Description": "The hose reel appears operational and can be deployed for use.",
             "Non Compliance Text": "The fire hose reel is inoperative, seized, leaking or cannot be deployed.",
             "Corrective Action": "Test, repair and restore the hose reel to full operational condition.",
@@ -192,7 +192,7 @@
           {
             "Item Number": "13",
             "Assessment": "Maintenance",
-            "Checklist Item": "Maintenance",
+            "Checklist Item": "Are the fire hose reels inspected, tested and within the valid service period?",
             "Description": "Inspection, testing and servicing records are current and acceptable.",
             "Non Compliance Text": "Fire hose reel maintenance or testing is overdue or not evidenced.",
             "Corrective Action": "Arrange inspection, testing and servicing and retain updated records.",
