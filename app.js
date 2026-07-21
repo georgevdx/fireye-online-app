@@ -14066,14 +14066,21 @@ orderedSectionNames.forEach((sectionName, sectionIndex) => {
         data-index="${originalIndex}"
         data-section-index="${sectionIndex}"
       >
+        <div class="note">
+          <strong>Section:</strong> ${escapeHtml(sectionName)}
+          ${c.Assessment ? ` &bull; <strong>Assessment:</strong> ${escapeHtml(c.Assessment)}` : ''}
+        </div>
+
         <div>
           <strong>${c["Item Number"]}.</strong>
           ${escapeHtml(c["Checklist Item"])}
         </div>
 
-        <div class="note">
-          Answer type: ${escapeHtml(c["Answer Type"])}
-        </div>
+        ${c.Description ? `
+          <div class="note">
+            <strong>What to check:</strong> ${escapeHtml(c.Description)}
+          </div>
+        ` : ''}
 
         <div class="professional-assessment" role="group" aria-label="Assessment status">
           <button type="button" class="assessment-chip assessment-compliant" data-assessment="Compliant" onclick="setProfessionalAssessment(${originalIndex}, 'Compliant')">Compliant</button>
