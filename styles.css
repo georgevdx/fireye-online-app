@@ -5312,7 +5312,7 @@ button.readiness-chip:focus {
   line-height: 1.35 !important;
 }
 
-.pdf-export-mode .report-priority-actions-block,
+.pdf-export-mode .report-priority-actions-lead,
 .pdf-export-mode .nc-section-lead {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
@@ -5320,8 +5320,12 @@ button.readiness-chip:focus {
 }
 
 .pdf-export-mode .report-priority-actions-block {
-  break-before: auto !important;
-  page-break-before: auto !important;
+  break-before: page !important;
+  page-break-before: always !important;
+}
+
+.pdf-export-mode .report-priority-actions-lead h2 {
+  margin-top: 0 !important;
 }
 
 .pdf-export-mode .report-conclusion-signoff {
@@ -5340,16 +5344,6 @@ button.readiness-chip:focus {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
   -webkit-column-break-inside: avoid !important;
-}
-
-.pdf-export-mode .pdf-programmatic-page-break {
-  display: block !important;
-  width: 100% !important;
-  height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  break-after: page !important;
-  page-break-after: always !important;
 }
 
 .pdf-export-mode .nc-section-lead > .nc-heading {

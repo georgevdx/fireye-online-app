@@ -1353,23 +1353,34 @@ pdfClone
     });
 
   /*
-    Report Layout v1.3:
-    Insert a real html2pdf page-break marker immediately before Priority
-    Actions. This is more reliable than depending on print CSS alone and
-    prevents the heading from being stranded at the bottom of page 1.
+    Report Layout v1.4:
+    Keep the Priority Actions heading with its first action. The html2pdf
+    configuration below applies the actual page break directly to the full
+    Priority Actions block instead of relying on an empty marker element.
   */
   const priorityActionsBlock =
     pdfClone.querySelector('.report-priority-actions-block');
 
   if (priorityActionsBlock) {
-    const priorityPageBreak =
+    const priorityHeading =
+      priorityActionsBlock.querySelector('h2');
+    const firstPriorityAction =
+      priorityHeading?.nextElementSibling;
+
+    const priorityActionsLead =
       document.createElement('div');
 
-    priorityPageBreak.className =
-      'html2pdf__page-break pdf-programmatic-page-break';
+    priorityActionsLead.className =
+      'report-priority-actions-lead';
 
-    priorityPageBreak.setAttribute('aria-hidden', 'true');
-    priorityActionsBlock.before(priorityPageBreak);
+    if (priorityHeading) {
+      priorityHeading.before(priorityActionsLead);
+      priorityActionsLead.appendChild(priorityHeading);
+
+      if (firstPriorityAction) {
+        priorityActionsLead.appendChild(firstPriorityAction);
+      }
+    }
   }
 
   pdfSandbox.appendChild(pdfClone);
@@ -1403,8 +1414,9 @@ pdfClone
       orientation: 'portrait'
     },
 
-    pagebreak: {
+pagebreak: {
   mode: ['legacy', 'css'],
+  before: ['.report-priority-actions-block'],
   avoid: [
     '.report-answer',
     '.report-summary-card',
@@ -1412,7 +1424,8 @@ pdfClone
     '.report-expiry-item',
     '.action-item',
     '.nc-item',
-    '.nc-section-lead'
+    '.nc-section-lead',
+    '.report-priority-actions-lead'
   ]
 }
   };
