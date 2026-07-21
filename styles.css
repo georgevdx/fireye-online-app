@@ -1716,6 +1716,11 @@ body {
   page-break-inside: avoid;
 }
 
+.report-conclusion-signoff {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 .signature-line {
   margin-top: 34px;
   padding-top: 8px;
@@ -5304,6 +5309,26 @@ button.readiness-chip:focus {
   break-inside: avoid !important;
   page-break-inside: avoid !important;
   -webkit-column-break-inside: avoid !important;
+}
+
+.pdf-export-mode .report-priority-actions-block {
+  break-before: page !important;
+  page-break-before: always !important;
+}
+
+.pdf-export-mode .report-conclusion-signoff {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+.pdf-export-mode .report-conclusion-signoff .report-block {
+  margin-bottom: 0 !important;
+}
+
+.pdf-export-mode .report-conclusion-signoff .report-signoff {
+  margin-top: 14px !important;
+  padding-top: 12px !important;
 }
 
 .pdf-export-mode .nc-section-lead > .nc-heading {
