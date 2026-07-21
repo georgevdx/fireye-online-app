@@ -16449,12 +16449,13 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
   const finalComments = inspection.finalComments || '';
   const inspectionNumber = inspection.inspectionNumber || '-';
 
-  let yesCount = 0;
-  let noCount = 0;
+  let compliantCount = 0;
+  let actionRequiredCount = 0;
+  let criticalCount = 0;
   let naCount = 0;
   let actionSections = {};
   let nonCompliance = {};
-  let answersHtml = '';
+  let sectionSummary = {};
 
   (inspection.answers || []).forEach(answer => {
     const item =
@@ -16475,19 +16476,51 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     const answerLower =
       String(answerValue).trim().toLowerCase();
 
-    if (answerLower === 'yes') yesCount++;
-    if (answerLower === 'no') noCount++;
-    if (answerLower === 'n/a') naCount++;
+    const savedAssessment = String(answer.assessment || '').trim();
+    const assessment = savedAssessment || (
+      answerLower === 'yes'
+        ? 'Compliant'
+        : answerLower === 'no'
+        ? 'Action Required'
+        : answerLower === 'n/a'
+        ? 'N/A'
+        : 'Not answered'
+    );
+    const assessmentLower = assessment.toLowerCase();
+
+    if (assessmentLower === 'compliant') compliantCount++;
+    if (assessmentLower === 'action required') actionRequiredCount++;
+    if (assessmentLower === 'critical') criticalCount++;
+    if (assessmentLower === 'n/a') naCount++;
 
     const sectionName =
       item.Section || 'General';
 
-    if (answerLower === 'no') {
+    if (assessmentLower === 'not answered') return;
+
+    if (!sectionSummary[sectionName]) {
+      sectionSummary[sectionName] = {
+        assessed: 0,
+        compliant: 0,
+        actionRequired: 0,
+        critical: 0,
+        na: 0
+      };
+    }
+
+    if (assessmentLower !== 'not answered') sectionSummary[sectionName].assessed++;
+    if (assessmentLower === 'compliant') sectionSummary[sectionName].compliant++;
+    if (assessmentLower === 'action required') sectionSummary[sectionName].actionRequired++;
+    if (assessmentLower === 'critical') sectionSummary[sectionName].critical++;
+    if (assessmentLower === 'n/a') sectionSummary[sectionName].na++;
+
+    if (assessmentLower === 'action required' || assessmentLower === 'critical') {
       if (!actionSections[sectionName]) {
-        actionSections[sectionName] = 0;
+        actionSections[sectionName] = { total: 0, critical: 0 };
       }
 
-      actionSections[sectionName]++;
+      actionSections[sectionName].total++;
+      if (assessmentLower === 'critical') actionSections[sectionName].critical++;
 
       if (!nonCompliance[sectionName]) {
         nonCompliance[sectionName] = [];
@@ -16495,59 +16528,34 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
       nonCompliance[sectionName].push({
         itemNumber,
+        assessment: assessmentLower === 'critical' ? 'Critical' : 'Action Required',
+        assessmentName: item.Assessment || '',
         checklistItem: itemText,
         text: item["Non Compliance Text"] || itemText,
         note: answer.note || '',
         reference: item["Reference"] || '',
         correctiveAction: item["Corrective Action"] || '',
-        severity: item["Severity"] || 'Medium'
+        severity: assessmentLower === 'critical' ? 'Critical' : (item["Severity"] || 'Medium')
       });
     }
 
-    const answerClass =
-      answerLower === 'no'
-        ? 'answer-no'
-        : answerLower === 'yes'
-        ? 'answer-yes'
-        : answerLower === 'n/a'
-        ? 'answer-na'
-        : '';
-
-    if (answerLower === 'no') {
-        answersHtml += `
-          <div class="report-answer ${answerClass}">
-            <strong>${escapeHtml(itemNumber)}. ${escapeHtml(itemText)}</strong><br>
-
-            <strong>Answer:</strong>
-            ${escapeHtml(answerValue)}
-
-            ${
-              answer.note
-                ? `<br><strong>Inspector Note:</strong> ${escapeHtml(answer.note)}`
-                : ''
-            }
-
-            ${
-              answer.expiryDate
-                ? `<br><strong>Expiry Date:</strong> ${escapeHtml(answer.expiryDate)}`
-                : ''
-            }
-          </div>
-        `;
-      }
   });
 
-  const answeredCount = yesCount + noCount + naCount;
+  const answeredCount = compliantCount + actionRequiredCount + criticalCount + naCount;
 
   let overallStatus = 'Compliant / Acceptable';
   let riskRating = 'LOW RISK';
   let riskComment = 'No significant fire safety risks identified.';
 
-  if (noCount > 0) {
+  if (criticalCount > 0) {
+    overallStatus = 'Critical Attention Required';
+    riskRating = 'HIGH RISK';
+    riskComment = 'Critical fire safety deficiencies were identified and require urgent corrective action.';
+  } else if (actionRequiredCount > 0) {
     overallStatus = 'Attention Required';
-    riskRating = noCount >= 5 ? 'HIGH RISK' : 'MEDIUM RISK';
+    riskRating = actionRequiredCount >= 5 ? 'HIGH RISK' : 'MEDIUM RISK';
     riskComment =
-      noCount >= 5
+      actionRequiredCount >= 5
         ? 'Immediate attention required. Multiple fire safety non-compliances identified.'
         : 'Fire safety deficiencies identified. Corrective action required.';
   }
@@ -16556,22 +16564,48 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
 
   const sections =
     Object.keys(actionSections)
-      .sort((a, b) => actionSections[b] - actionSections[a]);
+      .sort((a, b) => actionSections[b].total - actionSections[a].total);
 
   if (sections.length > 0) {
     actionHtml = sections.map(section => {
-      const count = actionSections[section];
-      const label = count === 1 ? 'item' : 'items';
+      const count = actionSections[section].total;
+      const critical = actionSections[section].critical;
 
       return `
         <div class="action-item">
-          ${escapeHtml(section.toUpperCase())} — ${count} action ${count === 1 ? 'item' : 'items'}
+          <strong>${escapeHtml(section.toUpperCase())}</strong>
+          <span>${count} action ${count === 1 ? 'item' : 'items'}${critical ? ` · ${critical} critical` : ''}</span>
         </div>
       `;
     }).join('');
   } else {
     actionHtml = `<div class="note">No action required.</div>`;
   }
+
+  const sectionSummaryHtml = Object.keys(sectionSummary).map(section => {
+    const summary = sectionSummary[section];
+    const sectionStatus = summary.critical > 0
+      ? 'Critical'
+      : summary.actionRequired > 0
+      ? 'Action Required'
+      : 'Compliant';
+
+    return `
+      <div class="report-section-summary status-${escapeHtml(sectionStatus.toLowerCase().replace(/\s+/g, '-'))}">
+        <div class="report-section-summary-head">
+          <strong>${escapeHtml(section)}</strong>
+          <span>${escapeHtml(sectionStatus)}</span>
+        </div>
+        <div class="report-section-summary-counts">
+          <span>Assessed <b>${summary.assessed}</b></span>
+          <span>Compliant <b>${summary.compliant}</b></span>
+          <span>Action Required <b>${summary.actionRequired}</b></span>
+          <span>Critical <b>${summary.critical}</b></span>
+          <span>N/A <b>${summary.na}</b></span>
+        </div>
+      </div>
+    `;
+  }).join('');
 
   let nonComplianceHtml = '';
 
@@ -16587,8 +16621,18 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
       nonCompliance[section].forEach(item => {
         nonComplianceHtml += `
           <div class="nc-item nc-${escapeHtml(String(item.severity).toLowerCase())}">
+            <div class="nc-item-title">
+              <strong>${escapeHtml(item.itemNumber)}. ${escapeHtml(item.assessmentName || item.checklistItem)}</strong>
+              <span>${escapeHtml(item.assessment)}</span>
+            </div>
+
             <div>
-              <strong>Severity:</strong>
+              <strong>Inspection question:</strong>
+              ${escapeHtml(item.checklistItem)}
+            </div>
+
+            <div>
+              <strong>Priority:</strong>
               ${escapeHtml(item.severity)}
             </div>
 
@@ -16809,13 +16853,18 @@ reportContent.innerHTML = `
         </div>
 
         <div class="report-summary-card">
-          <span>Yes</span>
-          <strong>${yesCount}</strong>
+          <span>Compliant</span>
+          <strong>${compliantCount}</strong>
         </div>
 
         <div class="report-summary-card">
-          <span>No</span>
-          <strong>${noCount}</strong>
+          <span>Action Required</span>
+          <strong>${actionRequiredCount}</strong>
+        </div>
+
+        <div class="report-summary-card summary-critical">
+          <span>Critical</span>
+          <strong>${criticalCount}</strong>
         </div>
 
         <div class="report-summary-card">
@@ -16825,13 +16874,18 @@ reportContent.innerHTML = `
       </div>
     </div>
 
+    <div class="report-block report-section-summary-block">
+      <h3>Section Summary</h3>
+      ${sectionSummaryHtml || '<div class="note">No assessed sections recorded.</div>'}
+    </div>
+
     <div class="report-block">
       <h2>Priority Actions Required</h2>
       ${actionHtml}
     </div>
 
     <div class="report-block">
-      <h3>Non-Compliance Details</h3>
+      <h3>Corrective Action Register</h3>
       ${nonComplianceHtml}
     </div>
 
@@ -16863,8 +16917,6 @@ reportContent.innerHTML = `
   Generated by Fire-S Fire Safety App | Version ${APP_VERSION}
 </div>
 </div>
-
-<div class="report-page-break"></div>
 
 ${photosHtml}
 `;
