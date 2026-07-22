@@ -16721,12 +16721,17 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
             ${
               item.reference
                 ? `
-                  <div class="note">
-                    <strong>Reference:</strong>
+                  <div class="finding-code-reference">
+                    <strong>Applicable Requirement:</strong>
                     ${escapeHtml(item.reference)}
                   </div>
                 `
-                : ''
+                : `
+                  <div class="finding-code-reference reference-missing">
+                    <strong>Applicable Requirement:</strong>
+                    Specific clause reference not recorded — verify before issuing the report.
+                  </div>
+                `
             }
 
             ${
@@ -16955,6 +16960,12 @@ reportContent.innerHTML = `
 
     <div class="report-block formal-numbered-section formal-action-register">
       <h3><span>4.</span> Findings and Required Actions</h3>
+      <div class="findings-reference-note">
+        <strong>Note:</strong>
+        The findings below must be read together with the applicable fire safety legislation,
+        national standards and municipal fire-safety by-laws. Each finding identifies the
+        specific code, legislative or by-law provision on which the required action is based.
+      </div>
       ${nonComplianceHtml}
     </div>
 

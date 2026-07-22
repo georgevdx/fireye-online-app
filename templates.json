@@ -11,7 +11,7 @@
             "Description": "Suitable portable fire extinguishers are present where required.",
             "Non Compliance Text": "Required portable fire extinguishers are missing or insufficient.",
             "Corrective Action": "Provide the required number and distribution of suitable portable fire extinguishers.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clause 4.37.1 and Table 11 (required provision, quantity and unobstructed positioning of portable fire extinguishers)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -26,7 +26,7 @@
             "Description": "The extinguisher type and rating are suitable for the occupancy and identified fire hazards.",
             "Non Compliance Text": "Portable fire extinguishers are unsuitable in type, size or rating for the applicable hazards.",
             "Corrective Action": "Replace or supplement extinguishers with suitable types and ratings for the occupancy and hazards.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.37.2–4.37.4; SANS 1910 (extinguisher type, capacity, rating and certification appropriate to the identified hazard)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -41,7 +41,7 @@
             "Description": "Extinguishers are correctly mounted, positioned and installed.",
             "Non Compliance Text": "Portable fire extinguishers are incorrectly installed, mounted or positioned.",
             "Corrective Action": "Install and position extinguishers correctly in compliant locations.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.32.2–4.32.3 and 4.37.3; SANS 10105-1 (positioning, identification and installation of portable fire extinguishers)",
             "Severity": "Medium",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -56,7 +56,7 @@
             "Description": "Extinguishers are visible, identified and readily accessible without obstruction.",
             "Non Compliance Text": "Portable fire extinguishers are obstructed, concealed or not readily accessible.",
             "Corrective Action": "Remove obstructions and maintain clear, visible access to all extinguishers.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.32.1–4.32.3 and 4.37.1 (fire equipment to remain readily accessible, visible or identified, and unobstructed)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -71,7 +71,7 @@
             "Description": "Extinguishers and associated components are in sound physical condition.",
             "Non Compliance Text": "Portable fire extinguishers show damage, corrosion, discharge, pressure loss or other defects.",
             "Corrective Action": "Have defective extinguishers inspected, repaired or replaced by a competent service provider.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clause 4.37.3; SANS 10105-1 and SANS 1475-1 (condition, inspection, maintenance and reconditioning of portable fire extinguishers)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -86,7 +86,7 @@
             "Description": "Service records, seals, tags and maintenance status are current and acceptable.",
             "Non Compliance Text": "Portable fire extinguishers are overdue for service or maintenance records are incomplete.",
             "Corrective Action": "Arrange inspection and servicing by a competent service provider and retain updated records.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clause 4.37.3; SANS 10105-1 and SANS 1475-1 (maintenance and servicing by a competent person)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -106,7 +106,7 @@
             "Description": "Fire hose reels are present where required and adequately distributed.",
             "Non Compliance Text": "Required fire hose reels are missing or insufficiently distributed.",
             "Corrective Action": "Provide the required hose reels in suitable locations.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clause 4.34.1 (required provision and distribution of fire hose reels)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -121,7 +121,7 @@
             "Description": "Hose reels are suitable for the premises, coverage and expected firefighting use.",
             "Non Compliance Text": "Fire hose reels are unsuitable for the premises or do not provide adequate coverage.",
             "Corrective Action": "Upgrade, reposition or supplement hose reels to provide suitable coverage.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.34.2–4.34.3; SANS 543, SANS 10105-2 and SANS 10400-W (suitability, coverage and water installation requirements)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -136,7 +136,7 @@
             "Description": "Hose reels, cabinets, valves, hoses and nozzles are correctly installed.",
             "Non Compliance Text": "Fire hose reel components are incorrectly installed or incomplete.",
             "Corrective Action": "Correct the installation using a competent fire equipment contractor.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.32.3 and 4.34.2; SANS 543, SANS 10105-2 and SANS 10400-W (installation and completeness of fire hose reel equipment)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -151,7 +151,7 @@
             "Description": "Hose reels are visible, identified and unobstructed.",
             "Non Compliance Text": "Fire hose reels are obstructed, concealed or inaccessible.",
             "Corrective Action": "Remove obstructions and keep hose reels visible and readily accessible.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.32.1–4.32.3 (fire equipment to remain readily accessible, visible or identified, and unobstructed)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -166,7 +166,7 @@
             "Description": "Hose, drum, cabinet, valve and nozzle are intact and free from obvious damage.",
             "Non Compliance Text": "Fire hose reel equipment is damaged, deteriorated or incomplete.",
             "Corrective Action": "Repair or replace damaged hose reel components.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clause 4.34.2; SANS 543, SANS 10105-2 and SANS 1475-2 (condition and maintenance of the hose, drum, valve and nozzle)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -181,7 +181,7 @@
             "Description": "The hose reel appears operational and can be deployed for use.",
             "Non Compliance Text": "The fire hose reel is inoperative, seized, leaking or cannot be deployed.",
             "Corrective Action": "Test, repair and restore the hose reel to full operational condition.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clauses 4.34.2–4.34.3; SANS 543, SANS 10105-2, SANS 10400-W and SANS 1475-2 (operability, reach, water supply and maintenance)",
             "Severity": "Critical",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
@@ -196,7 +196,7 @@
             "Description": "Inspection, testing and servicing records are current and acceptable.",
             "Non Compliance Text": "Fire hose reel maintenance or testing is overdue or not evidenced.",
             "Corrective Action": "Arrange inspection, testing and servicing and retain updated records.",
-            "Reference": "Applicable fire safety legislation, standards and municipal by-laws",
+            "Reference": "SANS 10400-T, clause 4.34.2; SANS 10105-2 and SANS 1475-2 (inspection, testing and maintenance of fire hose reels)",
             "Severity": "High",
             "Answer Type": "Professional Assessment",
             "Applicable To": [
