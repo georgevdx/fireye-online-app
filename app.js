@@ -1376,6 +1376,35 @@ pdfClone
     });
 
   /*
+    Formal report pagination v1:
+    Build a small, indivisible lead for every numbered section in the PDF
+    clone. This keeps the heading with the first meaningful content block,
+    while still allowing a long section to flow between complete cards.
+  */
+  pdfClone
+    .querySelectorAll('.formal-numbered-section')
+    .forEach(section => {
+      const heading = Array.from(section.children).find(child =>
+        child.matches('h2, h3')
+      );
+
+      if (!heading || heading.parentElement?.classList.contains('report-section-lead')) {
+        return;
+      }
+
+      const firstContent = heading.nextElementSibling;
+      const sectionLead = document.createElement('div');
+
+      sectionLead.className = 'report-section-lead';
+      heading.before(sectionLead);
+      sectionLead.appendChild(heading);
+
+      if (firstContent) {
+        sectionLead.appendChild(firstContent);
+      }
+    });
+
+  /*
     Report Layout v1.4:
     Keep the Priority Actions heading with its first action. The html2pdf
     configuration below applies the actual page break directly to the full
@@ -1439,16 +1468,32 @@ pdfClone
 
 pagebreak: {
   mode: ['legacy', 'css'],
-  before: ['.report-priority-actions-block'],
   avoid: [
+    '.report-section-lead',
+    '.formal-letter-routing',
+    '.formal-subject',
+    '.formal-opening',
+    '.formal-closing',
     '.report-answer',
+    '.report-line',
+    '.report-summary-grid',
     '.report-summary-card',
+    '.report-section-summary',
     '.executive-summary-card',
     '.report-expiry-item',
     '.action-item',
     '.nc-item',
     '.nc-section-lead',
-    '.report-priority-actions-lead'
+    '.findings-reference-note',
+    '.finding-code-reference',
+    '.finding-photo-reference',
+    '.report-signoff',
+    '.report-disclaimer',
+    'table tr',
+    'figure',
+    'blockquote',
+    'pre',
+    'li'
   ]
 }
   };

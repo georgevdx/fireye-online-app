@@ -13709,3 +13709,54 @@ body.camera-workspace-open {
   break-inside: avoid;
   page-break-inside: avoid;
 }
+
+/* Formal report pagination v1 — keep complete report units together. */
+.pdf-export-mode .report-section-lead,
+.pdf-export-mode .formal-letter-routing,
+.pdf-export-mode .formal-subject,
+.pdf-export-mode .formal-opening,
+.pdf-export-mode .formal-closing,
+.pdf-export-mode .report-line,
+.pdf-export-mode .report-summary-grid,
+.pdf-export-mode .report-summary-card,
+.pdf-export-mode .report-section-summary,
+.pdf-export-mode .nc-section-lead,
+.pdf-export-mode .nc-item,
+.pdf-export-mode .findings-reference-note,
+.pdf-export-mode .finding-reference-line,
+.pdf-export-mode .finding-code-reference,
+.pdf-export-mode .finding-photo-reference,
+.pdf-export-mode .report-signoff,
+.pdf-export-mode .report-disclaimer,
+.pdf-export-mode table tr,
+.pdf-export-mode figure,
+.pdf-export-mode blockquote,
+.pdf-export-mode pre,
+.pdf-export-mode li {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  -webkit-column-break-inside: avoid !important;
+}
+
+.pdf-export-mode .report-section-lead > h2,
+.pdf-export-mode .report-section-lead > h3 {
+  margin-top: 0 !important;
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
+/* Long sections may flow, but only between their protected child units. */
+.pdf-export-mode .formal-numbered-section,
+.pdf-export-mode .formal-action-register,
+.pdf-export-mode .nc-section,
+.pdf-export-mode .report-conclusion-signoff {
+  break-inside: auto !important;
+  page-break-inside: auto !important;
+  -webkit-column-break-inside: auto !important;
+  overflow: visible !important;
+}
+
+.pdf-export-mode .nc-heading {
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
