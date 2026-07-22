@@ -1376,35 +1376,6 @@ pdfClone
     });
 
   /*
-    Formal report pagination v1:
-    Build a small, indivisible lead for every numbered section in the PDF
-    clone. This keeps the heading with the first meaningful content block,
-    while still allowing a long section to flow between complete cards.
-  */
-  pdfClone
-    .querySelectorAll('.formal-numbered-section')
-    .forEach(section => {
-      const heading = Array.from(section.children).find(child =>
-        child.matches('h2, h3')
-      );
-
-      if (!heading || heading.parentElement?.classList.contains('report-section-lead')) {
-        return;
-      }
-
-      const firstContent = heading.nextElementSibling;
-      const sectionLead = document.createElement('div');
-
-      sectionLead.className = 'report-section-lead';
-      heading.before(sectionLead);
-      sectionLead.appendChild(heading);
-
-      if (firstContent) {
-        sectionLead.appendChild(firstContent);
-      }
-    });
-
-  /*
     Report Layout v1.4:
     Keep the Priority Actions heading with its first action. The html2pdf
     configuration below applies the actual page break directly to the full
@@ -1468,32 +1439,16 @@ pdfClone
 
 pagebreak: {
   mode: ['legacy', 'css'],
+  before: ['.report-priority-actions-block'],
   avoid: [
-    '.report-section-lead',
-    '.formal-letter-routing',
-    '.formal-subject',
-    '.formal-opening',
-    '.formal-closing',
     '.report-answer',
-    '.report-line',
-    '.report-summary-grid',
     '.report-summary-card',
-    '.report-section-summary',
     '.executive-summary-card',
     '.report-expiry-item',
     '.action-item',
     '.nc-item',
     '.nc-section-lead',
-    '.findings-reference-note',
-    '.finding-code-reference',
-    '.finding-photo-reference',
-    '.report-signoff',
-    '.report-disclaimer',
-    'table tr',
-    'figure',
-    'blockquote',
-    'pre',
-    'li'
+    '.report-priority-actions-lead'
   ]
 }
   };
@@ -16766,17 +16721,12 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
             ${
               item.reference
                 ? `
-                  <div class="finding-code-reference">
-                    <strong>Applicable Requirement:</strong>
+                  <div class="note">
+                    <strong>Reference:</strong>
                     ${escapeHtml(item.reference)}
                   </div>
                 `
-                : `
-                  <div class="finding-code-reference reference-missing">
-                    <strong>Applicable Requirement:</strong>
-                    Specific clause reference not recorded — verify before issuing the report.
-                  </div>
-                `
+                : ''
             }
 
             ${
@@ -17005,12 +16955,6 @@ reportContent.innerHTML = `
 
     <div class="report-block formal-numbered-section formal-action-register">
       <h3><span>4.</span> Findings and Required Actions</h3>
-      <div class="findings-reference-note">
-        <strong>Note:</strong>
-        The findings below must be read together with the applicable fire safety legislation,
-        national standards and municipal fire-safety by-laws. Each finding identifies the
-        specific code, legislative or by-law provision on which the required action is based.
-      </div>
       ${nonComplianceHtml}
     </div>
 
