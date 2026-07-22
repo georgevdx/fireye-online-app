@@ -5375,6 +5375,126 @@ button.readiness-chip:focus {
   hyphens: none !important;
 }
 
+/* Formal Letter Report v1 — isolated report presentation only. */
+.formal-letter-report {
+  color: #1f2937;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.formal-letter-report .formal-letterhead {
+  border-top: 7px solid #b71c1c;
+  border-bottom: 1px solid #cbd5e1;
+  padding-top: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+}
+
+.formal-letter-report .report-client-logo {
+  max-height: 68px;
+  width: auto;
+  object-fit: contain;
+}
+
+.formal-letter-routing {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(220px, .65fr);
+  gap: 28px;
+  margin: 8px 0 22px;
+}
+
+.formal-addressee {
+  min-height: 92px;
+  line-height: 1.55;
+}
+
+.formal-reference-box {
+  border-left: 3px solid #b71c1c;
+  padding-left: 14px;
+}
+
+.formal-reference-box div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+
+.formal-reference-box span {
+  color: #64748b;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.formal-subject {
+  border-top: 1px solid #94a3b8;
+  border-bottom: 1px solid #94a3b8;
+  color: #111827;
+  font-weight: 800;
+  letter-spacing: .2px;
+  padding: 10px 0;
+  margin: 0 0 20px;
+}
+
+.formal-salutation,
+.formal-opening,
+.formal-closing {
+  margin: 0 0 16px;
+}
+
+.formal-opening {
+  text-align: justify;
+}
+
+.formal-numbered-section {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.formal-numbered-section > h2,
+.formal-numbered-section > h3,
+.report-conclusion-block > h3 {
+  border-bottom: 1px solid #cbd5e1;
+  color: #7f1d1d;
+  font-size: 15px;
+  margin: 0 0 12px;
+  padding: 0 0 6px;
+}
+
+.formal-numbered-section > h2 span,
+.formal-numbered-section > h3 span,
+.report-conclusion-block > h3 span {
+  color: #111827;
+  margin-right: 5px;
+}
+
+.formal-letter-report .report-section-summary,
+.formal-letter-report .nc-item {
+  border-radius: 2px;
+  box-shadow: none;
+}
+
+.formal-letter-report .report-summary-card {
+  border-radius: 2px;
+}
+
+.formal-signoff {
+  border-top: 0;
+  margin-top: 8px;
+  padding-top: 0;
+}
+
+.pdf-export-mode .formal-letter-routing,
+.pdf-export-mode .formal-subject,
+.pdf-export-mode .formal-opening,
+.pdf-export-mode .formal-signoff {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
+
 .inspection-project-list-schedule {
   grid-column: 1 / -1;
   display: block;

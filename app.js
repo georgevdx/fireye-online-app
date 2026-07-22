@@ -1147,20 +1147,22 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
 
     pdf.addPage();
 
+    pdf.setFillColor(30, 41, 59);
+    pdf.rect(0, 0, pageWidth, 24, 'F');
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.setTextColor(183, 28, 28);
+    pdf.setFontSize(14);
+    pdf.setTextColor(255, 255, 255);
 
     if (index === 0) {
-      pdf.text('APPENDIX A - PHOTO EVIDENCE', marginX, marginTop);
+      pdf.text('APPENDIX A - PHOTOGRAPHIC EVIDENCE', marginX, marginTop);
     } else {
-      pdf.text(`PHOTO EVIDENCE - PHOTO ${photoNumber}`, marginX, marginTop);
+      pdf.text(`PHOTOGRAPHIC EVIDENCE - PHOTO ${photoNumber}`, marginX, marginTop);
     }
 
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(10);
     pdf.setFont('helvetica', 'bold');
-    pdf.text(`Photo ${photoNumber}`, marginX, 30);
+    pdf.text(`Photo ${photoNumber} of ${safePhotos.length}`, marginX, 32);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
@@ -1172,7 +1174,7 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
 
     pdf.text(`Captured: ${capturedText}`, marginX, 36);
 
-    const imageTop = 43;
+    const imageTop = 45;
     const imageBoxWidth = pageWidth - marginX * 2;
     const imageBoxHeight = 170;
 
@@ -1228,7 +1230,7 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
 
     pdf.setFont('helvetica', 'bold');
     pdf.setFontSize(9);
-    pdf.text('Photo Note:', marginX, noteTop);
+    pdf.text("Inspector's photographic note:", marginX, noteTop);
 
     pdf.setFont('helvetica', 'normal');
     pdf.setFontSize(8);
@@ -1240,6 +1242,13 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
       pdf.splitTextToSize(noteText, pageWidth - marginX * 2);
 
     pdf.text(wrappedNote.slice(0, 8), marginX, noteTop + 7);
+
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(marginX, 282, pageWidth - marginX, 282);
+    pdf.setFontSize(7);
+    pdf.setTextColor(90, 90, 90);
+    pdf.text('Fire-S Fire Safety Inspection Report | Photographic Evidence', marginX, 287);
+    pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - marginX, 287, { align: 'right' });
   }
 }
 
@@ -16732,7 +16741,8 @@ reportContent.innerHTML = `
       </button>
     </div>
 
-    <div class="report-header report-client-header">
+    <article class="formal-letter-report">
+    <div class="report-header report-client-header formal-letterhead">
       <div class="report-client-brand">
         <img
           class="report-client-logo"
@@ -16744,7 +16754,7 @@ reportContent.innerHTML = `
           <h1>Fire-S</h1>
 
           <div class="report-subtitle">
-            Archived Fire Safety Inspection Report
+            Fire Safety Inspection Services
           </div>
 
           <div class="report-platform-note">
@@ -16786,8 +16796,33 @@ reportContent.innerHTML = `
       </div>
     </div>
 
-    <div class="report-block">
-      <h3>Premises Information</h3>
+    <div class="formal-letter-routing">
+      <div class="formal-addressee">
+        <div>${escapeHtml(inspection.contactPerson || 'To whom it may concern')}</div>
+        <strong>${escapeHtml(projectName)}</strong>
+        <div>${escapeHtml(projectAddress)}</div>
+        ${inspection.contactEmail ? `<div>${escapeHtml(inspection.contactEmail)}</div>` : ''}
+      </div>
+
+      <div class="formal-reference-box">
+        <div><span>Our reference</span><strong>${escapeHtml(inspectionNumber)}</strong></div>
+        <div><span>Inspection date</span><strong>${escapeHtml(formatInspectionDate(getProjectInspectionDate(inspection)))}</strong></div>
+        <div><span>Report date</span><strong>${escapeHtml(new Date().toLocaleDateString())}</strong></div>
+      </div>
+    </div>
+
+    <div class="formal-subject">
+      FIRE SAFETY INSPECTION REPORT: ${escapeHtml(projectName.toUpperCase())}
+    </div>
+
+    <div class="formal-salutation">Dear Sir / Madam,</div>
+
+    <div class="formal-opening">
+      This report records the fire safety inspection conducted at the above premises. It summarises the conditions observed at the time of inspection, identifies criteria requiring corrective action, and provides supporting photographic evidence where captured.
+    </div>
+
+    <div class="report-block formal-numbered-section">
+      <h3><span>1.</span> Premises and Inspection Details</h3>
 
       <div class="report-line">
         <strong>Premises / Site:</strong>
@@ -16845,8 +16880,8 @@ reportContent.innerHTML = `
       </div>
     </div>
 
-    <div class="report-block">
-      <h3>Executive Inspection Summary</h3>
+    <div class="report-block formal-numbered-section">
+      <h3><span>2.</span> Inspection Outcome</h3>
 
       <div class="report-line">
         <strong>Overall Status:</strong>
@@ -16904,28 +16939,30 @@ reportContent.innerHTML = `
       </div>
     </div>
 
-    <div class="report-block report-section-summary-block">
-      <h3>Section Summary</h3>
+    <div class="report-block report-section-summary-block formal-numbered-section">
+      <h3><span>3.</span> Section Summary</h3>
       ${sectionSummaryHtml || '<div class="note">No assessed sections recorded.</div>'}
     </div>
 
-    <div class="report-block report-priority-actions-block">
-      <h2>Priority Actions Required</h2>
+    <div class="report-block report-priority-actions-block formal-numbered-section">
+      <h2><span>4.</span> Priority Actions Required</h2>
       ${actionHtml}
     </div>
 
-    <div class="report-block">
-      <h3>Corrective Action Register</h3>
+    <div class="report-block formal-numbered-section formal-action-register">
+      <h3><span>5.</span> Detailed Corrective Action Register</h3>
       ${nonComplianceHtml}
     </div>
 
     <div class="report-conclusion-signoff">
       <div class="report-block report-conclusion-block">
-        <h3>Inspector Comments and Conclusion</h3>
+        <h3><span>6.</span> Inspector's Conclusion</h3>
         <div>${escapeHtml(finalComments || 'No comments provided.')}</div>
       </div>
 
-      <div class="report-signoff">
+      <div class="formal-closing">Yours faithfully,</div>
+
+      <div class="report-signoff formal-signoff">
         <div>
           <strong>Inspector:</strong>
           ${escapeHtml(inspectorName)}
@@ -16949,6 +16986,7 @@ reportContent.innerHTML = `
         </div>
       </div>
     </div>
+    </article>
 
 ${photosHtml}
 `;
