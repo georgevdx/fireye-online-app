@@ -1102,12 +1102,31 @@ function applyMeasuredA4Pagination(pdfClone) {
   const pageHeightPx = exportWidthPx * printableHeightMm / printableWidthMm;
   const tolerancePx = 4;
 
+  /*
+    Some formal sections must start on a fresh page. A measured spacer is used
+    because html2pdf may ignore CSS-only page breaks after rasterisation.
+  */
+  Array.from(pdfClone.querySelectorAll('.pdf-force-new-page')).forEach(element => {
+    const cloneTop = pdfClone.getBoundingClientRect().top;
+    const elementTop = element.getBoundingClientRect().top - cloneTop;
+    const positionOnPage = ((elementTop % pageHeightPx) + pageHeightPx) % pageHeightPx;
+
+    if (positionOnPage <= tolerancePx) return;
+
+    const spacer = document.createElement('div');
+    spacer.className = 'pdf-measured-page-spacer pdf-forced-page-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    spacer.style.height = `${Math.ceil(pageHeightPx - positionOnPage + 1)}px`;
+    element.before(spacer);
+  });
+
   const atomicSelectors = [
     '.formal-letter-routing',
     '.formal-subject',
     '.formal-opening',
     '.report-section-lead',
     '.findings-reference-note',
+    '.nc-section-lead',
     '.nc-heading',
     '.nc-item',
     '.finding-code-reference',
@@ -1445,10 +1464,10 @@ async function addTwoUpPhotoAppendixToPdf(pdf, photos = []) {
       pdf.setTextColor(30, 41, 59);
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(8.5);
-      pdf.text('INSPECTOR CAPTION', captionX, imageTop + 3);
+      pdf.text('INSPECTOR COMMENTS', captionX, imageTop + 3);
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(8);
-      const caption = photo.note || 'No caption added.';
+      const caption = photo.note || 'No inspector comments added.';
       const wrappedCaption = pdf.splitTextToSize(caption, captionWidth);
       pdf.text(wrappedCaption.slice(0, 13), captionX, imageTop + 9);
     }
@@ -16929,6 +16948,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
       nonCompliance[section].forEach((item, itemIndex) => {
         if (itemIndex === 0) {
           nonComplianceHtml += `
+            <div class="nc-section-lead">
             <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
           `;
         }
@@ -16999,6 +17019,9 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
           </div>
         `;
 
+        if (itemIndex === 0) {
+          nonComplianceHtml += `</div>`;
+        }
       });
 
       nonComplianceHtml += `</div>`;
@@ -17167,7 +17190,7 @@ reportContent.innerHTML = `
 
     </div>
 
-    <div class="report-block formal-numbered-section formal-action-register">
+    <div class="report-block formal-numbered-section formal-action-register pdf-force-new-page">
       <h3><span>3.</span> Findings and Required Actions</h3>
       <div class="findings-reference-note">
         <strong>Note:</strong>

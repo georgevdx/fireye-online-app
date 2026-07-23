@@ -5319,6 +5319,11 @@ button.readiness-chip:focus {
   page-break-inside: avoid !important;
 }
 
+.pdf-export-mode .pdf-force-new-page {
+  break-before: page !important;
+  page-break-before: always !important;
+}
+
 .pdf-export-mode .formal-letter-routing,
 .pdf-export-mode .formal-subject,
 .pdf-export-mode .formal-opening,
@@ -5349,7 +5354,18 @@ button.readiness-chip:focus {
 .pdf-export-mode .formal-letter-report .formal-subject {
   margin-top: 7mm !important;
   padding-top: 4mm !important;
+  margin-bottom: 4mm !important;
   border-top: 0.6mm solid #b71c1c !important;
+}
+
+.formal-letter-report .formal-salutation {
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+
+.pdf-export-mode .formal-letter-report .formal-salutation {
+  margin-top: 4mm !important;
+  margin-bottom: 4mm !important;
 }
 
 /*
@@ -5358,7 +5374,9 @@ button.readiness-chip:focus {
   between consecutive findings sections while each finding card stays atomic.
 */
 .nc-section-lead {
-  display: contents;
+  display: block;
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 .pdf-export-mode .nc-heading {
