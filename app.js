@@ -16407,6 +16407,397 @@ function updatePhotoNote(index, value) {
   scheduleAutoSave();
 }
 
+function isBlankReportValue(value) {
+  const normalisedValue =
+    String(value ?? '').trim().toLowerCase();
+
+  return (
+    !normalisedValue ||
+    normalisedValue === '-' ||
+    normalisedValue === 'not recorded' ||
+    normalisedValue === 'unknown'
+  );
+}
+
+function hasSpecificReportRequirement(reference) {
+  const value =
+    String(reference || '').trim();
+
+  if (!value) return false;
+
+  /*
+    A standard name by itself is too broad for a client-facing finding.
+    Require a clause, section, regulation, article, table or comparable
+    numbered locator before treating the requirement as issue-ready.
+  */
+  return (
+    /\b(clause|cl\.?|section|sec\.?|regulation|reg\.?|article|art\.?|table|item|paragraph|para\.?|by-?law)\b[\s:.-]*[a-z0-9]/i.test(value) ||
+    /§\s*[a-z0-9]/i.test(value) ||
+    /\b\d+\.\d+(?:\.\d+)*\b/.test(value)
+  );
+}
+
+function buildReportQualityCheck(inspection) {
+  const safeInspection =
+    inspection || {};
+
+  const checklist =
+    getChecklistForProject(safeInspection) || [];
+
+  const issues = [];
+  const missingDetails = [];
+
+  [
+    ['Inspector name', safeInspection.inspectorName],
+    ['Inspection date', safeInspection.inspectionDate],
+    ['Client / organisation', safeInspection.organisationName],
+    ['Premises / site', safeInspection.siteName || safeInspection.projectName],
+    [
+      'Premises address',
+      safeInspection.projectAddress ||
+        combineStreetAddress(
+          safeInspection.streetNumber,
+          safeInspection.addressLine
+        )
+    ]
+  ].forEach(([label, value]) => {
+    if (isBlankReportValue(value)) {
+      missingDetails.push(label);
+    }
+  });
+
+  if (missingDetails.length > 0) {
+    issues.push({
+      type: 'details',
+      title: `${missingDetails.length} required report detail${missingDetails.length === 1 ? '' : 's'} missing`,
+      detail: missingDetails.join(', ')
+    });
+  }
+
+  const findingsWithoutSpecificRequirement = [];
+
+  (safeInspection.answers || []).forEach((answer, answerPosition) => {
+    const answerValue =
+      String(answer?.answer || '').trim().toLowerCase();
+
+    const assessment =
+      String(answer?.assessment || '').trim().toLowerCase();
+
+    const isFinding =
+      answerValue === 'no' ||
+      assessment === 'action required' ||
+      assessment === 'critical';
+
+    if (!isFinding) return;
+
+    const itemIndex =
+      Number.isFinite(Number(answer?.itemIndex))
+        ? Number(answer.itemIndex)
+        : answerPosition;
+
+    const item =
+      checklist[itemIndex] || {};
+
+    const itemNumber =
+      answer?.itemNumber ||
+      item['Item Number'] ||
+      String(itemIndex + 1);
+
+    const reference =
+      item.Reference ||
+      item.reference ||
+      answer.reference ||
+      '';
+
+    if (!hasSpecificReportRequirement(reference)) {
+      findingsWithoutSpecificRequirement.push(String(itemNumber));
+    }
+  });
+
+  if (findingsWithoutSpecificRequirement.length > 0) {
+    issues.push({
+      type: 'references',
+      title: `${findingsWithoutSpecificRequirement.length} finding${findingsWithoutSpecificRequirement.length === 1 ? '' : 's'} need a specific code reference`,
+      detail: `Checklist item${findingsWithoutSpecificRequirement.length === 1 ? '' : 's'}: ${findingsWithoutSpecificRequirement.join(', ')}`
+    });
+  }
+
+  const photos =
+    Array.isArray(safeInspection.photos)
+      ? safeInspection.photos
+      : [];
+
+  const photosWithoutComments = [];
+  const photosWithoutFinding = [];
+
+  photos.forEach((photo, photoIndex) => {
+    const photoNumber =
+      `P-${String(photoIndex + 1).padStart(2, '0')}`;
+
+    if (isBlankReportValue(photo?.note)) {
+      photosWithoutComments.push(photoNumber);
+    }
+
+    const linkedFindings =
+      Array.isArray(photo?.reportFindingRefs)
+        ? photo.reportFindingRefs.filter(Boolean)
+        : [];
+
+    if (linkedFindings.length === 0) {
+      photosWithoutFinding.push(photoNumber);
+    }
+  });
+
+  if (photosWithoutComments.length > 0) {
+    issues.push({
+      type: 'photo-comments',
+      title: `${photosWithoutComments.length} photo${photosWithoutComments.length === 1 ? '' : 's'} need Inspector Comments`,
+      detail: photosWithoutComments.join(', ')
+    });
+  }
+
+  if (photosWithoutFinding.length > 0) {
+    issues.push({
+      type: 'photo-links',
+      title: `${photosWithoutFinding.length} photo${photosWithoutFinding.length === 1 ? '' : 's'} not linked to a finding`,
+      detail: photosWithoutFinding.join(', ')
+    });
+  }
+
+  return {
+    issues,
+    passed: issues.length === 0
+  };
+}
+
+function showReportQualityCheck(qualityCheck) {
+  const existing =
+    document.getElementById('reportQualityCheckOverlay');
+
+  if (existing) {
+    existing.remove();
+  }
+
+  if (!qualityCheck || qualityCheck.passed) {
+    return Promise.resolve(true);
+  }
+
+  return new Promise(resolve => {
+    const overlay =
+      document.createElement('div');
+
+    overlay.id =
+      'reportQualityCheckOverlay';
+
+    overlay.setAttribute('role', 'presentation');
+    overlay.innerHTML = `
+      <div
+        class="report-quality-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reportQualityCheckTitle"
+      >
+        <div class="report-quality-icon" aria-hidden="true">!</div>
+
+        <div>
+          <h3 id="reportQualityCheckTitle">Report Quality Check</h3>
+          <p>
+            The report can be shared, but the following items should be reviewed first.
+          </p>
+        </div>
+
+        <div class="report-quality-list">
+          ${qualityCheck.issues.map(issue => `
+            <div class="report-quality-item report-quality-${escapeHtml(issue.type)}">
+              <strong>${escapeHtml(issue.title)}</strong>
+              <span>${escapeHtml(issue.detail)}</span>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="report-quality-note">
+          Sharing anyway does not change or delete any inspection data.
+        </div>
+
+        <div class="report-quality-actions">
+          <button type="button" data-report-quality-action="review">
+            Review Report
+          </button>
+
+          <button
+            type="button"
+            class="report-quality-share-anyway"
+            data-report-quality-action="share"
+          >
+            Share Anyway
+          </button>
+        </div>
+      </div>
+    `;
+
+    const closeQualityCheck = shouldShare => {
+      overlay.remove();
+      resolve(shouldShare);
+    };
+
+    overlay
+      .querySelector('[data-report-quality-action="review"]')
+      .addEventListener('click', () => closeQualityCheck(false));
+
+    overlay
+      .querySelector('[data-report-quality-action="share"]')
+      .addEventListener('click', () => closeQualityCheck(true));
+
+    overlay.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        closeQualityCheck(false);
+      }
+    });
+
+    document.body.appendChild(overlay);
+
+    overlay
+      .querySelector('[data-report-quality-action="review"]')
+      .focus();
+  });
+}
+
+function ensureReportQualityCheckStyles() {
+  if (document.getElementById('reportQualityCheckStyles')) {
+    return;
+  }
+
+  const style =
+    document.createElement('style');
+
+  style.id =
+    'reportQualityCheckStyles';
+
+  style.textContent = `
+    #reportQualityCheckOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(15, 23, 42, 0.72);
+      backdrop-filter: blur(3px);
+    }
+
+    .report-quality-dialog {
+      width: min(560px, 100%);
+      max-height: calc(100vh - 36px);
+      overflow-y: auto;
+      border-radius: 18px;
+      padding: 22px;
+      background: #ffffff;
+      color: #1e293b;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.32);
+    }
+
+    .report-quality-icon {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      margin-bottom: 12px;
+      border-radius: 50%;
+      background: #fff3cd;
+      color: #8a5a00;
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .report-quality-dialog h3 {
+      margin: 0 0 6px;
+      color: #0f172a;
+      font-size: 1.25rem;
+    }
+
+    .report-quality-dialog p {
+      margin: 0 0 16px;
+      color: #475569;
+      line-height: 1.5;
+    }
+
+    .report-quality-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .report-quality-item {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border: 1px solid #fed7aa;
+      border-left: 4px solid #f59e0b;
+      border-radius: 10px;
+      background: #fffaf0;
+    }
+
+    .report-quality-item strong {
+      color: #7c2d12;
+    }
+
+    .report-quality-item span {
+      color: #64748b;
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .report-quality-note {
+      margin-top: 14px;
+      color: #64748b;
+      font-size: 0.82rem;
+    }
+
+    .report-quality-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .report-quality-actions button {
+      min-height: 46px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: #ffffff;
+      color: #1e293b;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .report-quality-actions .report-quality-share-anyway {
+      border-color: #b91c1c;
+      background: #b91c1c;
+      color: #ffffff;
+    }
+
+    @media (max-width: 520px) {
+      #reportQualityCheckOverlay {
+        align-items: flex-end;
+        padding: 10px;
+      }
+
+      .report-quality-dialog {
+        max-height: calc(100vh - 20px);
+        border-radius: 18px 18px 12px 12px;
+        padding: 18px;
+      }
+
+      .report-quality-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
 async function shareReport() {
   if (!canViewReports()) {
     alert(
@@ -16434,6 +16825,45 @@ async function shareReport() {
 
   try {
     await generateReport();
+
+    const reportInspection =
+      liveReportContext?.inspection ||
+      currentProject;
+
+    ensureReportQualityCheckStyles();
+
+    const qualityCheck =
+      buildReportQualityCheck(reportInspection);
+
+    shareButton.textContent =
+      'Quality Check...';
+
+    saveMessage.textContent =
+      qualityCheck.passed
+        ? 'Report quality check passed.'
+        : 'Report quality check needs your review.';
+
+    const shareAnyway =
+      await showReportQualityCheck(qualityCheck);
+
+    if (!shareAnyway) {
+      saveMessage.textContent =
+        'Report sharing paused for review.';
+
+      getEl('reportSection').style.display = 'block';
+      getEl('reportSection').scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+
+      return;
+    }
+
+    shareButton.textContent = 'Preparing PDF...';
+    saveMessage.textContent =
+      qualityCheck.passed
+        ? 'Quality check passed. Preparing the formal PDF...'
+        : 'Sharing approved. Preparing the formal PDF...';
 
     const pdfResult =
       await exportReport({ returnFile: true });

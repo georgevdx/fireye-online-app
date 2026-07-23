@@ -1,33 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- fire-s-mobile-stable-repair: prevent stale mobile/PWA cache from loading broken files -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <script>
-    window.FIRE_S_BUILD = 'rc-1-2-0O-mobile-stable';
-    (function fireSMobileStableRepair(){
-      try {
-        if ('caches' in window) {
-          caches.keys().then(function(keys){ return Promise.all(keys.map(function(k){ return caches.delete(k); })); }).catch(function(){});
-        }
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function(regs){
-            regs.forEach(function(reg){ reg.unregister().catch(function(){}); });
-          }).catch(function(){});
-        }
-      } catch (e) {}
-    })();
-  </script>
-
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fire-S | Professional Fire Safety Platform</title>
-  <link rel="manifest" href="manifest.json?v=rc-1-2-0O-mobile-stable">
+  <title>Fire-S Fire Safety App</title>
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#b71c1c">
-  <link rel="stylesheet" href="styles.css?v=unified-formal-report-generator-20260723-1">
-  <link rel="icon" type="image/png" href="icon-192.png?v=rc-1-2-0O-mobile-stable">
+  <link rel="stylesheet" href="styles.css?v=106-0-new-inspection-flow">
+  <link rel="icon" href="data:,">
 </head>
 <body>
   <div class="app">
@@ -35,7 +15,7 @@
   <div class="brand-left">
     <img
       class="brand-mark"
-      src="fire-s-logo.png?v=rc-1-2-0O-mobile-stable"
+      src="icon-192.png"
       alt="Fire-S logo"
     >
     <div>
@@ -44,7 +24,7 @@
   <span class="beta-badge rc-badge">RC BETA</span>
     </h1>
 
-    <p class="subtitle">Professional Fire Safety Platform</p>
+    <p class="subtitle">Fire Safety App</p>
     <p id="appVersion" class="brand-version">Version loading...</p></div>
   </div>
 
@@ -648,10 +628,6 @@
       Photo Evidence
     </button>
 
-    <button type="button" id="analyticsMenuBtn">
-      Analytics
-    </button>
-
     <button type="button" data-section-target="inspectorCommentsCard">
       Inspector Comments
     </button>
@@ -792,10 +768,6 @@
     Finish
   </button>
 
-  <button id="analyticsBtn" type="button" class="secondary-btn">
-    Analytics
-  </button>
-
   <div class="action-menu">
 
     <button id="actionMenuBtn" type="button">
@@ -837,23 +809,6 @@
         <div id="saveMessage" class="note" style="margin-top: 10px;"></div>
       </section>
 
-      <section class="card analytics-section" id="analyticsSection" style="display:none;">
-        <div class="analytics-header">
-          <div>
-            <div class="analytics-kicker">Management View</div>
-            <h2>Analytics</h2>
-            <p>Statistical, trend and executive data is kept here so the inspection pages stay clean.</p>
-          </div>
-          <div class="analytics-header-actions">
-            <button id="refreshAnalyticsBtn" type="button">Refresh</button>
-            <button id="closeAnalyticsBtn" type="button" class="secondary-btn">Close</button>
-          </div>
-        </div>
-        <div id="analyticsContent" class="analytics-content">
-          Open an inspection and press Refresh to view Analytics.
-        </div>
-      </section>
-
       <div class="card" id="requirementsSection">
         <h2>Requirements</h2>
         <div id="requirements"></div>
@@ -867,29 +822,17 @@
 
   <section class="card" id="photoEvidenceCard">
   <h2>Photo Evidence</h2>
-  <div class="photo-source-actions">
-    <button type="button" id="takePhotoBtn" class="take-photo-btn" aria-controls="cameraCaptureModal">Take Photo</button>
-    <button type="button" id="chooseGalleryBtn" class="secondary-btn">Choose from Gallery</button>
-  </div>
+  <label for="photoInput" class="take-photo-btn">
+  Take Photo
+</label>
 
-  <input type="file" id="photoInput" accept="image/*" class="hidden-photo-input">
-
-  <div id="cameraCaptureModal" class="camera-capture-modal hidden" aria-hidden="true">
-    <div class="camera-capture-panel" role="dialog" aria-modal="true" aria-label="Take photo">
-      <div class="camera-workspace-header">
-        <strong>Camera</strong>
-        <button type="button" id="closeCameraBtn" class="camera-close-btn" aria-label="Close camera">Close</button>
-      </div>
-      <div class="camera-preview-frame">
-        <video id="cameraPreview" autoplay playsinline muted></video>
-        <canvas id="cameraCanvas" class="hidden"></canvas>
-      </div>
-      <div id="cameraStatus" class="camera-workspace-status" aria-live="polite"></div>
-      <div class="camera-capture-actions">
-        <button type="button" id="capturePhotoBtn" class="take-photo-btn camera-shutter-btn">Capture Photo</button>
-      </div>
-    </div>
-  </div>
+<input
+  type="file"
+  id="photoInput"
+  accept="image/*"
+  capture="environment"
+  class="hidden-photo-input"
+>
 
 <button
   type="button"
@@ -1007,7 +950,7 @@
     </section>
   </div>
 
-  <script src="supabase-js-v2.js?v=rc-1-2-0O-mobile-stable"></script>
+  <script src="supabase-js-v2.js?v=1"></script>
   <script src="action-engine.js?v=103-5-action-dashboard"></script>
   <script src="action-register.js?v=103-5-action-dashboard"></script>
   <script src="building-passport.js?v=104-4-passport-stability-fix"></script>
@@ -1017,20 +960,12 @@
   <script src="action-sync-fix.js?v=105-1-action-sync-fix"></script>
   <script src="action-register-live-fix.js?v=105-2-action-register-live-fix"></script>
   <script src="action-register-hard-fix.js?v=105-3-action-register-hard-fix"></script>
-  <script src="app.js?v=share-formal-pdf-20260723-1"></script>
-  <script src="risk-engine.js?v=108-2-category-intelligence"></script>
-  <script src="action-intelligence.js?v=108-3-action-intelligence"></script>
-  <script src="sprint-109-1-history.js?v=109-1-inspection-history-versioning"></script>
-  <script src="sprint-109-2-comparison.js?v=109-2-inspection-comparison"></script>
-  <script src="sprint-109-3-trends.js?v=109-3-trend-analytics"></script>
-  <script src="sprint-110-0-ai-assist.js?v=110-0-ai-assist-foundation"></script>
-  <script src="sprint-110-1-dashboard-data-consolidation.js?v=110-1-dashboard-data-consolidation"></script>
-  <script src="sprint-111-0-analytics-tab.js?v=111-0-analytics-tab"></script>
-  <script src="sprint-111-3-analytics-isolation.js?v=111-3-analytics-isolation"></script>
+  <script src="new-inspection-flow.js?v=106-0-new-inspection-flow"></script>
+  <script src="app.js?v=report-quality-check-v1"></script>
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js?v=rc-1-2-0O-mobile-stable')
+        navigator.serviceWorker.register('./service-worker.js')
           .then(() => {
             console.log('Fire-S service worker registered.');
           })
