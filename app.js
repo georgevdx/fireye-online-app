@@ -53,12 +53,12 @@ let currentProjectId = null;
 let currentProjectSummaryId = null;
 let siteReadyPreflightOpen = false;
 let currentPhotos = [];
-let currentReportFindingReferencesByItem = {};
 let archivedReportContext = null;
+let liveReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.3.6A.14 - Finding Photo Traceability';
+const APP_VERSION = 'RC 1.2.0B - User Choice Layer';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1136,10 +1136,6 @@ function applyMeasuredA4Pagination(pdfClone) {
     '.formal-subject',
     '.formal-opening',
     '.report-section-lead',
-    '.report-section-status',
-    '.report-summary-card',
-    '.report-expiry-item',
-    '.action-item',
     '.findings-reference-note',
     '.nc-section-lead',
     '.nc-heading',
@@ -1192,6 +1188,13 @@ function applyMeasuredA4Pagination(pdfClone) {
 }
 
 function getPhotosForPdfExport() {
+  if (
+    archivedReportContext?.mode === 'live' &&
+    liveReportContext?.inspection
+  ) {
+    return liveReportContext.inspection.photos || [];
+  }
+
   if (archivedReportContext) {
     const projects = getProjects();
     const project = projects.find(
@@ -1204,16 +1207,7 @@ function getPhotosForPdfExport() {
     return inspection?.photos || [];
   }
 
-  return (currentPhotos || []).map(photo => {
-    const linkedItem = String(photo.linkedQuestion || '').trim();
-
-    return {
-      ...photo,
-      reportFindingRefs: linkedItem
-        ? (currentReportFindingReferencesByItem[linkedItem] || [])
-        : []
-    };
-  });
+  return currentPhotos || [];
 }
 
 function getPdfImageFormat(src = '') {
@@ -1540,7 +1534,7 @@ async function exportReport() {
     new Date().toISOString().slice(0, 10);
 
   const reportPrefix =
-    archivedReportContext
+    archivedReportContext?.mode === 'archived'
       ? 'Fire-S_Archived_Report'
       : 'Fire-S_Report';
 
@@ -5483,10 +5477,6 @@ function normaliseProjectPhotoSources(project) {
 
 async function hydrateProjectPhotosFromCloudStorage(project) {
   if (!project || !project.id) return project?.photos || [];
-  if (Array.isArray(project.photos) && project.photos.some(photo => getStoredPhotoSource(photo))) {
-    project.photos = normaliseInspectionPhotoSources(project.photos);
-    return project.photos;
-  }
 
   try {
     if (typeof supabaseClient === 'undefined' || !supabaseClient?.storage) {
@@ -14567,13 +14557,118 @@ function buildPdfPhotoAppendix(photos = [], emptyMessage = 'No photo evidence wa
   }).join('');
 }
 
-function generateReport() {
+async function generateReport() {
 
   if (!canViewReports()) {
     alert(
       'Your company access does not allow viewing reports. Please contact your company admin or Fire-S support.'
     );
     return;
+  }
+
+  {
+  const liveCurrentProject = getProjects().find(
+    project => String(project.id) === String(currentProjectId)
+  );
+
+  if (!liveCurrentProject) {
+    alert('Save the inspection before generating the report.');
+    return;
+  }
+
+  const selectedChecklist = getActiveTemplateChecklist() || [];
+  const answers = [];
+
+  document.querySelectorAll('.answer-select').forEach((field, index) => {
+    const noteField = document.getElementById(`note_${index}`);
+    const expiryField = document.querySelector(
+      `.expiry-date[data-index="${index}"]`
+    );
+
+    answers.push({
+      itemIndex: index,
+      itemNumber:
+        selectedChecklist[index]?.["Item Number"] ||
+        String(index + 1),
+      answer: field.value || 'Not answered',
+      note: noteField ? noteField.value.trim() : '',
+      expiryDate: expiryField ? expiryField.value : null,
+      assessment:
+        field.dataset.assessment ||
+        (
+          field.value === 'Yes'
+            ? 'Compliant'
+            : field.value === 'No'
+            ? 'Action Required'
+            : field.value === 'N/A'
+            ? 'N/A'
+            : 'Not answered'
+        )
+    });
+  });
+
+  const liveProject = {
+    ...liveCurrentProject,
+    photos: normaliseInspectionPhotoSources(currentPhotos || [])
+  };
+
+  const hydratedPhotos =
+    await hydrateProjectPhotosFromCloudStorage(liveProject);
+
+  currentPhotos =
+    normaliseInspectionPhotoSources(hydratedPhotos || currentPhotos || []);
+
+  const organisationName = getEl('organisationName').value.trim();
+  const siteName = getEl('siteName').value.trim();
+  const streetNumber = getEl('streetNumber').value.trim();
+  const addressLine = getEl('projectAddress').value.trim();
+
+  const liveInspection = {
+    ...liveCurrentProject,
+    projectName:
+      [organisationName, siteName].filter(Boolean).join(' ') ||
+      liveCurrentProject.projectName ||
+      'Untitled Project',
+    organisationName,
+    siteName,
+    streetNumber,
+    addressLine,
+    projectAddress: combineStreetAddress(streetNumber, addressLine),
+    gps: getEl('gps').value.trim(),
+    inMall: getEl('inMall').value || 'No',
+    mallName: getEl('mallName').value.trim(),
+    unitNumber: getEl('unitNumber').value.trim(),
+    contactPerson: getEl('contactPerson').value.trim(),
+    contactTel: getEl('contactTel').value.trim(),
+    contactEmail: getEl('contactEmail').value.trim(),
+    productType: normalizeProductType(getEl('productType').value),
+    inspectionType: getEl('inspectionType').value || '-',
+    inspectorName: getEl('inspectorName').value.trim() || '-',
+    inspectionDate:
+      getEl('inspectionDate').value ||
+      liveCurrentProject.inspectionDate ||
+      new Date().toISOString().slice(0, 10),
+    occupancy: getEl('occupancySelect').value || '-',
+    finalComments: getEl('finalComments').value.trim(),
+    followUpRequired: getEl('followUpRequired').value,
+    followUpDate: getEl('followUpDate').value,
+    followUpNotes: getEl('followUpNotes').value.trim(),
+    answers,
+    photos: currentPhotos,
+    lastSaved: new Date().toISOString()
+  };
+
+  liveReportContext = {
+    project: {
+      ...liveProject,
+      projectName: liveInspection.projectName,
+      photos: currentPhotos
+    },
+    inspection: liveInspection
+  };
+
+  generateArchivedInspectionReport(liveCurrentProject.id, -1);
+  return;
   }
 
   archivedReportContext = null;
@@ -15013,46 +15108,6 @@ const executiveSummaryHtml = `
     `;
   }
 
-  /*
-    Give every current-report finding a stable reference and connect it to
-    photographic evidence captured against the same checklist item. This
-    mirrors the archived-report traceability without changing saved answers.
-  */
-  const photoReferencesByItem = (currentPhotos || []).reduce(
-    (references, photo, photoIndex) => {
-      const linkedItem = String(photo.linkedQuestion || '').trim();
-      if (!linkedItem) return references;
-
-      if (!references[linkedItem]) references[linkedItem] = [];
-      references[linkedItem].push(
-        `P-${String(photoIndex + 1).padStart(2, '0')}`
-      );
-      return references;
-    },
-    {}
-  );
-
-  currentReportFindingReferencesByItem = {};
-  let findingSequence = 0;
-
-  Object.keys(nonCompliance).forEach(section => {
-    nonCompliance[section].forEach(item => {
-      findingSequence++;
-      item.findingReference =
-        `F-${String(findingSequence).padStart(2, '0')}`;
-      item.photoReferences =
-        photoReferencesByItem[String(item.itemNumber)] || [];
-
-      const itemKey = String(item.itemNumber);
-      if (!currentReportFindingReferencesByItem[itemKey]) {
-        currentReportFindingReferencesByItem[itemKey] = [];
-      }
-      currentReportFindingReferencesByItem[itemKey].push(
-        item.findingReference
-      );
-    });
-  });
-
   let nonComplianceHtml = '';
   let actionPlanHtml = '';
 
@@ -15069,11 +15124,6 @@ const executiveSummaryHtml = `
       nonComplianceHtml += `
         
       <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
-
-      <div class="finding-reference-line">
-        <strong>Finding Reference:</strong>
-        ${escapeHtml(item.findingReference)}
-      </div>
 
       <div><strong>Severity:</strong> 
         ${escapeHtml(item.severity)}
@@ -15113,15 +15163,6 @@ const executiveSummaryHtml = `
           ${escapeHtml(item.correctiveAction)}
         </div>
       ` : ''}
-
-      <div class="finding-photo-reference">
-        <strong>Photo Reference:</strong>
-        ${
-          item.photoReferences.length
-            ? escapeHtml(item.photoReferences.join(', '))
-            : 'No photograph linked'
-        }
-      </div>
 
     </div>
       `;
@@ -15272,8 +15313,8 @@ const executiveSummaryHtml = `
       </div>
 
       <div>
-        <strong>Report Date:</strong>
-        ${escapeHtml(new Date().toLocaleDateString())}
+        <strong>Inspection Date:</strong>
+        ${escapeHtml(inspectionDate)}
       </div>
 
       <div>
@@ -15341,28 +15382,6 @@ const executiveSummaryHtml = `
       <h2>Executive Summary</h2>
       ${executiveSummaryHtml}
     </div>
-
-<div class="report-block report-flow-block">
-  <h2>Inspection and Action Overview</h2>
-  ${summaryCardsHtml}
-  ${actionHtml}
-</div>
-
-<div class="report-block report-flow-block">
-  <h2>Findings and Required Actions</h2>
-  ${nonComplianceHtml}
-</div>
-
-<div class="report-block report-flow-block">
-  <h2>Equipment Service and Expiry Status</h2>
-  ${expiryDetailsHtml}
-  ${missingExpiryHtml}
-</div>
-
-<div class="report-block report-flow-block">
-  <h2>Detailed Inspection Results</h2>
-  ${answersHtml}
-</div>
 
 <div class="report-block">
   <h3>Next Inspection Cycle / Re-inspection</h3>
@@ -16817,15 +16836,29 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     return;
   }
 
-  const projects = getProjects();
-  const project = projects.find(p => p.id === projectId);
+  const isLiveReport =
+    historyIndex === -1 &&
+    String(liveReportContext?.project?.id) === String(projectId);
 
-  if (!project || !project.inspectionHistory) {
+  if (!isLiveReport) {
+    liveReportContext = null;
+  }
+
+  const projects = getProjects();
+  const project =
+    isLiveReport
+      ? liveReportContext.project
+      : projects.find(p => p.id === projectId);
+
+  if (!project || (!isLiveReport && !project.inspectionHistory)) {
     alert('Archived inspection was not found.');
     return;
   }
 
-  const inspection = project.inspectionHistory[historyIndex];
+  const inspection =
+    isLiveReport
+      ? liveReportContext.inspection
+      : project.inspectionHistory[historyIndex];
 
     if (!inspection) {
       alert('Archived inspection was not found.');
@@ -16835,6 +16868,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
     archivedReportContext = {
     projectId,
     historyIndex,
+    mode: isLiveReport ? 'live' : 'archived',
     inspectionNumber: inspection.inspectionNumber || '',
     projectName:
       inspection.projectName ||
@@ -17145,7 +17179,7 @@ reportContent.innerHTML = `
         class="secondary-btn"
         onclick="exportReport()"
       >
-        Export Archived PDF
+        ${isLiveReport ? 'Export PDF' : 'Export Archived PDF'}
       </button>
     </div>
 
@@ -17325,7 +17359,10 @@ reportContent.innerHTML = `
         </div>
 
         <div class="report-disclaimer">
-          This archived report records observations made at the time of the previous inspection. It should be read together with applicable fire safety legislation, standards, municipal by-laws, and competent professional judgement where required.
+          ${isLiveReport
+            ? 'This report records observations made at the time of inspection.'
+            : 'This archived report records observations made at the time of the previous inspection.'}
+          It should be read together with applicable fire safety legislation, standards, municipal by-laws, and competent professional judgement where required.
         </div>
 
         <div class="report-generated">
