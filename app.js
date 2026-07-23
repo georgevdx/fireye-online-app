@@ -57,7 +57,7 @@ let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.2.0B - User Choice Layer';
+const APP_VERSION = 'RC 1.3.6A.12 - Formal Report Stability';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -15204,8 +15204,8 @@ const executiveSummaryHtml = `
       </div>
 
       <div>
-        <strong>Inspection Date:</strong>
-        ${escapeHtml(inspectionDate)}
+        <strong>Report Date:</strong>
+        ${escapeHtml(new Date().toLocaleDateString())}
       </div>
 
       <div>
