@@ -53,11 +53,12 @@ let currentProjectId = null;
 let currentProjectSummaryId = null;
 let siteReadyPreflightOpen = false;
 let currentPhotos = [];
+let currentReportFindingReferencesByItem = {};
 let archivedReportContext = null;
 let currentUserProfile = null;
 let currentCompanyAccess = null;
 
-const APP_VERSION = 'RC 1.3.6A.12 - Formal Report Stability';
+const APP_VERSION = 'RC 1.3.6A.14 - Finding Photo Traceability';
 const MAX_PHOTOS_PER_INSPECTION = 10;
 const SUPABASE_URL = "https://ispsdmglyylcwkufphnv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlzcHNkbWdseXlsY3drdWZwaG52Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNzkwNDUsImV4cCI6MjA5MTc1NTA0NX0.Uy_DcmodOBvZf_WMOtnZwAh4ZQeJIbS9ojBw8DzNXhk";
@@ -1135,6 +1136,10 @@ function applyMeasuredA4Pagination(pdfClone) {
     '.formal-subject',
     '.formal-opening',
     '.report-section-lead',
+    '.report-section-status',
+    '.report-summary-card',
+    '.report-expiry-item',
+    '.action-item',
     '.findings-reference-note',
     '.nc-section-lead',
     '.nc-heading',
@@ -1199,7 +1204,16 @@ function getPhotosForPdfExport() {
     return inspection?.photos || [];
   }
 
-  return currentPhotos || [];
+  return (currentPhotos || []).map(photo => {
+    const linkedItem = String(photo.linkedQuestion || '').trim();
+
+    return {
+      ...photo,
+      reportFindingRefs: linkedItem
+        ? (currentReportFindingReferencesByItem[linkedItem] || [])
+        : []
+    };
+  });
 }
 
 function getPdfImageFormat(src = '') {
@@ -14999,6 +15013,46 @@ const executiveSummaryHtml = `
     `;
   }
 
+  /*
+    Give every current-report finding a stable reference and connect it to
+    photographic evidence captured against the same checklist item. This
+    mirrors the archived-report traceability without changing saved answers.
+  */
+  const photoReferencesByItem = (currentPhotos || []).reduce(
+    (references, photo, photoIndex) => {
+      const linkedItem = String(photo.linkedQuestion || '').trim();
+      if (!linkedItem) return references;
+
+      if (!references[linkedItem]) references[linkedItem] = [];
+      references[linkedItem].push(
+        `P-${String(photoIndex + 1).padStart(2, '0')}`
+      );
+      return references;
+    },
+    {}
+  );
+
+  currentReportFindingReferencesByItem = {};
+  let findingSequence = 0;
+
+  Object.keys(nonCompliance).forEach(section => {
+    nonCompliance[section].forEach(item => {
+      findingSequence++;
+      item.findingReference =
+        `F-${String(findingSequence).padStart(2, '0')}`;
+      item.photoReferences =
+        photoReferencesByItem[String(item.itemNumber)] || [];
+
+      const itemKey = String(item.itemNumber);
+      if (!currentReportFindingReferencesByItem[itemKey]) {
+        currentReportFindingReferencesByItem[itemKey] = [];
+      }
+      currentReportFindingReferencesByItem[itemKey].push(
+        item.findingReference
+      );
+    });
+  });
+
   let nonComplianceHtml = '';
   let actionPlanHtml = '';
 
@@ -15015,6 +15069,11 @@ const executiveSummaryHtml = `
       nonComplianceHtml += `
         
       <div class="nc-item nc-${escapeHtml(item.severity.toLowerCase())}">
+
+      <div class="finding-reference-line">
+        <strong>Finding Reference:</strong>
+        ${escapeHtml(item.findingReference)}
+      </div>
 
       <div><strong>Severity:</strong> 
         ${escapeHtml(item.severity)}
@@ -15054,6 +15113,15 @@ const executiveSummaryHtml = `
           ${escapeHtml(item.correctiveAction)}
         </div>
       ` : ''}
+
+      <div class="finding-photo-reference">
+        <strong>Photo Reference:</strong>
+        ${
+          item.photoReferences.length
+            ? escapeHtml(item.photoReferences.join(', '))
+            : 'No photograph linked'
+        }
+      </div>
 
     </div>
       `;
@@ -15273,6 +15341,28 @@ const executiveSummaryHtml = `
       <h2>Executive Summary</h2>
       ${executiveSummaryHtml}
     </div>
+
+<div class="report-block report-flow-block">
+  <h2>Inspection and Action Overview</h2>
+  ${summaryCardsHtml}
+  ${actionHtml}
+</div>
+
+<div class="report-block report-flow-block">
+  <h2>Findings and Required Actions</h2>
+  ${nonComplianceHtml}
+</div>
+
+<div class="report-block report-flow-block">
+  <h2>Equipment Service and Expiry Status</h2>
+  ${expiryDetailsHtml}
+  ${missingExpiryHtml}
+</div>
+
+<div class="report-block report-flow-block">
+  <h2>Detailed Inspection Results</h2>
+  ${answersHtml}
+</div>
 
 <div class="report-block">
   <h3>Next Inspection Cycle / Re-inspection</h3>
