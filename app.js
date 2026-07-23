@@ -1108,7 +1108,7 @@ function applyMeasuredA4Pagination(pdfClone) {
     '.formal-opening',
     '.report-section-lead',
     '.findings-reference-note',
-    '.nc-section-lead',
+    '.nc-heading',
     '.nc-item',
     '.finding-code-reference',
     '.finding-photo-reference',
@@ -1340,6 +1340,129 @@ async function addPhotoAppendixToPdf(pdf, photos = []) {
   }
 }
 
+async function addTwoUpPhotoAppendixToPdf(pdf, photos = []) {
+  const safePhotos = Array.isArray(photos) ? photos : [];
+  if (safePhotos.length === 0) return;
+
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const marginX = 12;
+  const cardWidth = pageWidth - (marginX * 2);
+  const cardHeight = 119;
+  const firstCardTop = 35;
+  const secondCardTop = 162;
+
+  for (let pageStart = 0; pageStart < safePhotos.length; pageStart += 2) {
+    pdf.addPage();
+
+    pdf.setFillColor(30, 41, 59);
+    pdf.rect(0, 0, pageWidth, 24, 'F');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(14);
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('APPENDIX A - PHOTOGRAPHIC EVIDENCE', marginX, 15);
+
+    const pagePhotos = safePhotos.slice(pageStart, pageStart + 2);
+
+    for (let slot = 0; slot < pagePhotos.length; slot++) {
+      const photo = pagePhotos[slot];
+      const photoIndex = pageStart + slot;
+      const photoNumber = photoIndex + 1;
+      const top = slot === 0 ? firstCardTop : secondCardTop;
+      const photoReference = `P-${String(photoNumber).padStart(2, '0')}`;
+      const findingReferences = Array.isArray(photo.reportFindingRefs)
+        ? photo.reportFindingRefs.filter(Boolean)
+        : [];
+      const category = photo.category || 'General';
+      const area = photo.area || 'Not recorded';
+      const capturedText = photo.timestamp
+        ? new Date(photo.timestamp).toLocaleString()
+        : 'Not recorded';
+      const linkedEvidenceText = findingReferences.length
+        ? `Linked finding${findingReferences.length === 1 ? '' : 's'}: ${findingReferences.join(', ')}`
+        : photo.linkedQuestion
+        ? `Linked checklist item: ${photo.linkedQuestion} (no action finding)`
+        : 'General evidence - no finding linked';
+
+      pdf.setDrawColor(205, 210, 216);
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(marginX, top, cardWidth, cardHeight, 1.5, 1.5, 'FD');
+
+      pdf.setFillColor(245, 247, 250);
+      pdf.rect(marginX + 0.5, top + 0.5, cardWidth - 1, 13, 'F');
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.text(`${photoReference} | PHOTO ${photoNumber} OF ${safePhotos.length} | ${String(category).toUpperCase()}`, marginX + 4, top + 6);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.text(`Captured: ${capturedText} | Area: ${area}`, marginX + 4, top + 11);
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8);
+      pdf.text(linkedEvidenceText, marginX + 4, top + 18);
+
+      const imageTop = top + 23;
+      const imageBoxWidth = 94;
+      const imageBoxHeight = 82;
+      pdf.setDrawColor(225, 225, 225);
+      pdf.setFillColor(248, 248, 248);
+      pdf.rect(marginX + 4, imageTop, imageBoxWidth, imageBoxHeight, 'FD');
+
+      const img = await loadPdfImage(photo.src);
+      if (img) {
+        const imgRatio = img.naturalWidth / img.naturalHeight;
+        const boxRatio = imageBoxWidth / imageBoxHeight;
+        let drawWidth = imageBoxWidth;
+        let drawHeight = imageBoxHeight;
+
+        if (imgRatio > boxRatio) {
+          drawHeight = drawWidth / imgRatio;
+        } else {
+          drawWidth = drawHeight * imgRatio;
+        }
+
+        const drawX = marginX + 4 + ((imageBoxWidth - drawWidth) / 2);
+        const drawY = imageTop + ((imageBoxHeight - drawHeight) / 2);
+
+        try {
+          pdf.addImage(img, 'JPEG', drawX, drawY, drawWidth, drawHeight, undefined, 'FAST');
+        } catch (_) {
+          try {
+            pdf.addImage(img, 'PNG', drawX, drawY, drawWidth, drawHeight, undefined, 'FAST');
+          } catch (_) {}
+        }
+      } else {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(100, 100, 100);
+        pdf.text('Photo preview unavailable.', marginX + 51, imageTop + 41, { align: 'center' });
+      }
+
+      const captionX = marginX + 104;
+      const captionWidth = cardWidth - 112;
+      pdf.setTextColor(30, 41, 59);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(8.5);
+      pdf.text('INSPECTOR CAPTION', captionX, imageTop + 3);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8);
+      const caption = photo.note || 'No caption added.';
+      const wrappedCaption = pdf.splitTextToSize(caption, captionWidth);
+      pdf.text(wrappedCaption.slice(0, 13), captionX, imageTop + 9);
+    }
+
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(marginX, 287, pageWidth - marginX, 287);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(7);
+    pdf.setTextColor(90, 90, 90);
+    pdf.text('Fire-S Fire Safety Inspection Report | Photographic Evidence', marginX, 291);
+    pdf.text(`Page ${pdf.getNumberOfPages()}`, pageWidth - marginX, 291, { align: 'right' });
+  }
+}
+
 async function exportReport() {
   if (!canViewReports()) {
     alert(
@@ -1557,7 +1680,7 @@ pagebreak: {
     '.report-expiry-item',
     '.action-item',
     '.nc-item',
-    '.nc-section-lead',
+    '.nc-heading',
     '.findings-reference-note',
     '.finding-code-reference',
     '.finding-photo-reference',
@@ -1586,7 +1709,7 @@ pagebreak: {
     const pdf =
       await worker.get('pdf');
 
-    await addPhotoAppendixToPdf(
+    await addTwoUpPhotoAppendixToPdf(
       pdf,
       photosForPdf
     );
@@ -16806,8 +16929,7 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
       nonCompliance[section].forEach((item, itemIndex) => {
         if (itemIndex === 0) {
           nonComplianceHtml += `
-            <div class="nc-section-lead">
-              <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
+            <div class="nc-heading">${escapeHtml(section.toUpperCase())}</div>
           `;
         }
 
@@ -16877,9 +16999,6 @@ function generateArchivedInspectionReport(projectId, historyIndex) {
           </div>
         `;
 
-        if (itemIndex === 0) {
-          nonComplianceHtml += `</div>`;
-        }
       });
 
       nonComplianceHtml += `</div>`;

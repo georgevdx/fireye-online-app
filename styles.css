@@ -5339,6 +5339,35 @@ button.readiness-chip:focus {
   -webkit-column-break-inside: avoid !important;
 }
 
+/* Formal report refinement: separate the routing details from the subject. */
+.formal-letter-report .formal-subject {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 2px solid #b71c1c;
+}
+
+.pdf-export-mode .formal-letter-report .formal-subject {
+  margin-top: 7mm !important;
+  padding-top: 4mm !important;
+  border-top: 0.6mm solid #b71c1c !important;
+}
+
+/*
+  A section heading and the first finding are measured separately. This avoids
+  reserving an oversized combined wrapper and removes artificial blank space
+  between consecutive findings sections while each finding card stays atomic.
+*/
+.nc-section-lead {
+  display: contents;
+}
+
+.pdf-export-mode .nc-heading {
+  margin-top: 5mm !important;
+  margin-bottom: 2mm !important;
+  break-after: avoid !important;
+  page-break-after: avoid !important;
+}
+
 .pdf-export-mode .nc-heading,
 .pdf-export-mode .report-section-heading,
 .pdf-export-mode .report-block h2,
