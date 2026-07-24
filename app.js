@@ -16578,9 +16578,14 @@ function showReportQualityCheck(qualityCheck) {
     existing.remove();
   }
 
-  if (!qualityCheck || qualityCheck.passed) {
-    return Promise.resolve(true);
-  }
+  const checkPassed =
+    !qualityCheck ||
+    qualityCheck.passed;
+
+  const issues =
+    Array.isArray(qualityCheck?.issues)
+      ? qualityCheck.issues
+      : [];
 
   return new Promise(resolve => {
     const overlay =
@@ -16600,23 +16605,35 @@ function showReportQualityCheck(qualityCheck) {
         <div class="report-quality-icon" aria-hidden="true">!</div>
 
         <div>
-          <h3 id="reportQualityCheckTitle">Report Quality Check</h3>
+          <h3 id="reportQualityCheckTitle">
+            ${checkPassed ? 'PDF Ready to Share' : 'Report Quality Check'}
+          </h3>
           <p>
-            The report can be shared, but the following items should be reviewed first.
+            ${
+              checkPassed
+                ? 'The formal PDF is ready. Tap Share PDF to open your phone sharing options.'
+                : 'The report can be shared, but the following items should be reviewed first.'
+            }
           </p>
         </div>
 
-        <div class="report-quality-list">
-          ${qualityCheck.issues.map(issue => `
+        ${issues.length ? `
+          <div class="report-quality-list">
+          ${issues.map(issue => `
             <div class="report-quality-item report-quality-${escapeHtml(issue.type)}">
               <strong>${escapeHtml(issue.title)}</strong>
               <span>${escapeHtml(issue.detail)}</span>
             </div>
           `).join('')}
-        </div>
+          </div>
+        ` : ''}
 
         <div class="report-quality-note">
-          Sharing anyway does not change or delete any inspection data.
+          ${
+            checkPassed
+              ? 'The shared file is the same formal PDF used by Fire-S reports.'
+              : 'Sharing anyway does not change or delete any inspection data.'
+          }
         </div>
 
         <div class="report-quality-actions">
@@ -16629,7 +16646,7 @@ function showReportQualityCheck(qualityCheck) {
             class="report-quality-share-anyway"
             data-report-quality-action="share"
           >
-            Share Anyway
+            ${checkPassed ? 'Share PDF' : 'Share Anyway'}
           </button>
         </div>
       </div>
@@ -16798,6 +16815,114 @@ function ensureReportQualityCheckStyles() {
   document.head.appendChild(style);
 }
 
+function getReportShareIdentity(inspection) {
+  const safeInspection =
+    inspection || {};
+
+  const organisationName =
+    String(safeInspection.organisationName || '').trim();
+
+  const siteName =
+    String(
+      safeInspection.siteName ||
+      safeInspection.projectName ||
+      ''
+    ).trim();
+
+  const premisesName =
+    [organisationName, siteName]
+      .filter((value, index, values) =>
+        value &&
+        values.findIndex(other =>
+          other.toLowerCase() === value.toLowerCase()
+        ) === index
+      )
+      .join(' - ') ||
+    'Inspected Premises';
+
+  const inspectionDate =
+    isBlankReportValue(safeInspection.inspectionDate)
+      ? 'Not recorded'
+      : formatInspectionDate(safeInspection.inspectionDate);
+
+  return {
+    premisesName,
+    inspectionDate
+  };
+}
+
+function buildReportSharePayload(reportFile, inspection) {
+  const {
+    premisesName,
+    inspectionDate
+  } = getReportShareIdentity(inspection);
+
+  return {
+    title:
+      `Fire-S Inspection Report - ${premisesName}`,
+    text: [
+      'Please find attached the formal Fire-S Fire Safety Inspection Report.',
+      '',
+      `Premises: ${premisesName}`,
+      `Inspection date: ${inspectionDate}`
+    ].join('\n'),
+    files: [reportFile]
+  };
+}
+
+function canShareReportFile(reportFile) {
+  if (
+    typeof navigator.share !== 'function' ||
+    !reportFile
+  ) {
+    return false;
+  }
+
+  if (typeof navigator.canShare !== 'function') {
+    return true;
+  }
+
+  try {
+    return navigator.canShare({
+      files: [reportFile]
+    });
+  } catch (error) {
+    console.warn(
+      'Report file sharing capability check failed:',
+      error
+    );
+    return false;
+  }
+}
+
+function downloadPreparedReportPdf(pdfResult) {
+  if (!pdfResult?.blob || !pdfResult?.fileName) {
+    return false;
+  }
+
+  const downloadUrl =
+    URL.createObjectURL(pdfResult.blob);
+
+  const downloadLink =
+    document.createElement('a');
+
+  downloadLink.href = downloadUrl;
+  downloadLink.download = pdfResult.fileName;
+  downloadLink.rel = 'noopener';
+  downloadLink.style.display = 'none';
+
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  downloadLink.remove();
+
+  setTimeout(
+    () => URL.revokeObjectURL(downloadUrl),
+    1000
+  );
+
+  return true;
+}
+
 async function shareReport() {
   if (!canViewReports()) {
     alert(
@@ -16818,6 +16943,7 @@ async function shareReport() {
   const shareButton = getEl('shareBtn');
   const saveMessage = getEl('saveMessage');
   const originalLabel = shareButton.textContent;
+  let preparedPdfResult = null;
 
   shareButton.disabled = true;
   shareButton.textContent = 'Preparing PDF...';
@@ -16835,13 +16961,42 @@ async function shareReport() {
     const qualityCheck =
       buildReportQualityCheck(reportInspection);
 
-    shareButton.textContent =
-      'Quality Check...';
-
+    shareButton.textContent = 'Preparing PDF...';
     saveMessage.textContent =
       qualityCheck.passed
-        ? 'Report quality check passed.'
-        : 'Report quality check needs your review.';
+        ? 'Quality check passed. Preparing the formal PDF...'
+        : 'Preparing the formal PDF for your review...';
+
+    const pdfResult =
+      await exportReport({ returnFile: true });
+
+    if (!pdfResult?.blob || !pdfResult?.fileName) {
+      throw new Error('The report PDF could not be prepared.');
+    }
+
+    preparedPdfResult =
+      pdfResult;
+
+    const reportFile = new File(
+      [pdfResult.blob],
+      pdfResult.fileName,
+      { type: 'application/pdf' }
+    );
+
+    const sharePayload =
+      buildReportSharePayload(
+        reportFile,
+        reportInspection
+      );
+
+    const canShareFile =
+      canShareReportFile(reportFile);
+
+    shareButton.textContent = 'PDF Ready...';
+    saveMessage.textContent =
+      qualityCheck.passed
+        ? 'Formal PDF ready to share.'
+        : 'Formal PDF ready. Review the quality check before sharing.';
 
     const shareAnyway =
       await showReportQualityCheck(qualityCheck);
@@ -16859,55 +17014,14 @@ async function shareReport() {
       return;
     }
 
-    shareButton.textContent = 'Preparing PDF...';
-    saveMessage.textContent =
-      qualityCheck.passed
-        ? 'Quality check passed. Preparing the formal PDF...'
-        : 'Sharing approved. Preparing the formal PDF...';
-
-    const pdfResult =
-      await exportReport({ returnFile: true });
-
-    if (!pdfResult?.blob || !pdfResult?.fileName) {
-      throw new Error('The report PDF could not be prepared.');
-    }
-
-    const reportFile = new File(
-      [pdfResult.blob],
-      pdfResult.fileName,
-      { type: 'application/pdf' }
-    );
-
-    const sharePayload = {
-      title: 'Fire-S Fire Safety Inspection Report',
-      text: 'Please find the Fire-S fire safety inspection report attached.',
-      files: [reportFile]
-    };
-
-    const canShareFile =
-      typeof navigator.share === 'function' &&
-      (
-        typeof navigator.canShare !== 'function' ||
-        navigator.canShare({ files: [reportFile] })
-      );
-
     if (canShareFile) {
       await navigator.share(sharePayload);
-      saveMessage.textContent = 'Formal PDF report shared.';
+      saveMessage.textContent =
+        'Formal PDF report shared successfully.';
       return;
     }
 
-    const downloadUrl =
-      URL.createObjectURL(pdfResult.blob);
-    const downloadLink =
-      document.createElement('a');
-
-    downloadLink.href = downloadUrl;
-    downloadLink.download = pdfResult.fileName;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    downloadLink.remove();
-    setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+    downloadPreparedReportPdf(pdfResult);
 
     saveMessage.textContent =
       'Direct file sharing is not supported on this device. The formal PDF was downloaded and is ready to attach.';
@@ -16916,8 +17030,14 @@ async function shareReport() {
       saveMessage.textContent = 'Sharing cancelled.';
     } else {
       console.error('Share report failed:', error);
-      saveMessage.textContent =
-        'The PDF could not be shared. Please use the PDF button to download it.';
+
+      if (downloadPreparedReportPdf(preparedPdfResult)) {
+        saveMessage.textContent =
+          'Direct sharing failed, but the formal PDF was downloaded safely and is ready to attach.';
+      } else {
+        saveMessage.textContent =
+          'The PDF could not be prepared or shared. Please use the PDF button to try again.';
+      }
     }
   } finally {
     shareButton.disabled = false;
